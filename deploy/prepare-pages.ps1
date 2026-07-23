@@ -13,4 +13,11 @@ if (-not (Test-Path $PlayHtml)) {
 Copy-Item $PlayHtml (Join-Path $DistDir 'index.html') -Force
 New-Item (Join-Path $DistDir '.nojekyll') -ItemType File -Force | Out-Null
 
+# Also sync repo root so branch-based GitHub Pages (and opening index.html) works.
+# GitHub Actions still deploys dist/; root copies are a fallback when Pages source is "Deploy from a branch".
+Copy-Item $PlayHtml (Join-Path $ProjectRoot 'index.html') -Force
+Copy-Item $PlayHtml (Join-Path $ProjectRoot 'play.html') -Force
+New-Item (Join-Path $ProjectRoot '.nojekyll') -ItemType File -Force | Out-Null
+
 Write-Host "  Prepared dist/ for web hosting (index.html + .nojekyll)" -ForegroundColor Green
+Write-Host "  Synced root index.html + play.html for branch Pages / local open" -ForegroundColor Green
