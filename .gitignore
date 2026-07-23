@@ -1,0 +1,44 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+
+# Dependencies
+node_modules
+
+# Build (regenerate with build.bat)
+dist
+dist-ssr
+app/js/bundle.js
+app/play.html
+*.local
+
+# Editor
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Env
+.env
+.env.*
+
+# Local Rapid Ingress saves / exports (not part of the app source)
+Purge the Foe*
+RapidIngress-*.png
+*_files/
+*.pdf
+
+# Local army roster exports (players upload their own)
+*.json
+!package.json
+!tsconfig*.json
+!**/layoutData/*.js
+
+deploy/*.zip
+scripts/layout-previews/

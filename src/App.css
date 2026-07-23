@@ -1,0 +1,377 @@
+:root {
+  --bg: #0c0a09;
+  --surface: #1c1917;
+  --surface-2: #292524;
+  --border: #44403c;
+  --text: #fafaf9;
+  --muted: #a8a29e;
+  --gold: #d4a853;
+  --blue: #3b82f6;
+  --green: #22c55e;
+  --red: #ef4444;
+  font-family: 'Inter', system-ui, sans-serif;
+  color: var(--text);
+  background: var(--bg);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  min-height: 100vh;
+}
+
+.app {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.app-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.5rem;
+  background: linear-gradient(180deg, #1a1210 0%, var(--bg) 100%);
+  border-bottom: 1px solid var(--border);
+}
+
+.app-header h1 {
+  font-family: 'Cinzel', serif;
+  font-size: 1.5rem;
+  color: var(--gold);
+  letter-spacing: 0.05em;
+}
+
+.subtitle {
+  font-size: 0.8rem;
+  color: var(--muted);
+  margin-top: 0.15rem;
+}
+
+.start-btn {
+  background: linear-gradient(135deg, #92400e, #b45309);
+  color: white;
+  border: 1px solid #d97706;
+  padding: 0.6rem 1.4rem;
+  border-radius: 6px;
+  font-family: 'Cinzel', serif;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+
+.start-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 20px rgba(217, 119, 6, 0.3);
+}
+
+.game-over {
+  color: var(--gold);
+  font-family: 'Cinzel', serif;
+  font-weight: 600;
+}
+
+.phase-tracker {
+  padding: 0.75rem 1.5rem;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+}
+
+.phase-header {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  margin-bottom: 0.6rem;
+}
+
+.round-badge {
+  background: var(--surface-2);
+  padding: 0.2rem 0.6rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--gold);
+}
+
+.active-player {
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.phase-steps {
+  display: flex;
+  gap: 0.25rem;
+  overflow-x: auto;
+  padding-bottom: 0.25rem;
+}
+
+.phase-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  min-width: 64px;
+  opacity: 0.4;
+  font-size: 0.65rem;
+  color: var(--muted);
+  text-align: center;
+}
+
+.phase-step.active {
+  opacity: 1;
+  color: var(--gold);
+}
+
+.phase-step.done {
+  opacity: 0.65;
+  color: var(--green);
+}
+
+.phase-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--border);
+}
+
+.phase-step.active .phase-dot {
+  background: var(--gold);
+  box-shadow: 0 0 8px var(--gold);
+}
+
+.phase-step.done .phase-dot {
+  background: var(--green);
+}
+
+.current-phase-label {
+  margin-top: 0.5rem;
+  font-family: 'Cinzel', serif;
+  font-size: 0.9rem;
+  color: var(--text);
+}
+
+.app-main {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  gap: 0;
+  min-height: 0;
+}
+
+.battlefield-wrapper {
+  padding: 1rem;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: #0a0807;
+}
+
+.battlefield-canvas {
+  max-width: 100%;
+  height: auto;
+  border: 2px solid var(--border);
+  border-radius: 4px;
+  cursor: crosshair;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+}
+
+.battlefield-scale {
+  margin-top: 0.5rem;
+  font-size: 0.7rem;
+  color: var(--muted);
+}
+
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  border-left: 1px solid var(--border);
+  background: var(--surface);
+  overflow: hidden;
+}
+
+.control-panel {
+  padding: 1rem;
+  overflow-y: auto;
+  flex: 1;
+  max-height: 55vh;
+}
+
+.panel-section {
+  margin-bottom: 1rem;
+}
+
+.panel-section h3 {
+  font-family: 'Cinzel', serif;
+  font-size: 0.8rem;
+  color: var(--gold);
+  margin-bottom: 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.cp-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.85rem;
+}
+
+.unit-btn {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  text-align: left;
+  padding: 0.5rem 0.65rem;
+  margin-bottom: 0.35rem;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text);
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+
+.unit-btn:hover {
+  border-color: var(--muted);
+}
+
+.unit-btn.selected {
+  border-color: var(--gold);
+  background: rgba(212, 168, 83, 0.1);
+}
+
+.unit-btn.inactive {
+  opacity: 0.55;
+}
+
+.unit-name {
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+
+.unit-meta {
+  font-size: 0.7rem;
+  color: var(--muted);
+}
+
+.action-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.action-group button,
+.tools button {
+  padding: 0.45rem 0.65rem;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text);
+  font-size: 0.8rem;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.15s;
+}
+
+.action-group button:hover,
+.tools button:hover {
+  background: #3f3a36;
+}
+
+.action-group button.selected,
+.tools button.active {
+  border-color: var(--gold);
+}
+
+.tools button.primary {
+  background: linear-gradient(135deg, #1e3a5f, #1d4ed8);
+  border-color: #3b82f6;
+  font-weight: 600;
+  margin-top: 0.5rem;
+}
+
+.hint {
+  font-size: 0.72rem;
+  color: var(--muted);
+  font-style: italic;
+  padding: 0.25rem 0;
+}
+
+.objective-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.75rem;
+  padding: 0.3rem 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.game-log {
+  border-top: 1px solid var(--border);
+  padding: 1rem;
+  flex: 1;
+  min-height: 200px;
+  display: flex;
+  flex-direction: column;
+}
+
+.game-log h3 {
+  font-family: 'Cinzel', serif;
+  font-size: 0.8rem;
+  color: var(--gold);
+  margin-bottom: 0.5rem;
+}
+
+.log-entries {
+  flex: 1;
+  overflow-y: auto;
+  font-size: 0.75rem;
+}
+
+.log-entry {
+  padding: 0.35rem 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  display: flex;
+  gap: 0.5rem;
+}
+
+.log-meta {
+  color: var(--gold);
+  font-weight: 600;
+  min-width: 24px;
+}
+
+.log-text {
+  color: var(--muted);
+}
+
+.log-empty {
+  color: var(--muted);
+  font-style: italic;
+}
+
+.app-footer {
+  padding: 0.5rem 1.5rem;
+  font-size: 0.7rem;
+  color: var(--muted);
+  border-top: 1px solid var(--border);
+  text-align: center;
+}
+
+@media (max-width: 900px) {
+  .app-main {
+    grid-template-columns: 1fr;
+  }
+
+  .sidebar {
+    border-left: none;
+    border-top: 1px solid var(--border);
+  }
+
+  .control-panel {
+    max-height: none;
+  }
+}

@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Warhammer 40,000 — Battle Guide</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="css/app.css" />
+  </head>
+  <body>
+    <div id="root"></div>
+    <script>
+      window.onerror = function (msg, url, line) {
+        document.body.innerHTML =
+          '<div style="padding:2rem;font-family:monospace;color:#f87171;background:#1a1410;min-height:100vh">' +
+          '<h2 style="color:#fbbf24">Game failed to load</h2>' +
+          '<p>' + msg + '</p><p>Line: ' + line + '</p>' +
+          '<p style="color:#a8a29e;margin-top:1rem">Run build.bat then try launch-offline.bat again.</p></div>';
+      };
+    </script>
+    <script src="js/bundle.js"></script>
+  </body>
+</html>
