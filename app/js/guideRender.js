@@ -25,6 +25,7 @@ import {
   renderKeywordRulePopover,
 } from './guide/weaponUi.js';
 import { renderBattleSim } from './battleSim/battleSimRender.js';
+import { renderStratagemsBtn, renderStratagemPanel, bindStratagemEvents } from './guide/stratagemUi.js';
 
 const SLOT_LABELS = {
   'setup-pre-battle': 'Pre-battle',
@@ -87,6 +88,7 @@ function renderScoreboard(state) {
           <span class="score-total">${totalScore(p.score)}</span>
         </div>
         ${renderBattleReadyBtn(state, key)}
+        ${renderStratagemsBtn(state, key)}
       </div>
     </div>`;
 
@@ -94,6 +96,7 @@ function renderScoreboard(state) {
     <div class="score-player score-right">
       <div class="score-player-name">${renderFirstTurnBadge(key)}${esc(p.army?.name || p.name)}</div>
       <div class="score-row score-row-mirror">
+        ${renderStratagemsBtn(state, key)}
         ${renderBattleReadyBtn(state, key)}
         <div class="score-cell score-total-cell">
           <span class="score-label">Total</span>
@@ -888,6 +891,7 @@ export function renderGuide(root, state, dispatch) {
       </footer>
       ${renderUnitDetailModal(state)}
       ${renderKeywordRulePopover(state)}
+      ${renderStratagemPanel(state)}
     </div>`;
 
   bindGuideEvents(root, dispatch);
@@ -966,6 +970,8 @@ function bindGuideEvents(root, dispatch) {
   root.querySelectorAll('[data-action="toggle-battle-ready"]').forEach((btn) => {
     btn.addEventListener('click', () => dispatch({ type: 'TOGGLE_BATTLE_READY', player: btn.dataset.player }));
   });
+
+  bindStratagemEvents(root, dispatch);
 
   root.querySelectorAll('[data-action="reorder-unit"]').forEach((btn) => {
     btn.addEventListener('click', (e) => {

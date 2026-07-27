@@ -156,6 +156,240 @@ body { min-height: 100vh; }
   color: #b8e0c0;
 }
 
+.stratagems-btn {
+  align-self: center;
+  padding: 0.45rem 0.55rem;
+  min-height: 44px;
+  max-width: 92px;
+  background: var(--surface-2);
+  border: 2px solid var(--border);
+  border-radius: 6px;
+  color: var(--text-dim);
+  font-size: 0.58rem;
+  font-weight: 600;
+  line-height: 1.25;
+  text-align: center;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.stratagems-btn:hover {
+  border-color: var(--gold);
+  background: var(--surface-3);
+}
+
+.stratagems-btn.has-deck {
+  color: var(--text);
+  border-color: #8a7340;
+}
+
+.stratagems-btn.active {
+  background: rgba(212, 168, 83, 0.2);
+  border-color: var(--gold);
+  color: #f0d78c;
+}
+
+.strat-panel-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1300;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: rgba(8, 6, 4, 0.72);
+}
+
+.strat-panel {
+  width: min(720px, 100%);
+  max-height: min(88vh, 900px);
+  display: flex;
+  flex-direction: column;
+  background: linear-gradient(180deg, #1a1612 0%, #12100e 100%);
+  border: 1px solid #5a4a32;
+  border-radius: 10px;
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.55);
+  overflow: hidden;
+}
+
+.strat-panel-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 1.15rem 0.75rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.strat-panel-header h2 {
+  font-family: 'Cinzel', serif;
+  font-size: 1.15rem;
+  color: var(--gold);
+  margin: 0;
+}
+
+.strat-panel-meta {
+  margin: 0.25rem 0 0;
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+.strat-panel-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+  padding: 0.75rem 1.15rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.strat-panel-body {
+  padding: 0.85rem 1.15rem 1.25rem;
+  overflow-y: auto;
+}
+
+.strat-empty {
+  padding: 1.5rem 0.5rem;
+  text-align: center;
+  color: var(--muted);
+}
+
+.strat-empty .hint {
+  margin-top: 0.5rem;
+  font-size: 0.8rem;
+}
+
+.strat-card-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.strat-card {
+  border: 1px solid var(--border);
+  border-left: 3px solid #8a7340;
+  border-radius: 8px;
+  background: rgba(28, 24, 20, 0.85);
+  padding: 0.75rem 0.85rem;
+}
+
+.strat-card.turn-opponent {
+  border-left-color: #a35a4a;
+}
+
+.strat-card.turn-either {
+  border-left-color: #6a8ab0;
+}
+
+.strat-card-head {
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-start;
+}
+
+.strat-card-icon {
+  flex: 0 0 auto;
+  width: 42px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+}
+
+.strat-card-pips {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 2px;
+  min-height: 14px;
+}
+
+.strat-phase-pip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  border-radius: 2px;
+  background: #3a342c;
+  border: 1px solid #6a5a40;
+  color: #e6d3a3;
+  font-size: 0.55rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.strat-card-cp {
+  width: 34px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid var(--gold);
+  transform: rotate(45deg);
+  background: #1c1814;
+  margin: 4px 0 6px;
+}
+
+.strat-card-cp > span {
+  transform: rotate(-45deg);
+  color: var(--gold);
+  font-family: 'Cinzel', serif;
+  font-weight: 700;
+  font-size: 0.95rem;
+  line-height: 1;
+}
+
+.strat-card-titles {
+  min-width: 0;
+  flex: 1;
+}
+
+.strat-card-name {
+  margin: 0;
+  font-family: 'Cinzel', serif;
+  font-size: 0.95rem;
+  color: var(--text);
+  line-height: 1.25;
+}
+
+.strat-card-meta {
+  margin: 0.2rem 0 0;
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+
+.strat-card-phases {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin: 0.55rem 0 0.35rem;
+}
+
+.strat-phase-tag {
+  font-size: 0.62rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 0.15rem 0.4rem;
+  border-radius: 999px;
+  border: 1px solid #5a4a32;
+  color: #d4c4a0;
+  background: rgba(60, 48, 28, 0.45);
+}
+
+.strat-card-body {
+  margin-top: 0.45rem;
+  font-size: 0.78rem;
+  line-height: 1.45;
+  color: var(--text-dim);
+}
+
+.strat-card-body b,
+.strat-card-body strong {
+  color: #e8d7a8;
+  font-weight: 600;
+}
+
 .score-center {
   display: flex;
   flex-direction: column;

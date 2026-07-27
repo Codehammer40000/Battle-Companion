@@ -13,6 +13,8 @@ battleSim\mapView.js
 guide\phaseFlow.js
 guide\abilityMapper.js
 guide\rosterParser.js
+guide\stratagemParser.js
+guide\stratagemUi.js
 guide\weaponUi.js
 guide\guideState.js
 battleSim\battleSimRender.js

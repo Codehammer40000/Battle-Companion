@@ -21,6 +21,7 @@ import {
 import { getAllAbilitiesForStep } from '../guide/abilityMapper.js';
 import { getUnitDisplayAbilities, getUnitKeywordRules } from '../guide/rosterParser.js';
 import { renderWeaponTable, renderKeywordRulePopover } from '../guide/weaponUi.js';
+import { renderStratagemsBtn, renderStratagemPanel, bindStratagemEvents } from '../guide/stratagemUi.js';
 import { BATTLE_LAYOUTS, getAllLayouts, getLayoutById } from './layouts.js';
 import {
   beginImportSession,
@@ -79,6 +80,7 @@ function renderSimScoreboard(state) {
             <span class="score-total">${totalScore(p1.score)}</span>
           </div>
           ${renderBattleReadyBtn(state, 'player1')}
+          ${renderStratagemsBtn(state, 'player1')}
         </div>
       </div>
       <div class="score-center">
@@ -98,6 +100,7 @@ function renderSimScoreboard(state) {
       <div class="score-player score-right">
         <div class="score-player-name">${esc(p2.army?.name || p2.name)}</div>
         <div class="score-row score-row-mirror">
+          ${renderStratagemsBtn(state, 'player2')}
           ${renderBattleReadyBtn(state, 'player2')}
           <div class="score-cell score-total-cell">
             <span class="score-label">Total</span>
@@ -594,6 +597,7 @@ export function renderBattleSim(root, state, dispatch) {
       ${renderReminderPopup(state)}
       ${renderKeywordRulePopover(state)}
       ${renderLayoutImportDialog(state)}
+      ${renderStratagemPanel(state)}
     </div>`;
 
   bindBattleSimEvents(root, state, dispatch);
@@ -624,6 +628,8 @@ function bindBattleSimEvents(root, state, dispatch) {
   root.querySelectorAll('[data-action="toggle-battle-ready"]').forEach((btn) => {
     btn.addEventListener('click', () => dispatch({ type: 'TOGGLE_BATTLE_READY', player: btn.dataset.player }));
   });
+
+  bindStratagemEvents(root, dispatch);
 
   root.querySelectorAll('[data-action="map-deploy-unit"]').forEach((btn) => {
     btn.addEventListener('click', () =>

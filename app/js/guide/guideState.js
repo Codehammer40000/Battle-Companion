@@ -1,6 +1,7 @@
 import { buildFullGuideFlow } from './phaseFlow.js';
 import { extractArmyAbilities, injectAbilitiesIntoFlow } from './abilityMapper.js';
 import { parseRosterJson, normalizeArmy, getUnitInitialModelCount, getUnitWoundCapacityFromUnit, getRemainingModelsFromUnit, findKeywordRule, getUnitKeywordRules } from './rosterParser.js';
+import { normalizeStratagemDeck } from './stratagemParser.js';
 import {
   createEmptyBattleMap,
   mapUnitKey,
@@ -29,6 +30,8 @@ export function createInitialGuideState() {
     player2: { name: 'Player 2', army: null, score: emptyScore() },
     firstPlayer: 'player1',
     battleReady: { player1: false, player2: false },
+    stratagems: { player1: [], player2: [] },
+    stratagemPanel: null,
     deadUnits: { player1: [], player2: [] },
     unitWounds: { player1: {}, player2: {} },
     leaderAttachments: { player1: {}, player2: {} },
@@ -550,6 +553,7 @@ export function guideReducer(state, action) {
       const next = {
         ...state,
         battleReady: extras.battleReady,
+        // Keep stratagem deck when replacing army roster — decks are uploaded separately.
         deadUnits: extras.deadUnits,
         unitWounds: extras.unitWounds,
         leaderAttachments: extras.leaderAttachments,
@@ -683,6 +687,41 @@ export function guideReducer(state, action) {
         [player]: { ...state[player], score },
       };
     }
+
+    case 'LOAD_STRATAGEMS': {
+      const { player, deck } = action;
+      if (player !== 'player1' && player !== 'player2') return state;
+      const normalized = normalizeStratagemDeck(deck);
+      return {
+        ...state,
+        stratagems: {
+          ...(state.stratagems || { player1: [], player2: [] }),
+          [player]: normalized,
+        },
+        stratagemPanel: { player },
+      };
+    }
+
+    case 'CLEAR_STRATAGEMS': {
+      const { player } = action;
+      if (player !== 'player1' && player !== 'player2') return state;
+      return {
+        ...state,
+        stratagems: {
+          ...(state.stratagems || { player1: [], player2: [] }),
+          [player]: [],
+        },
+      };
+    }
+
+    case 'OPEN_STRATAGEMS': {
+      const { player } = action;
+      if (player !== 'player1' && player !== 'player2') return state;
+      return { ...state, stratagemPanel: { player } };
+    }
+
+    case 'CLOSE_STRATAGEMS':
+      return { ...state, stratagemPanel: null };
 
     case 'REORDER_UNIT': {
       const { player, unitId, direction } = action;
@@ -1243,6 +1282,11 @@ export function guideReducer(state, action) {
             player1: !!saved.battleReady?.player1,
             player2: !!saved.battleReady?.player2,
           },
+          stratagems: {
+            player1: normalizeStratagemDeck(saved.stratagems?.player1),
+            player2: normalizeStratagemDeck(saved.stratagems?.player2),
+          },
+          stratagemPanel: null,
           deadUnits: {
             player1: Array.isArray(saved.deadUnits?.player1) ? saved.deadUnits.player1 : [],
             player2: Array.isArray(saved.deadUnits?.player2) ? saved.deadUnits.player2 : [],
@@ -1298,6 +1342,7 @@ export function guideReducer(state, action) {
           player2: { ...state.player2, army: normalizeArmy(state.player2.army) },
           flow: [],
           unitDetail: null,
+          stratagemPanel: null,
           currentStepId: state.flow[state.stepIndex]?.id || null,
         };
         localStorage.setItem(STORAGE_KEY, JSON.stringify(toSave));
