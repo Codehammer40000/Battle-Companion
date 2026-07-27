@@ -199,7 +199,7 @@ function renderModels(unitsOnMap, selectedUnitKey, selectedModelId, highlights =
     .flatMap(([key, entry]) =>
       (entry.models || []).map((m) => {
         const isUnitSel = key === selectedUnitKey;
-        const isModelSel = m.id === selectedModelId;
+        const isModelSel = key === selectedUnitKey && m.id === selectedModelId;
         const fill = entry.player === 'player1' ? '#3b82f6' : '#22c55e';
         const r = toPx(m.radiusIn);
         const cx = toPx(m.x);

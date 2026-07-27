@@ -2922,6 +2922,14 @@ function parseMapUnitKey(key) {
   return { player: key.slice(0, idx), unitId: key.slice(idx + 1) };
 }
 
+/** Match model to a unit whether ids use legacy `unitId-mN` or `player:unitId-mN`. */
+function modelBelongsToUnit(model, unitId) {
+  if (!model || !unitId) return false;
+  if (model.unitId === unitId) return true;
+  const id = String(model.id || '');
+  return id.includes(`:${unitId}-`) || id.startsWith(`${unitId}-`);
+}
+
 function hasKeyword(unit, pattern) {
   return (unit?.keywords || []).some((k) => pattern.test(k));
 }
@@ -2987,7 +2995,7 @@ function buildDeployedModels(unit, player, remainingModels, stagingOrigin, attac
     const col = index % 4;
     const row = Math.floor(index / 4);
     models.push({
-      id: `${u.id}-m${modelIndex}`,
+      id: `${player}:${u.id}-m${modelIndex}`,
       unitId: u.id,
       player,
       role,
@@ -3014,6 +3022,53 @@ function buildDeployedModels(unit, player, remainingModels, stagingOrigin, attac
   });
 
   return models;
+}
+
+/** Rewrite legacy model ids that omit the player prefix (same-faction id collisions). */
+function ensureUniqueModelIds(unitsOnMap) {
+  if (!unitsOnMap || typeof unitsOnMap !== 'object') return unitsOnMap || {};
+  let changed = false;
+  const next = {};
+  for (const [key, entry] of Object.entries(unitsOnMap)) {
+    if (!entry || typeof entry !== 'object') {
+      next[key] = entry;
+      continue;
+    }
+    const player = entry.player;
+    if (!Array.isArray(entry.models)) {
+      next[key] = entry;
+      continue;
+    }
+    const models = entry.models.map((m) => {
+      if (!m || typeof m !== 'object') return m;
+      const id = String(m.id || '');
+      if (!player || id.startsWith(`${player}:`)) return m;
+      changed = true;
+      return { ...m, id: `${player}:${id}`, player: m.player || player };
+    });
+    next[key] = changed ? { ...entry, models } : entry;
+  }
+  return changed ? next : unitsOnMap;
+}
+
+/** Migrate map model ids + selectedModelId for saved / in-progress same-faction games. */
+function migrateBattleMapModelIds(battleMap) {
+  if (!battleMap || typeof battleMap !== 'object') return battleMap;
+  const unitsOnMap = ensureUniqueModelIds(battleMap.unitsOnMap);
+  let selectedModelId = battleMap.selectedModelId;
+  const parsed = parseMapUnitKey(battleMap.selectedUnitKey);
+  if (
+    selectedModelId &&
+    parsed?.player &&
+    !String(selectedModelId).startsWith('special-') &&
+    !String(selectedModelId).startsWith(`${parsed.player}:`)
+  ) {
+    selectedModelId = `${parsed.player}:${selectedModelId}`;
+  }
+  if (unitsOnMap === battleMap.unitsOnMap && selectedModelId === battleMap.selectedModelId) {
+    return battleMap;
+  }
+  return { ...battleMap, unitsOnMap, selectedModelId };
 }
 
 /* --- battleSim\layoutData\searchAndDestroy.js --- */
@@ -4003,7 +4058,7 @@ function renderModels(unitsOnMap, selectedUnitKey, selectedModelId, highlights =
     .flatMap(([key, entry]) =>
       (entry.models || []).map((m) => {
         const isUnitSel = key === selectedUnitKey;
-        const isModelSel = m.id === selectedModelId;
+        const isModelSel = key === selectedUnitKey && m.id === selectedModelId;
         const fill = entry.player === 'player1' ? '#3b82f6' : '#22c55e';
         const r = toPx(m.radiusIn);
         const cx = toPx(m.x);
@@ -6721,7 +6776,15 @@ function guideReducer(state, action) {
 
     case 'SET_VIEW_MODE': {
       const mode = action.mode === 'battleSim' ? 'battleSim' : 'companion';
-      return { ...state, viewMode: mode };
+      if (mode !== 'battleSim') return { ...state, viewMode: mode };
+      const battleMap = migrateBattleMapModelIds(state.battleMap || createEmptyBattleMap());
+      return { ...state, viewMode: mode, battleMap };
+    }
+
+    case 'MAP_MIGRATE_MODEL_IDS': {
+      const battleMap = migrateBattleMapModelIds(state.battleMap || createEmptyBattleMap());
+      if (battleMap === state.battleMap) return state;
+      return { ...state, battleMap };
     }
 
     case 'SET_MAP_LAYOUT': {
@@ -6832,7 +6895,7 @@ function guideReducer(state, action) {
 
       const models = buildDeployedModels(bodyguard, player, remaining, staging, attachedLeaders);
       const preferredModel =
-        models.find((m) => String(m.id).startsWith(`${unitId}-`)) || models[0] || null;
+        models.find((m) => modelBelongsToUnit(m, unitId)) || models[0] || null;
       return {
         ...state,
         battleMap: {
@@ -6881,7 +6944,7 @@ function guideReducer(state, action) {
       let modelId = action.modelId || null;
       if (!modelId && entry?.models?.length) {
         modelId =
-          entry.models.find((m) => String(m.id).startsWith(`${unitId}-`))?.id ||
+          entry.models.find((m) => modelBelongsToUnit(m, unitId))?.id ||
           entry.models[0]?.id ||
           null;
       }
@@ -7147,11 +7210,11 @@ function guideReducer(state, action) {
           viewMode: saved.viewMode === 'battleSim' ? 'battleSim' : 'companion',
           battleMap:
             saved.battleMap && typeof saved.battleMap === 'object'
-              ? {
+              ? migrateBattleMapModelIds({
                   ...createEmptyBattleMap(),
                   ...saved.battleMap,
                   layoutId: getLayoutById(saved.battleMap.layoutId).id,
-                }
+                })
               : createEmptyBattleMap(),
         };
         merged.player1.army = normalizeArmy(merged.player1.army);
@@ -7559,7 +7622,7 @@ function getSelectedRadii(state) {
     if (!entry?.models?.length) return [];
     model =
       entry.models.find((m) => m.id === bm.selectedModelId) ||
-      entry.models.find((m) => String(m.id).startsWith(`${active.unitId}-`)) ||
+      entry.models.find((m) => modelBelongsToUnit(m, active.unitId)) ||
       entry.models[0];
     groupUnitId = active.unitId;
   } else {
@@ -7613,12 +7676,12 @@ function getSelectedRadii(state) {
   if (swInGroup) {
     const unit = findUnitInArmy(army, sw.unitId);
     const w = unit?.rangedWeapons?.[sw.weaponIndex];
-    const origin = entry.models.find((m) => String(m.id).startsWith(`${sw.unitId}-`)) || model;
+    const origin = entry.models.find((m) => modelBelongsToUnit(m, sw.unitId)) || model;
     if (w) pushWeapon(unit, w, origin);
   } else if (isShootAction || (isShootStep && !isFightAction)) {
     // Controlling unit keeps full range rings open while checking targets
     for (const unit of groupUnits) {
-      const origin = entry.models.find((m) => String(m.id).startsWith(`${unit.id}-`)) || model;
+      const origin = entry.models.find((m) => modelBelongsToUnit(m, unit.id)) || model;
       for (const w of unit.rangedWeapons || []) pushWeapon(unit, w, origin);
     }
   }
@@ -7733,6 +7796,14 @@ function renderBattleSim(root, state, dispatch) {
   // Keep a live state pointer so pointer handlers don't use a stale closure after re-renders
   mapInteractionRuntime.state = state;
   mapInteractionRuntime.dispatch = dispatch;
+
+  // One-shot migrate for games already open on Battle Map with legacy colliding model ids
+  if (state.battleMap) {
+    const migrated = migrateBattleMapModelIds(state.battleMap);
+    if (migrated !== state.battleMap) {
+      queueMicrotask(() => dispatch({ type: 'MAP_MIGRATE_MODEL_IDS' }));
+    }
+  }
 
   root.innerHTML = `
     <div class="guide-app battle-sim-app">
@@ -8028,6 +8099,15 @@ function findByDataAttr(root, attr, value) {
   return [...root.querySelectorAll(`[${attr}]`)].find((el) => el.getAttribute(attr) === value) || null;
 }
 
+function findModelGroup(root, unitKey, modelId) {
+  if (!root || !unitKey || modelId == null) return null;
+  return (
+    [...root.querySelectorAll('.map-model')].find(
+      (el) => el.getAttribute('data-unit-key') === unitKey && el.getAttribute('data-model-id') === modelId,
+    ) || null
+  );
+}
+
 function ensureMapPointerHandlers() {
   if (mapInteractionRuntime.bound) return;
   mapInteractionRuntime.bound = true;
@@ -8167,7 +8247,7 @@ function ensureMapPointerHandlers() {
         const nx = m.x + dx;
         const ny = m.y + dy;
         moves.push({ id: m.id, x: nx, y: ny });
-        const g = findByDataAttr(svg, 'data-model-id', m.id);
+        const g = findModelGroup(svg, drag.unitKey, m.id);
         g?.querySelectorAll('circle').forEach((c) => {
           c.setAttribute('cx', String(nx * ppi));
           c.setAttribute('cy', String(ny * ppi));

@@ -33,6 +33,14 @@ export function parseMapUnitKey(key) {
   return { player: key.slice(0, idx), unitId: key.slice(idx + 1) };
 }
 
+/** Match model to a unit whether ids use legacy `unitId-mN` or `player:unitId-mN`. */
+export function modelBelongsToUnit(model, unitId) {
+  if (!model || !unitId) return false;
+  if (model.unitId === unitId) return true;
+  const id = String(model.id || '');
+  return id.includes(`:${unitId}-`) || id.startsWith(`${unitId}-`);
+}
+
 function hasKeyword(unit, pattern) {
   return (unit?.keywords || []).some((k) => pattern.test(k));
 }
@@ -98,7 +106,7 @@ export function buildDeployedModels(unit, player, remainingModels, stagingOrigin
     const col = index % 4;
     const row = Math.floor(index / 4);
     models.push({
-      id: `${u.id}-m${modelIndex}`,
+      id: `${player}:${u.id}-m${modelIndex}`,
       unitId: u.id,
       player,
       role,
@@ -125,4 +133,51 @@ export function buildDeployedModels(unit, player, remainingModels, stagingOrigin
   });
 
   return models;
+}
+
+/** Rewrite legacy model ids that omit the player prefix (same-faction id collisions). */
+export function ensureUniqueModelIds(unitsOnMap) {
+  if (!unitsOnMap || typeof unitsOnMap !== 'object') return unitsOnMap || {};
+  let changed = false;
+  const next = {};
+  for (const [key, entry] of Object.entries(unitsOnMap)) {
+    if (!entry || typeof entry !== 'object') {
+      next[key] = entry;
+      continue;
+    }
+    const player = entry.player;
+    if (!Array.isArray(entry.models)) {
+      next[key] = entry;
+      continue;
+    }
+    const models = entry.models.map((m) => {
+      if (!m || typeof m !== 'object') return m;
+      const id = String(m.id || '');
+      if (!player || id.startsWith(`${player}:`)) return m;
+      changed = true;
+      return { ...m, id: `${player}:${id}`, player: m.player || player };
+    });
+    next[key] = changed ? { ...entry, models } : entry;
+  }
+  return changed ? next : unitsOnMap;
+}
+
+/** Migrate map model ids + selectedModelId for saved / in-progress same-faction games. */
+export function migrateBattleMapModelIds(battleMap) {
+  if (!battleMap || typeof battleMap !== 'object') return battleMap;
+  const unitsOnMap = ensureUniqueModelIds(battleMap.unitsOnMap);
+  let selectedModelId = battleMap.selectedModelId;
+  const parsed = parseMapUnitKey(battleMap.selectedUnitKey);
+  if (
+    selectedModelId &&
+    parsed?.player &&
+    !String(selectedModelId).startsWith('special-') &&
+    !String(selectedModelId).startsWith(`${parsed.player}:`)
+  ) {
+    selectedModelId = `${parsed.player}:${selectedModelId}`;
+  }
+  if (unitsOnMap === battleMap.unitsOnMap && selectedModelId === battleMap.selectedModelId) {
+    return battleMap;
+  }
+  return { ...battleMap, unitsOnMap, selectedModelId };
 }

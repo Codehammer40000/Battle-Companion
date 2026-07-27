@@ -35,6 +35,8 @@ import {
 import {
   mapUnitKey,
   parseMapUnitKey,
+  modelBelongsToUnit,
+  migrateBattleMapModelIds,
 } from './battleMapState.js';
 import { renderMapSvg, clientToBoardInches, getPixelsPerInch } from './mapView.js';
 
@@ -396,7 +398,7 @@ function getSelectedRadii(state) {
     if (!entry?.models?.length) return [];
     model =
       entry.models.find((m) => m.id === bm.selectedModelId) ||
-      entry.models.find((m) => String(m.id).startsWith(`${active.unitId}-`)) ||
+      entry.models.find((m) => modelBelongsToUnit(m, active.unitId)) ||
       entry.models[0];
     groupUnitId = active.unitId;
   } else {
@@ -450,12 +452,12 @@ function getSelectedRadii(state) {
   if (swInGroup) {
     const unit = findUnitInArmy(army, sw.unitId);
     const w = unit?.rangedWeapons?.[sw.weaponIndex];
-    const origin = entry.models.find((m) => String(m.id).startsWith(`${sw.unitId}-`)) || model;
+    const origin = entry.models.find((m) => modelBelongsToUnit(m, sw.unitId)) || model;
     if (w) pushWeapon(unit, w, origin);
   } else if (isShootAction || (isShootStep && !isFightAction)) {
     // Controlling unit keeps full range rings open while checking targets
     for (const unit of groupUnits) {
-      const origin = entry.models.find((m) => String(m.id).startsWith(`${unit.id}-`)) || model;
+      const origin = entry.models.find((m) => modelBelongsToUnit(m, unit.id)) || model;
       for (const w of unit.rangedWeapons || []) pushWeapon(unit, w, origin);
     }
   }
@@ -570,6 +572,14 @@ export function renderBattleSim(root, state, dispatch) {
   // Keep a live state pointer so pointer handlers don't use a stale closure after re-renders
   mapInteractionRuntime.state = state;
   mapInteractionRuntime.dispatch = dispatch;
+
+  // One-shot migrate for games already open on Battle Map with legacy colliding model ids
+  if (state.battleMap) {
+    const migrated = migrateBattleMapModelIds(state.battleMap);
+    if (migrated !== state.battleMap) {
+      queueMicrotask(() => dispatch({ type: 'MAP_MIGRATE_MODEL_IDS' }));
+    }
+  }
 
   root.innerHTML = `
     <div class="guide-app battle-sim-app">
@@ -865,6 +875,15 @@ function findByDataAttr(root, attr, value) {
   return [...root.querySelectorAll(`[${attr}]`)].find((el) => el.getAttribute(attr) === value) || null;
 }
 
+function findModelGroup(root, unitKey, modelId) {
+  if (!root || !unitKey || modelId == null) return null;
+  return (
+    [...root.querySelectorAll('.map-model')].find(
+      (el) => el.getAttribute('data-unit-key') === unitKey && el.getAttribute('data-model-id') === modelId,
+    ) || null
+  );
+}
+
 function ensureMapPointerHandlers() {
   if (mapInteractionRuntime.bound) return;
   mapInteractionRuntime.bound = true;
@@ -1004,7 +1023,7 @@ function ensureMapPointerHandlers() {
         const nx = m.x + dx;
         const ny = m.y + dy;
         moves.push({ id: m.id, x: nx, y: ny });
-        const g = findByDataAttr(svg, 'data-model-id', m.id);
+        const g = findModelGroup(svg, drag.unitKey, m.id);
         g?.querySelectorAll('circle').forEach((c) => {
           c.setAttribute('cx', String(nx * ppi));
           c.setAttribute('cy', String(ny * ppi));

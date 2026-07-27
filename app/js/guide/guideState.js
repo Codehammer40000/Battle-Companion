@@ -9,6 +9,9 @@ import {
   getStagingOrigin,
   boardSizeForLayout,
   getModelMarkerRadius,
+  ensureUniqueModelIds,
+  migrateBattleMapModelIds,
+  modelBelongsToUnit,
 } from '../battleSim/battleMapState.js';
 import { getLayoutById } from '../battleSim/layouts.js';
 import { clearImportSession } from '../battleSim/layoutImport.js';
@@ -888,7 +891,15 @@ export function guideReducer(state, action) {
 
     case 'SET_VIEW_MODE': {
       const mode = action.mode === 'battleSim' ? 'battleSim' : 'companion';
-      return { ...state, viewMode: mode };
+      if (mode !== 'battleSim') return { ...state, viewMode: mode };
+      const battleMap = migrateBattleMapModelIds(state.battleMap || createEmptyBattleMap());
+      return { ...state, viewMode: mode, battleMap };
+    }
+
+    case 'MAP_MIGRATE_MODEL_IDS': {
+      const battleMap = migrateBattleMapModelIds(state.battleMap || createEmptyBattleMap());
+      if (battleMap === state.battleMap) return state;
+      return { ...state, battleMap };
     }
 
     case 'SET_MAP_LAYOUT': {
@@ -999,7 +1010,7 @@ export function guideReducer(state, action) {
 
       const models = buildDeployedModels(bodyguard, player, remaining, staging, attachedLeaders);
       const preferredModel =
-        models.find((m) => String(m.id).startsWith(`${unitId}-`)) || models[0] || null;
+        models.find((m) => modelBelongsToUnit(m, unitId)) || models[0] || null;
       return {
         ...state,
         battleMap: {
@@ -1048,7 +1059,7 @@ export function guideReducer(state, action) {
       let modelId = action.modelId || null;
       if (!modelId && entry?.models?.length) {
         modelId =
-          entry.models.find((m) => String(m.id).startsWith(`${unitId}-`))?.id ||
+          entry.models.find((m) => modelBelongsToUnit(m, unitId))?.id ||
           entry.models[0]?.id ||
           null;
       }
@@ -1314,11 +1325,11 @@ export function guideReducer(state, action) {
           viewMode: saved.viewMode === 'battleSim' ? 'battleSim' : 'companion',
           battleMap:
             saved.battleMap && typeof saved.battleMap === 'object'
-              ? {
+              ? migrateBattleMapModelIds({
                   ...createEmptyBattleMap(),
                   ...saved.battleMap,
                   layoutId: getLayoutById(saved.battleMap.layoutId).id,
-                }
+                })
               : createEmptyBattleMap(),
         };
         merged.player1.army = normalizeArmy(merged.player1.army);
