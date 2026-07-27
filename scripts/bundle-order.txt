@@ -6,6 +6,7 @@ battleSim\layoutData\searchAndDestroy.js
 battleSim\layoutData\meatgrinder1.js
 battleSim\layoutData\unstoppableForce.js
 battleSim\layoutData\purgeVsTakeAndHoldC.js
+battleSim\layoutData\priorityAssetsVsPriorityAssetsB.js
 battleSim\layoutImport.js
 battleSim\layouts.js
 battleSim\battleLos.js

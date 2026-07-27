@@ -6,6 +6,7 @@ import { SEARCH_AND_DESTROY_LAYOUT } from './layoutData/searchAndDestroy.js';
 import { MEATGRINDER_1_LAYOUT } from './layoutData/meatgrinder1.js';
 import { UNSTOPPABLE_FORCE_LAYOUT } from './layoutData/unstoppableForce.js';
 import { PURGE_VS_TAKE_AND_HOLD_C_LAYOUT } from './layoutData/purgeVsTakeAndHoldC.js';
+import { PRIORITY_ASSETS_VS_PRIORITY_ASSETS_B_LAYOUT } from './layoutData/priorityAssetsVsPriorityAssetsB.js';
 import { loadCustomLayouts } from './layoutImport.js';
 
 export const BLANK_LAYOUT = {
@@ -27,6 +28,7 @@ export const BUILTIN_LAYOUTS = [
   MEATGRINDER_1_LAYOUT,
   UNSTOPPABLE_FORCE_LAYOUT,
   PURGE_VS_TAKE_AND_HOLD_C_LAYOUT,
+  PRIORITY_ASSETS_VS_PRIORITY_ASSETS_B_LAYOUT,
 ];
 
 /** Built-in layouts only (no custom). Prefer getAllLayouts() for UI. */
