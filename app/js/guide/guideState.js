@@ -35,6 +35,7 @@ export function createInitialGuideState() {
     battleReady: { player1: false, player2: false },
     stratagems: { player1: [], player2: [] },
     stratagemPanel: null,
+    helpGuide: { open: false, query: '', sectionId: null },
     deadUnits: { player1: [], player2: [] },
     unitWounds: { player1: {}, player2: {} },
     leaderAttachments: { player1: {}, player2: {} },
@@ -726,6 +727,46 @@ export function guideReducer(state, action) {
     case 'CLOSE_STRATAGEMS':
       return { ...state, stratagemPanel: null };
 
+    case 'OPEN_HELP_GUIDE':
+      return {
+        ...state,
+        helpGuide: {
+          open: true,
+          query: state.helpGuide?.query || '',
+          sectionId: state.helpGuide?.sectionId || null,
+        },
+      };
+
+    case 'CLOSE_HELP_GUIDE':
+      return {
+        ...state,
+        helpGuide: {
+          open: false,
+          query: state.helpGuide?.query || '',
+          sectionId: state.helpGuide?.sectionId || null,
+        },
+      };
+
+    case 'SET_HELP_GUIDE_QUERY':
+      return {
+        ...state,
+        helpGuide: {
+          open: true,
+          query: String(action.query ?? ''),
+          sectionId: state.helpGuide?.sectionId || null,
+        },
+      };
+
+    case 'SET_HELP_GUIDE_SECTION':
+      return {
+        ...state,
+        helpGuide: {
+          open: true,
+          query: state.helpGuide?.query || '',
+          sectionId: action.sectionId || null,
+        },
+      };
+
     case 'REORDER_UNIT': {
       const { player, unitId, direction } = action;
       const army = state[player]?.army;
@@ -1298,6 +1339,11 @@ export function guideReducer(state, action) {
             player2: normalizeStratagemDeck(saved.stratagems?.player2),
           },
           stratagemPanel: null,
+          helpGuide: {
+            open: false,
+            query: '',
+            sectionId: null,
+          },
           deadUnits: {
             player1: Array.isArray(saved.deadUnits?.player1) ? saved.deadUnits.player1 : [],
             player2: Array.isArray(saved.deadUnits?.player2) ? saved.deadUnits.player2 : [],
@@ -1354,6 +1400,7 @@ export function guideReducer(state, action) {
           flow: [],
           unitDetail: null,
           stratagemPanel: null,
+          helpGuide: { open: false, query: '', sectionId: null },
           currentStepId: state.flow[state.stepIndex]?.id || null,
         };
         localStorage.setItem(STORAGE_KEY, JSON.stringify(toSave));

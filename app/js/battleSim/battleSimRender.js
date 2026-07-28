@@ -22,6 +22,7 @@ import { getAllAbilitiesForStep } from '../guide/abilityMapper.js';
 import { getUnitDisplayAbilities, getUnitKeywordRules } from '../guide/rosterParser.js';
 import { renderWeaponTable, renderKeywordRulePopover } from '../guide/weaponUi.js';
 import { renderStratagemsBtn, renderStratagemPanel, bindStratagemEvents } from '../guide/stratagemUi.js';
+import { renderHelpQuestionBtn, renderHelpGuidePanel, bindHelpGuideEvents } from '../guide/helpGuideUi.js';
 import { BATTLE_LAYOUTS, getAllLayouts, getLayoutById } from './layouts.js';
 import {
   beginImportSession,
@@ -91,6 +92,7 @@ function renderSimScoreboard(state) {
         <div class="view-mode-bar">
           <button type="button" class="view-mode-btn" data-action="set-view-mode" data-mode="companion">Companion</button>
           <button type="button" class="view-mode-btn active" data-action="set-view-mode" data-mode="battleSim">Battle Map</button>
+          ${renderHelpQuestionBtn()}
         </div>
         ${state.started ? `
           <div class="sim-step-nav">
@@ -600,6 +602,7 @@ export function renderBattleSim(root, state, dispatch) {
         <div class="guide-footer-bar">
           Warhammer 40,000 Battle Companion · Battle Sim
           <button type="button" class="btn-link" data-action="set-view-mode" data-mode="companion">Companion</button>
+          <button type="button" class="btn-link" data-action="open-help-guide">Instructions</button>
           <button type="button" class="btn-link" data-action="save-game">Save</button>
           <button type="button" class="btn-link" data-action="reset-game">Reset</button>
         </div>
@@ -608,6 +611,7 @@ export function renderBattleSim(root, state, dispatch) {
       ${renderKeywordRulePopover(state)}
       ${renderLayoutImportDialog(state)}
       ${renderStratagemPanel(state)}
+      ${renderHelpGuidePanel(state)}
     </div>`;
 
   bindBattleSimEvents(root, state, dispatch);
@@ -640,6 +644,7 @@ function bindBattleSimEvents(root, state, dispatch) {
   });
 
   bindStratagemEvents(root, dispatch);
+  bindHelpGuideEvents(root, dispatch);
 
   root.querySelectorAll('[data-action="map-deploy-unit"]').forEach((btn) => {
     btn.addEventListener('click', () =>

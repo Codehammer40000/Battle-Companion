@@ -2613,6 +2613,238 @@ tr.weapon-row-selected td {
   padding: 0.35rem 0;
 }
 
+/* ===== Help / Instructions guide ===== */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.help-q-btn {
+  width: 1.55rem;
+  height: 1.55rem;
+  min-width: 1.55rem;
+  padding: 0;
+  border-radius: 999px;
+  border: 1px solid #6b7280;
+  background: #4b5563;
+  color: #e5e7eb;
+  font-size: 0.78rem;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.help-q-btn:hover {
+  background: #6b7280;
+  border-color: #9ca3af;
+  color: #fff;
+}
+
+.help-q-btn-toolbar {
+  align-self: center;
+}
+
+.view-mode-bar .help-q-btn {
+  align-self: center;
+}
+
+.help-guide-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin: 0.25rem 0 0.35rem;
+  padding: 0.55rem 0.9rem;
+  border-radius: 8px;
+  border: 1px solid #5a4a32;
+  background: rgba(40, 36, 30, 0.9);
+  color: var(--text);
+  cursor: pointer;
+  font: inherit;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.help-guide-cta:hover {
+  border-color: var(--gold);
+  background: rgba(55, 48, 38, 0.95);
+}
+
+.help-guide-cta .help-q-btn-inline {
+  pointer-events: none;
+}
+
+.help-guide-cta-label {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #d4c4a0;
+}
+
+.help-guide-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1400;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: rgba(8, 6, 4, 0.72);
+}
+
+.help-guide-panel {
+  width: min(820px, 100%);
+  max-height: min(90vh, 960px);
+  display: flex;
+  flex-direction: column;
+  background: linear-gradient(180deg, #1a1612 0%, #12100e 100%);
+  border: 1px solid #5a4a32;
+  border-radius: 10px;
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.55);
+  overflow: hidden;
+}
+
+.help-guide-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 1.15rem 0.75rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.help-guide-header h2 {
+  font-family: 'Cinzel', serif;
+  font-size: 1.15rem;
+  color: var(--gold);
+  margin: 0;
+}
+
+.help-guide-sub {
+  margin: 0.3rem 0 0;
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+.help-guide-toolbar {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  padding: 0.75rem 1.15rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.help-search-label {
+  display: block;
+  width: 100%;
+}
+
+.help-search-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.55rem 0.7rem;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: #0f0d0b;
+  color: var(--text);
+  font-size: 0.85rem;
+}
+
+.help-search-input:focus {
+  outline: none;
+  border-color: var(--gold);
+}
+
+.help-jump-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.help-jump {
+  padding: 0.28rem 0.65rem;
+  border-radius: 999px;
+  border: 1px solid #5a4a32;
+  background: rgba(60, 48, 28, 0.35);
+  color: #d4c4a0;
+  font-size: 0.72rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.help-jump:hover,
+.help-jump.active {
+  border-color: var(--gold);
+  color: #f0d78c;
+  background: rgba(212, 168, 83, 0.15);
+}
+
+.help-guide-body {
+  padding: 0.85rem 1.15rem 1.35rem;
+  overflow-y: auto;
+}
+
+.help-section {
+  margin-bottom: 1.5rem;
+  scroll-margin-top: 0.5rem;
+}
+
+.help-section-header h3 {
+  font-family: 'Cinzel', serif;
+  font-size: 1.05rem;
+  color: var(--gold);
+  margin: 0 0 0.25rem;
+}
+
+.help-section-blurb {
+  margin: 0 0 0.75rem;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.help-item {
+  border: 1px solid var(--border);
+  border-left: 3px solid #8a7340;
+  border-radius: 8px;
+  background: rgba(28, 24, 20, 0.85);
+  padding: 0.7rem 0.85rem;
+  margin-bottom: 0.65rem;
+}
+
+.help-item-title {
+  margin: 0 0 0.4rem;
+  font-size: 0.88rem;
+  color: var(--text);
+}
+
+.help-item-bullets {
+  margin: 0;
+  padding-left: 1.1rem;
+  color: var(--text-dim);
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+
+.help-item-bullets li {
+  margin-bottom: 0.35rem;
+}
+
+.help-empty {
+  text-align: center;
+  color: var(--muted);
+  padding: 1.5rem 0.5rem;
+  font-size: 0.85rem;
+}
+
 @media (max-width: 1100px) {
   .battle-sim-main {
     grid-template-columns: 1fr;
@@ -4137,6 +4369,7 @@ function renderMapSvg(state, options = {}) {
         <button type="button" data-action="map-zoom" data-delta="-0.15">Zoom −</button>
         <button type="button" data-action="map-reset-camera">Reset view</button>
         <button type="button" data-action="add-special-marker">Add special marker</button>
+        <button type="button" class="help-q-btn help-q-btn-toolbar" data-action="open-help-guide" title="Instructions / Guides" aria-label="Open instructions and guides">?</button>
         ${
           selectedSpecial
             ? `<button type="button" class="remove-special-btn" data-action="remove-special-marker" data-special-id="${esc(selectedSpecial.id)}">Remove marker</button>`
@@ -5786,6 +6019,458 @@ function bindStratagemEvents(root, dispatch) {
   });
 }
 
+/* --- guide\helpGuideData.js --- */
+/**
+ * Searchable in-app instructions for Battle Companion.
+ * Sections: General, Companion, Battle Map.
+ */
+
+const HELP_GUIDE_SECTIONS = [
+  {
+    id: 'general',
+    title: 'General',
+    blurb: 'Getting started, uploads, official app tips, and saving your game.',
+    items: [
+      {
+        id: 'gen-what',
+        title: 'What this app is',
+        keywords: 'overview companion battle map browser play aid',
+        body: [
+          'Battle Companion is a browser play aid for Warhammer 40,000 tabletop games.',
+          'Use Companion to walk Core Rules phases, track scores, and see ability reminders.',
+          'Use Battle Map to place models on terrain layouts, check ranges, and preview line of sight.',
+          'Play on the physical table; use this app as your digital reference and tracker.',
+        ],
+      },
+      {
+        id: 'gen-official-app',
+        title: 'Best practice: official 40k app for the game + secondaries',
+        keywords: 'official app warhammer app secondaries mission draw cards primary',
+        body: [
+          'Create and run the matched play / Event Companion game in the official Warhammer 40,000 app when you can.',
+          'Use that app to set the mission, draw or choose secondaries, and keep the official mission card flow.',
+          'Battle Companion does not replace mission generation or secondary draws — enter Secondary and Primary VP on the scoreboard as you score them in the official flow.',
+          'Keep both apps open: official app for mission/secondaries, Battle Companion for phase guide, armies, stratagems, and the map.',
+        ],
+      },
+      {
+        id: 'gen-upload-army',
+        title: 'Upload army lists (.json)',
+        keywords: 'upload army roster json newrecruit load replace clear',
+        body: [
+          'In Companion, use Load Army (.json) on Player 1 and Player 2.',
+          'Export your list as JSON from New Recruit (newrecruit.eu) or a compatible army builder.',
+          'After loading, you can Replace a side’s list or Clear it from the army panel.',
+          'Load both armies before Begin Battle Guide. Battle Map uses the same loaded armies.',
+        ],
+      },
+      {
+        id: 'gen-upload-stratagems',
+        title: 'Upload stratagem decks (.html)',
+        keywords: 'stratagems deck html upload cp cost export',
+        body: [
+          'Click Stratagems next to Battle Ready Army on either side (Companion or Battle Map).',
+          'Export your stratagems as HTML from your army builder, then Upload deck (.html).',
+          'The panel lists each stratagem with CP cost, timing (your / opponent / either turn), phases, and full rules text.',
+          'Decks are per side and stay loaded if you replace an army JSON. Use Clear inside the Stratagems panel to remove a deck.',
+        ],
+      },
+      {
+        id: 'gen-scoreboard',
+        title: 'Scoreboard controls',
+        keywords: 'cp secondary primary total battle ready vp score',
+        body: [
+          'Top bar tracks CP, Sec (secondary VP), Prim (primary VP), and Total for each player.',
+          'Use − / + to adjust scores as you play.',
+          'Battle Ready Army toggles +10 primary VP for that side when marked battle-ready.',
+          'Stratagems opens that player’s stratagem deck viewer.',
+        ],
+      },
+      {
+        id: 'gen-views',
+        title: 'Companion vs Battle Map',
+        keywords: 'view mode companion battle map switch',
+        body: [
+          'Use the Companion / Battle Map buttons in the center of the top bar to switch views.',
+          'Companion: phase steps, army cards, ability reminders, checklists.',
+          'Battle Map: terrain layout, deploy/move models, ranges, LoS during shooting.',
+          'Scores, armies, stratagems, and guide progress are shared between views.',
+        ],
+      },
+      {
+        id: 'gen-save-reset',
+        title: 'Save, restore, and reset',
+        keywords: 'save reset localstorage browser refresh',
+        body: [
+          'Save stores the current game in this browser (armies, scores, map, progress).',
+          'Refresh or reopen the same browser to continue a saved game when restore runs on load.',
+          'Reset clears the battle guide session (armies and scores) after confirmation — use carefully.',
+        ],
+      },
+      {
+        id: 'gen-offline',
+        title: 'Offline / local play',
+        keywords: 'offline launch-offline bat play.html file',
+        body: [
+          'On a local copy of the project, double-click launch-offline.bat to rebuild and open the single-file play.html.',
+          'The live GitHub Pages site works in any modern browser with an internet connection for fonts; core play does not need a server once the page is loaded.',
+        ],
+      },
+    ],
+  },
+  {
+    id: 'companion',
+    title: 'Companion',
+    blurb: 'Phase guide, army panels, abilities, combat helpers, and score tracking.',
+    items: [
+      {
+        id: 'comp-start',
+        title: 'Start the Battle Guide',
+        keywords: 'begin battle guide next step previous start',
+        body: [
+          'Load both army JSONs on the home screen.',
+          'Press Begin Battle Guide when both sides are loaded.',
+          'Advance with Next Step; go back with Previous. The top progress bar tracks where you are.',
+          'Follow each step on the tabletop, then click Next Step when that rule step is done.',
+        ],
+      },
+      {
+        id: 'comp-phases',
+        title: 'Phases, turns, and first player',
+        keywords: 'command movement shooting charge fight battle round first turn',
+        body: [
+          'The guide covers setup/deployment, then five battle rounds with the full turn sequence.',
+          'On the Who goes first step, pick Left or Right — that sets turn order for all five rounds.',
+          'Ability reminders for army/detachment/unit rules appear on the steps where they usually matter.',
+          'Optional unit checklists in some phases let you mark units finished for that phase (not required to advance).',
+        ],
+      },
+      {
+        id: 'comp-army-cards',
+        title: 'Army panels and unit details',
+        keywords: 'unit card keywords weapons abilities wounds dead reorder attach leader',
+        body: [
+          'Each side’s army list shows units, wounds remaining, and key stats.',
+          'Open a unit for full keywords, abilities, and weapon profiles. Keyword links open short rule popovers when available.',
+          'Adjust wounds with − / +, mark units destroyed, and reorder the list if needed.',
+          'Attach leaders/support to bodyguards with the attach controls before or during deployment as your rules allow.',
+          'Toggle BattleShocked on a unit/group when they fail (or pass via stratagem) battle-shock as needed for reminders.',
+        ],
+      },
+      {
+        id: 'comp-combat',
+        title: 'Shooting / fight helpers in Companion',
+        keywords: 'combat active target overlay shoot fight select',
+        body: [
+          'On combat action steps, pick an active unit then a target — overlays show weapons and details on the army columns.',
+          'This tracks who is shooting/fighting whom for reference; resolve dice and wounds on the table (or use Battle Map LoS/ranges as a visual aid).',
+        ],
+      },
+      {
+        id: 'comp-formations',
+        title: 'Deep Strike / Strategic Reserves reminder',
+        keywords: 'deep strike formations reserves ingress',
+        body: [
+          'During Declare Battle Formations, the guide lists Deep Strike-capable units as a reminder for Strategic Reserves.',
+          'Place reserves and ingresses on the table (and optionally on Battle Map) according to the Core Rules.',
+        ],
+      },
+      {
+        id: 'comp-summary',
+        title: 'End of battle summary',
+        keywords: 'summary battle ready rounds vp',
+        body: [
+          'After five rounds, the summary shows round VP snapshots and Battle Ready awards.',
+          'Round totals lock when you complete each End of Battle Round step — keep entering VP as you go.',
+        ],
+      },
+      {
+        id: 'comp-stratagems',
+        title: 'Using stratagems during Companion play',
+        keywords: 'stratagems cp spend timing when target effect',
+        body: [
+          'Open Stratagems anytime from the top bar to read timing, target, effect, and CP cost.',
+          'Spend CP on the scoreboard when you use a stratagem on the table.',
+          'The deck is a reference — it does not auto-spend CP or enforce once-per-battle limits for you.',
+        ],
+      },
+    ],
+  },
+  {
+    id: 'battle-map',
+    title: 'Battle Map',
+    blurb: 'Layouts, deploy/move models, camera, ranges, LoS, and custom terrain import.',
+    items: [
+      {
+        id: 'map-open',
+        title: 'Open Battle Map',
+        keywords: 'battle map view deploy companion first',
+        body: [
+          'Load armies in Companion first, then switch to Battle Map from the top bar or footer.',
+          'Side panels list each army. Empty sides send you back to Companion to load lists.',
+        ],
+      },
+      {
+        id: 'map-layouts',
+        title: 'Choose a terrain layout',
+        keywords: 'layout terrain deployment zones priority assets search destroy meatgrinder',
+        body: [
+          'Use the Layout dropdown above the map to pick a built-in board (blank grid or Event Companion-style layouts such as Search and Destroy, Meatgrinder, Unstoppable Force, Purge vs Take and Hold C, Priority Assets Layout B, and more as added).',
+          'Layouts show deployment zones, terrain footprints, and feature pieces used for LoS/obscuring.',
+          'Choose Add new… to import another Rapid Ingress layout (see Import custom layout).',
+        ],
+      },
+      {
+        id: 'map-deploy',
+        title: 'Deploy and withdraw units',
+        keywords: 'deploy withdraw staging models markers',
+        body: [
+          'Press Deploy on a unit to place its models in the off-board staging area for that player.',
+          'Attached leaders deploy with their bodyguard group.',
+          'Withdraw removes that unit’s models from the map.',
+          'Player 1 models are blue; Player 2 models are green. Mirror-match (same faction) units stay separate.',
+        ],
+      },
+      {
+        id: 'map-move',
+        title: 'Select and move models',
+        keywords: 'drag move pan select unit right click',
+        body: [
+          'Left-drag a model to move that model. Right-drag (or secondary button drag) moves the whole unit group.',
+          'Click a model or use the side list to select a unit; the selected unit and model are highlighted.',
+          'Click empty board space (without dragging) to clear selection.',
+          'Drag empty space to pan. Use Zoom + / −, mouse wheel over the map, or Reset view for the camera.',
+        ],
+      },
+      {
+        id: 'map-ranges',
+        title: 'Move, charge, and weapon range rings',
+        keywords: 'range ring move charge shoot weapon select',
+        body: [
+          'With a model selected during movement/charge-style steps, a range ring shows approximate reach from the base edge.',
+          'During shooting steps, click a ranged weapon name on the selected unit’s card to show that weapon’s range ring.',
+          'While picking shoot/fight targets, controlling-unit ranges stay on the active unit; enemy target rings are suppressed so the board stays readable.',
+        ],
+      },
+      {
+        id: 'map-los',
+        title: 'Line of sight preview',
+        keywords: 'los line of sight obscure terrain shooting see',
+        body: [
+          'During shooting, when an active shooter and a target are set, the map can show LoS rays and highlight attacker models that have a clear shot.',
+          'Dense/obscuring terrain and see-through rules follow the imported layout features; treat the preview as a play aid, not a tournament judge.',
+          'Touching centre objective halves may merge for LoS as implemented in the map LoS helper.',
+        ],
+      },
+      {
+        id: 'map-markers',
+        title: 'Special markers',
+        keywords: 'special marker objective token reminder',
+        body: [
+          'Add special marker places a purple token you can drag (objectives tokens, reminders, etc.).',
+          'Select a marker to show Remove marker.',
+        ],
+      },
+      {
+        id: 'map-shock-wounds',
+        title: 'Battle-shock and wounds on the map',
+        keywords: 'battleshock wounds remaining models highlight',
+        body: [
+          'Selected unit cards on the map support wound tracking and BattleShocked toggles like Companion.',
+          'Map highlights can show units that must test battle-shock or are currently shocked during the relevant steps.',
+        ],
+      },
+      {
+        id: 'map-import',
+        title: 'Import custom layout (Rapid Ingress)',
+        keywords: 'import add new rapid ingress html terrain-data-11e custom layout',
+        body: [
+          'Choose Add new… in the Layout dropdown.',
+          'Upload a saved Rapid Ingress layout page (Complete webpage). Prefer including terrain-data-11e.js.download from the page’s _files folder — multi-select with the .html when possible.',
+          'You can also use a RapidIngress-*.png filename for slug detection; polygon data still needs the terrain JS/HTML export for a full board.',
+          'Pick the matching RI layout id, name it, then Import & use. Customs are stored in this browser and appear in the Layout list.',
+          'Delete imported customs from the import dialog’s Imported layouts list when you no longer need them.',
+        ],
+      },
+      {
+        id: 'map-steps',
+        title: 'Step controls on Battle Map',
+        keywords: 'next previous step nav guide progress',
+        body: [
+          'When the guide has started, Battle Map shows compact ← / → step controls under the turn label.',
+          'You can keep advancing the Companion guide while looking at the map.',
+        ],
+      },
+    ],
+  },
+];
+
+function searchHelpGuide(query) {
+  const q = String(query || '')
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, ' ');
+  if (!q) {
+    return HELP_GUIDE_SECTIONS.map((s) => ({
+      ...s,
+      items: s.items.slice(),
+    }));
+  }
+  const terms = q.split(' ').filter(Boolean);
+  return HELP_GUIDE_SECTIONS.map((section) => {
+    const items = section.items.filter((item) => {
+      const hay = `${section.title} ${item.title} ${(item.body || []).join(' ')} ${item.keywords || ''}`.toLowerCase();
+      return terms.every((t) => hay.includes(t));
+    });
+    return { ...section, items };
+  }).filter((s) => s.items.length > 0);
+}
+
+/* --- guide\helpGuideUi.js --- */
+/**
+ * In-app Instructions / Guides panel — searchable, shared by Companion + Battle Map.
+ */
+
+function esc(s) {
+  return String(s ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/"/g, '&quot;');
+}
+
+/** Compact grey ? control used on toolbars / pages. */
+function renderHelpQuestionBtn(extraClass = '') {
+  return `<button type="button" class="help-q-btn ${esc(extraClass)}" data-action="open-help-guide" title="Instructions / Guides" aria-label="Open instructions and guides">?</button>`;
+}
+
+/** Home landing CTA: ? + “Read Full Instructions/Guides”. */
+function renderHelpGuideCta() {
+  return `
+    <button type="button" class="help-guide-cta" data-action="open-help-guide">
+      <span class="help-q-btn help-q-btn-inline" aria-hidden="true">?</span>
+      <span class="help-guide-cta-label">Read Full Instructions/Guides</span>
+    </button>`;
+}
+
+function renderHelpItem(item) {
+  const paras = (item.body || []).map((p) => `<li>${esc(p)}</li>`).join('');
+  return `
+    <article class="help-item" id="help-item-${esc(item.id)}" data-help-item="${esc(item.id)}">
+      <h4 class="help-item-title">${esc(item.title)}</h4>
+      <ul class="help-item-bullets">${paras}</ul>
+    </article>`;
+}
+
+function renderHelpSection(section) {
+  if (!section.items?.length) return '';
+  return `
+    <section class="help-section" id="help-section-${esc(section.id)}" data-help-section="${esc(section.id)}">
+      <header class="help-section-header">
+        <h3>${esc(section.title)}</h3>
+        ${section.blurb ? `<p class="help-section-blurb">${esc(section.blurb)}</p>` : ''}
+      </header>
+      <div class="help-section-items">
+        ${section.items.map(renderHelpItem).join('')}
+      </div>
+    </section>`;
+}
+
+function renderHelpGuidePanel(state) {
+  const panel = state.helpGuide;
+  if (!panel?.open) return '';
+
+  const query = panel.query || '';
+  const sections = searchHelpGuide(query);
+  const jumpLinks = HELP_GUIDE_SECTIONS.map(
+    (s) =>
+      `<button type="button" class="help-jump ${panel.sectionId === s.id ? 'active' : ''}" data-action="help-jump-section" data-section="${esc(s.id)}">${esc(s.title)}</button>`,
+  ).join('');
+
+  const body = sections.length
+    ? sections.map(renderHelpSection).join('')
+    : `<p class="help-empty">No matching topics. Try “upload”, “stratagems”, “layout”, or “LoS”.</p>`;
+
+  return `
+    <div class="help-guide-backdrop" data-action="close-help-guide">
+      <div class="help-guide-panel" role="dialog" aria-modal="true" aria-labelledby="help-guide-title">
+        <div class="help-guide-header">
+          <div>
+            <h2 id="help-guide-title">Instructions / Guides</h2>
+            <p class="help-guide-sub">Searchable help for General setup, Companion, and Battle Map.</p>
+          </div>
+          <button type="button" class="unit-modal-close" data-action="close-help-guide" aria-label="Close">×</button>
+        </div>
+        <div class="help-guide-toolbar">
+          <label class="help-search-label">
+            <span class="visually-hidden">Search instructions</span>
+            <input type="search" class="help-search-input" data-action="help-guide-search" placeholder="Search instructions…" value="${esc(query)}" autocomplete="off" />
+          </label>
+          <div class="help-jump-row" role="navigation" aria-label="Guide sections">
+            ${jumpLinks}
+          </div>
+        </div>
+        <div class="help-guide-body" data-help-scroll="1">
+          ${body}
+        </div>
+      </div>
+    </div>`;
+}
+
+function bindHelpGuideEvents(root, dispatch) {
+  root.querySelectorAll('[data-action="open-help-guide"]').forEach((btn) => {
+    btn.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      dispatch({ type: 'OPEN_HELP_GUIDE' });
+    });
+  });
+
+  root.querySelectorAll('[data-action="close-help-guide"]').forEach((el) => {
+    el.addEventListener('click', (e) => {
+      if (el.classList.contains('help-guide-backdrop') && e.target !== el) return;
+      dispatch({ type: 'CLOSE_HELP_GUIDE' });
+    });
+  });
+
+  root.querySelector('.help-guide-panel')?.addEventListener('click', (e) => e.stopPropagation());
+
+  const search = root.querySelector('[data-action="help-guide-search"]');
+  if (search) {
+    search.addEventListener('input', () => {
+      dispatch({ type: 'SET_HELP_GUIDE_QUERY', query: search.value });
+    });
+    // Keep focus after re-render
+    if (document.activeElement === search || search.dataset.keepFocus === '1') {
+      requestAnimationFrame(() => {
+        const again = root.querySelector('[data-action="help-guide-search"]');
+        if (again) {
+          again.focus();
+          const len = again.value.length;
+          again.setSelectionRange(len, len);
+        }
+      });
+    }
+    search.addEventListener('focus', () => {
+      search.dataset.keepFocus = '1';
+    });
+    search.addEventListener('blur', () => {
+      search.dataset.keepFocus = '0';
+    });
+  }
+
+  root.querySelectorAll('[data-action="help-jump-section"]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const id = btn.dataset.section;
+      dispatch({ type: 'SET_HELP_GUIDE_SECTION', sectionId: id });
+      requestAnimationFrame(() => {
+        const safe = String(id || '').replace(/[^a-zA-Z0-9_-]/g, '');
+        const el = root.querySelector(`#help-section-${safe}`);
+        el?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+    });
+  });
+}
+
 /* --- guide\weaponUi.js --- */
 /**
  * Shared weapon table + clickable keyword chips (Companion + Battle Sim).
@@ -5925,6 +6610,7 @@ function createInitialGuideState() {
     battleReady: { player1: false, player2: false },
     stratagems: { player1: [], player2: [] },
     stratagemPanel: null,
+    helpGuide: { open: false, query: '', sectionId: null },
     deadUnits: { player1: [], player2: [] },
     unitWounds: { player1: {}, player2: {} },
     leaderAttachments: { player1: {}, player2: {} },
@@ -6616,6 +7302,46 @@ function guideReducer(state, action) {
     case 'CLOSE_STRATAGEMS':
       return { ...state, stratagemPanel: null };
 
+    case 'OPEN_HELP_GUIDE':
+      return {
+        ...state,
+        helpGuide: {
+          open: true,
+          query: state.helpGuide?.query || '',
+          sectionId: state.helpGuide?.sectionId || null,
+        },
+      };
+
+    case 'CLOSE_HELP_GUIDE':
+      return {
+        ...state,
+        helpGuide: {
+          open: false,
+          query: state.helpGuide?.query || '',
+          sectionId: state.helpGuide?.sectionId || null,
+        },
+      };
+
+    case 'SET_HELP_GUIDE_QUERY':
+      return {
+        ...state,
+        helpGuide: {
+          open: true,
+          query: String(action.query ?? ''),
+          sectionId: state.helpGuide?.sectionId || null,
+        },
+      };
+
+    case 'SET_HELP_GUIDE_SECTION':
+      return {
+        ...state,
+        helpGuide: {
+          open: true,
+          query: state.helpGuide?.query || '',
+          sectionId: action.sectionId || null,
+        },
+      };
+
     case 'REORDER_UNIT': {
       const { player, unitId, direction } = action;
       const army = state[player]?.army;
@@ -7188,6 +7914,11 @@ function guideReducer(state, action) {
             player2: normalizeStratagemDeck(saved.stratagems?.player2),
           },
           stratagemPanel: null,
+          helpGuide: {
+            open: false,
+            query: '',
+            sectionId: null,
+          },
           deadUnits: {
             player1: Array.isArray(saved.deadUnits?.player1) ? saved.deadUnits.player1 : [],
             player2: Array.isArray(saved.deadUnits?.player2) ? saved.deadUnits.player2 : [],
@@ -7244,6 +7975,7 @@ function guideReducer(state, action) {
           flow: [],
           unitDetail: null,
           stratagemPanel: null,
+          helpGuide: { open: false, query: '', sectionId: null },
           currentStepId: state.flow[state.stepIndex]?.id || null,
         };
         localStorage.setItem(STORAGE_KEY, JSON.stringify(toSave));
@@ -7320,6 +8052,7 @@ function renderSimScoreboard(state) {
         <div class="view-mode-bar">
           <button type="button" class="view-mode-btn" data-action="set-view-mode" data-mode="companion">Companion</button>
           <button type="button" class="view-mode-btn active" data-action="set-view-mode" data-mode="battleSim">Battle Map</button>
+          ${renderHelpQuestionBtn()}
         </div>
         ${state.started ? `
           <div class="sim-step-nav">
@@ -7829,6 +8562,7 @@ function renderBattleSim(root, state, dispatch) {
         <div class="guide-footer-bar">
           Warhammer 40,000 Battle Companion · Battle Sim
           <button type="button" class="btn-link" data-action="set-view-mode" data-mode="companion">Companion</button>
+          <button type="button" class="btn-link" data-action="open-help-guide">Instructions</button>
           <button type="button" class="btn-link" data-action="save-game">Save</button>
           <button type="button" class="btn-link" data-action="reset-game">Reset</button>
         </div>
@@ -7837,6 +8571,7 @@ function renderBattleSim(root, state, dispatch) {
       ${renderKeywordRulePopover(state)}
       ${renderLayoutImportDialog(state)}
       ${renderStratagemPanel(state)}
+      ${renderHelpGuidePanel(state)}
     </div>`;
 
   bindBattleSimEvents(root, state, dispatch);
@@ -7869,6 +8604,7 @@ function bindBattleSimEvents(root, state, dispatch) {
   });
 
   bindStratagemEvents(root, dispatch);
+  bindHelpGuideEvents(root, dispatch);
 
   root.querySelectorAll('[data-action="map-deploy-unit"]').forEach((btn) => {
     btn.addEventListener('click', () =>
@@ -8393,6 +9129,7 @@ function renderScoreboard(state) {
         <div class="view-mode-bar">
           <button type="button" class="view-mode-btn active" data-action="set-view-mode" data-mode="companion">Companion</button>
           <button type="button" class="view-mode-btn" data-action="set-view-mode" data-mode="battleSim">Battle Map</button>
+          ${renderHelpQuestionBtn()}
         </div>
         <div class="progress-bar"><div class="progress-fill" style="width:${getProgress(state)}%"></div></div>
       </div>
@@ -9045,6 +9782,7 @@ function renderGuideCenter(state) {
           <li>Army abilities auto-placed in the correct phase</li>
           <li>Scoreboard: CP · Secondary VP · Primary VP · Total</li>
         </ul>
+        ${renderHelpGuideCta()}
         <button type="button" class="btn-primary" data-action="start-game" ${canStart ? '' : 'disabled'}>
           ${canStart ? 'Begin Battle Guide' : 'Load both armies first'}
         </button>
@@ -9161,6 +9899,7 @@ function renderGuide(root, state, dispatch) {
         <div class="guide-footer-bar">
           Warhammer 40,000 Battle Companion · Step ${state.stepIndex + 1}/${state.flow.length || '—'}
           <button type="button" class="btn-link" data-action="set-view-mode" data-mode="battleSim">Battle Map</button>
+          <button type="button" class="btn-link" data-action="open-help-guide">Instructions</button>
           <button type="button" class="btn-link" data-action="reset-game">Reset</button>
           <button type="button" class="btn-link" data-action="save-game">Save</button>
         </div>
@@ -9168,6 +9907,7 @@ function renderGuide(root, state, dispatch) {
       ${renderUnitDetailModal(state)}
       ${renderKeywordRulePopover(state)}
       ${renderStratagemPanel(state)}
+      ${renderHelpGuidePanel(state)}
     </div>`;
 
   bindGuideEvents(root, dispatch);
@@ -9248,6 +9988,7 @@ function bindGuideEvents(root, dispatch) {
   });
 
   bindStratagemEvents(root, dispatch);
+  bindHelpGuideEvents(root, dispatch);
 
   root.querySelectorAll('[data-action="reorder-unit"]').forEach((btn) => {
     btn.addEventListener('click', (e) => {

@@ -273,6 +273,7 @@ export function renderMapSvg(state, options = {}) {
         <button type="button" data-action="map-zoom" data-delta="-0.15">Zoom −</button>
         <button type="button" data-action="map-reset-camera">Reset view</button>
         <button type="button" data-action="add-special-marker">Add special marker</button>
+        <button type="button" class="help-q-btn help-q-btn-toolbar" data-action="open-help-guide" title="Instructions / Guides" aria-label="Open instructions and guides">?</button>
         ${
           selectedSpecial
             ? `<button type="button" class="remove-special-btn" data-action="remove-special-marker" data-special-id="${esc(selectedSpecial.id)}">Remove marker</button>`

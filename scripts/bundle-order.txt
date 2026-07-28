@@ -16,6 +16,8 @@ guide\abilityMapper.js
 guide\rosterParser.js
 guide\stratagemParser.js
 guide\stratagemUi.js
+guide\helpGuideData.js
+guide\helpGuideUi.js
 guide\weaponUi.js
 guide\guideState.js
 battleSim\battleSimRender.js

@@ -26,6 +26,7 @@ import {
 } from './guide/weaponUi.js';
 import { renderBattleSim } from './battleSim/battleSimRender.js';
 import { renderStratagemsBtn, renderStratagemPanel, bindStratagemEvents } from './guide/stratagemUi.js';
+import { renderHelpQuestionBtn, renderHelpGuideCta, renderHelpGuidePanel, bindHelpGuideEvents } from './guide/helpGuideUi.js';
 
 const SLOT_LABELS = {
   'setup-pre-battle': 'Pre-battle',
@@ -117,6 +118,7 @@ function renderScoreboard(state) {
         <div class="view-mode-bar">
           <button type="button" class="view-mode-btn active" data-action="set-view-mode" data-mode="companion">Companion</button>
           <button type="button" class="view-mode-btn" data-action="set-view-mode" data-mode="battleSim">Battle Map</button>
+          ${renderHelpQuestionBtn()}
         </div>
         <div class="progress-bar"><div class="progress-fill" style="width:${getProgress(state)}%"></div></div>
       </div>
@@ -769,6 +771,7 @@ function renderGuideCenter(state) {
           <li>Army abilities auto-placed in the correct phase</li>
           <li>Scoreboard: CP · Secondary VP · Primary VP · Total</li>
         </ul>
+        ${renderHelpGuideCta()}
         <button type="button" class="btn-primary" data-action="start-game" ${canStart ? '' : 'disabled'}>
           ${canStart ? 'Begin Battle Guide' : 'Load both armies first'}
         </button>
@@ -885,6 +888,7 @@ export function renderGuide(root, state, dispatch) {
         <div class="guide-footer-bar">
           Warhammer 40,000 Battle Companion · Step ${state.stepIndex + 1}/${state.flow.length || '—'}
           <button type="button" class="btn-link" data-action="set-view-mode" data-mode="battleSim">Battle Map</button>
+          <button type="button" class="btn-link" data-action="open-help-guide">Instructions</button>
           <button type="button" class="btn-link" data-action="reset-game">Reset</button>
           <button type="button" class="btn-link" data-action="save-game">Save</button>
         </div>
@@ -892,6 +896,7 @@ export function renderGuide(root, state, dispatch) {
       ${renderUnitDetailModal(state)}
       ${renderKeywordRulePopover(state)}
       ${renderStratagemPanel(state)}
+      ${renderHelpGuidePanel(state)}
     </div>`;
 
   bindGuideEvents(root, dispatch);
@@ -972,6 +977,7 @@ function bindGuideEvents(root, dispatch) {
   });
 
   bindStratagemEvents(root, dispatch);
+  bindHelpGuideEvents(root, dispatch);
 
   root.querySelectorAll('[data-action="reorder-unit"]').forEach((btn) => {
     btn.addEventListener('click', (e) => {
