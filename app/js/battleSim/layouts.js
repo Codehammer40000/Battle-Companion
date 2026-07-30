@@ -7,7 +7,9 @@ import { MEATGRINDER_1_LAYOUT } from './layoutData/meatgrinder1.js';
 import { UNSTOPPABLE_FORCE_LAYOUT } from './layoutData/unstoppableForce.js';
 import { PURGE_VS_TAKE_AND_HOLD_C_LAYOUT } from './layoutData/purgeVsTakeAndHoldC.js';
 import { PRIORITY_ASSETS_VS_PRIORITY_ASSETS_B_LAYOUT } from './layoutData/priorityAssetsVsPriorityAssetsB.js';
+import { PRIORITY_ASSETS_VS_TAKE_AND_HOLD_B_LAYOUT } from './layoutData/priorityAssetsVsTakeAndHoldB.js';
 import { loadCustomLayouts } from './layoutImport.js';
+import { applyLayoutTransform, identityLayoutTransform } from './layoutTransform.js';
 
 export const BLANK_LAYOUT = {
   id: 'blank',
@@ -29,6 +31,7 @@ export const BUILTIN_LAYOUTS = [
   UNSTOPPABLE_FORCE_LAYOUT,
   PURGE_VS_TAKE_AND_HOLD_C_LAYOUT,
   PRIORITY_ASSETS_VS_PRIORITY_ASSETS_B_LAYOUT,
+  PRIORITY_ASSETS_VS_TAKE_AND_HOLD_B_LAYOUT,
 ];
 
 /** Built-in layouts only (no custom). Prefer getAllLayouts() for UI. */
@@ -47,4 +50,10 @@ export function getLayoutById(id) {
     customs.find((l) => l.id === id) ||
     BLANK_LAYOUT
   );
+}
+
+/** Base layout + current flip/rotate orientation for map display & LoS. */
+export function getActiveBattleLayout(battleMap) {
+  const base = getLayoutById(battleMap?.layoutId || 'blank');
+  return applyLayoutTransform(base, battleMap?.layoutTransform || identityLayoutTransform());
 }

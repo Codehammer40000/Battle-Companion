@@ -11,6 +11,7 @@ export const MARKER_RADIUS = {
 export function createEmptyBattleMap() {
   return {
     layoutId: 'blank',
+    layoutTransform: { ops: [] },
     camera: { x: 0, y: 0, zoom: 1 },
     unitsOnMap: {},
     selectedUnitKey: null,

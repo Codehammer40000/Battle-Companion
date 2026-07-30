@@ -2600,10 +2600,13 @@ tr.weapon-row-selected td {
   font-size: 0.75rem;
 }
 
-.layout-import-empty {
-  color: var(--muted, #888);
-  font-size: 0.82rem;
-  padding: 0.35rem 0;
+.battle-map-orient-badge {
+  align-self: center;
+  font-size: 0.65rem;
+  color: #d4c4a0;
+  border: 1px solid #5a4a32;
+  border-radius: 999px;
+  padding: 0.15rem 0.45rem;
 }
 
 /* ===== Help / Instructions guide ===== */

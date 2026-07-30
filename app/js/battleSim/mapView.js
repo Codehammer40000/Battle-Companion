@@ -2,7 +2,7 @@
  * SVG map rendering for Battle Sim — grid, terrain, models, radii, LOS.
  */
 
-import { getLayoutById } from './layouts.js';
+import { getLayoutById, getActiveBattleLayout } from './layouts.js';
 import { boardSizeForLayout } from './battleMapState.js';
 
 const PPI = 12; // pixels per inch in SVG user space
@@ -249,7 +249,7 @@ function renderSpecialMarkers(markers, selectedModelId) {
 }
 
 export function renderMapSvg(state, options = {}) {
-  const layout = getLayoutById(state.battleMap?.layoutId || 'blank');
+  const layout = getActiveBattleLayout(state.battleMap);
   const board = boardSizeForLayout(layout);
   const cam = state.battleMap?.camera || { x: 0, y: 0, zoom: 1 };
   const pad = 8; // inches of off-board staging visible
@@ -259,16 +259,23 @@ export function renderMapSvg(state, options = {}) {
   const selectedSpecial = (state.battleMap?.specialMarkers || []).find(
     (m) => m.id === state.battleMap?.selectedModelId,
   );
+  const orient = state.battleMap?.layoutTransform?.ops?.length
+    ? `<span class="battle-map-orient-badge" title="Layout orientation applied">Oriented</span>`
+    : '';
 
   return `
     <div class="battle-map-viewport" data-map-viewport="1">
       <div class="battle-map-toolbar">
         <label class="battle-map-layout-label">Layout
           <select data-action="set-map-layout">
-            ${(options.layouts || []).map((l) => `<option value="${esc(l.id)}" ${l.id === layout.id ? 'selected' : ''}>${esc(l.name)}</option>`).join('')}
+            ${(options.layouts || []).map((l) => `<option value="${esc(l.id)}" ${l.id === (state.battleMap?.layoutId || layout.id) ? 'selected' : ''}>${esc(l.name)}</option>`).join('')}
             <option value="__add_new__">Add new…</option>
           </select>
         </label>
+        <button type="button" data-action="map-flip-horizontal" title="Mirror layout left/right (keeps models with terrain)">Flip</button>
+        <button type="button" data-action="map-rotate-90" title="Rotate layout 90° clockwise">Rotate 90°</button>
+        <button type="button" data-action="map-reset-orientation" title="Reset flip/rotate to original" ${state.battleMap?.layoutTransform?.ops?.length ? '' : 'disabled'}>Reset orient</button>
+        ${orient}
         <button type="button" data-action="map-zoom" data-delta="0.15">Zoom +</button>
         <button type="button" data-action="map-zoom" data-delta="-0.15">Zoom −</button>
         <button type="button" data-action="map-reset-camera">Reset view</button>

@@ -832,6 +832,15 @@ function bindBattleSimEvents(root, state, dispatch) {
   root.querySelector('[data-action="map-reset-camera"]')?.addEventListener('click', () =>
     dispatch({ type: 'MAP_RESET_CAMERA' }),
   );
+  root.querySelector('[data-action="map-flip-horizontal"]')?.addEventListener('click', () =>
+    dispatch({ type: 'MAP_FLIP_HORIZONTAL' }),
+  );
+  root.querySelector('[data-action="map-rotate-90"]')?.addEventListener('click', () =>
+    dispatch({ type: 'MAP_ROTATE_90' }),
+  );
+  root.querySelector('[data-action="map-reset-orientation"]')?.addEventListener('click', () =>
+    dispatch({ type: 'MAP_RESET_ORIENTATION' }),
+  );
   root.querySelector('[data-action="add-special-marker"]')?.addEventListener('click', () => {
     const name = prompt('Special marker name', 'OOM target');
     if (name) dispatch({ type: 'MAP_ADD_SPECIAL_MARKER', name });

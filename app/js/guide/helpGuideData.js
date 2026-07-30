@@ -191,10 +191,11 @@ export const HELP_GUIDE_SECTIONS = [
       {
         id: 'map-layouts',
         title: 'Choose a terrain layout',
-        keywords: 'layout terrain deployment zones priority assets search destroy meatgrinder',
+        keywords: 'layout terrain deployment zones priority assets search destroy meatgrinder flip rotate mirror',
         body: [
-          'Use the Layout dropdown above the map to pick a built-in board (blank grid or Event Companion-style layouts such as Search and Destroy, Meatgrinder, Unstoppable Force, Purge vs Take and Hold C, Priority Assets Layout B, and more as added).',
+          'Use the Layout dropdown above the map to pick a built-in board (blank grid or Event Companion-style layouts such as Search and Destroy, Meatgrinder, Unstoppable Force, Purge vs Take and Hold C, Priority Assets layouts, and more as added).',
           'Layouts show deployment zones, terrain footprints, and feature pieces used for LoS/obscuring.',
+          'Flip mirrors the board left/right (useful on mobile or to match which army list sits on which side). Rotate 90° turns the board clockwise. Reset orient restores the original facing. Models and markers move with the terrain.',
           'Choose Add new… to import another Rapid Ingress layout (see Import custom layout).',
         ],
       },

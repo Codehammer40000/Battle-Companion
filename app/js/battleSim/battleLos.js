@@ -18,7 +18,7 @@
  */
 
 import { distance, pointInArea, pointInPolygon, pointInRect } from '../geometry.js';
-import { getLayoutById } from './layouts.js';
+import { getActiveBattleLayout } from './layouts.js';
 
 function lerp(a, b, t) {
   return { x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t };
@@ -269,7 +269,7 @@ export function computeBattleLos(state, shooterKey, targetKey) {
   const target = state.battleMap?.unitsOnMap?.[targetKey];
   if (!shooter?.models?.length || !target?.models?.length) return null;
 
-  const layout = getLayoutById(state.battleMap?.layoutId || 'blank');
+  const layout = getActiveBattleLayout(state.battleMap);
   const attackerModels = shooter.models;
   const targetModels = target.models;
 

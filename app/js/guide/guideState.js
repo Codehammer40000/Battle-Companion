@@ -13,7 +13,13 @@ import {
   migrateBattleMapModelIds,
   modelBelongsToUnit,
 } from '../battleSim/battleMapState.js';
-import { getLayoutById } from '../battleSim/layouts.js';
+import { getLayoutById, getActiveBattleLayout } from '../battleSim/layouts.js';
+import {
+  identityLayoutTransform,
+  nextTransformAfterOp,
+  remapMapEntities,
+  normalizeLayoutTransform,
+} from '../battleSim/layoutTransform.js';
 import { clearImportSession } from '../battleSim/layoutImport.js';
 import { computeLosFromCombat } from '../battleSim/battleLos.js';
 
@@ -470,7 +476,7 @@ function syncBattleMapModels(state) {
 
       if (mine.length < remaining) {
         const anchor = mine[mine.length - 1] || others()[0];
-        const layout = getLayoutById(battleMap.layoutId);
+        const layout = getActiveBattleLayout(battleMap);
         const board = boardSizeForLayout(layout);
         const staging = getStagingOrigin(entry.player, board);
         const ax = anchor?.x ?? staging.x;
@@ -948,6 +954,7 @@ export function guideReducer(state, action) {
       const battleMap = {
         ...(state.battleMap || createEmptyBattleMap()),
         layoutId: layout.id,
+        layoutTransform: identityLayoutTransform(),
         camera: { x: 0, y: 0, zoom: 1 },
         losPreview: null,
       };
@@ -995,7 +1002,11 @@ export function guideReducer(state, action) {
           ...battleMap,
           layoutId: layout.id,
           ...(battleMap.layoutId !== layout.id
-            ? { camera: { x: 0, y: 0, zoom: 1 }, losPreview: null }
+            ? {
+                layoutTransform: identityLayoutTransform(),
+                camera: { x: 0, y: 0, zoom: 1 },
+                losPreview: null,
+              }
             : {}),
         },
         layoutImport: state.layoutImport?.open
@@ -1020,6 +1031,82 @@ export function guideReducer(state, action) {
       return { ...state, battleMap: { ...battleMap, camera: { x: 0, y: 0, zoom: 1 } } };
     }
 
+    case 'MAP_FLIP_HORIZONTAL':
+    case 'MAP_ROTATE_90': {
+      const op = action.type === 'MAP_FLIP_HORIZONTAL' ? 'flipH' : 'rotate90';
+      const battleMap = state.battleMap || createEmptyBattleMap();
+      const active = getActiveBattleLayout(battleMap);
+      const board = boardSizeForLayout(active);
+      const remapped = remapMapEntities(
+        battleMap.unitsOnMap,
+        battleMap.specialMarkers,
+        board.width,
+        board.height,
+        op,
+      );
+      const layoutTransform = nextTransformAfterOp(battleMap.layoutTransform, op);
+      let next = {
+        ...state,
+        battleMap: {
+          ...battleMap,
+          layoutTransform,
+          unitsOnMap: remapped.unitsOnMap,
+          specialMarkers: remapped.specialMarkers,
+          camera: { x: 0, y: 0, zoom: battleMap.camera?.zoom || 1 },
+          losPreview: null,
+        },
+      };
+      const step = state.flow[state.stepIndex];
+      const isShoot =
+        step && (step.phase === 'shooting' || String(step.id || '').includes('-shoot'));
+      if (isShoot && state.combat?.active && state.combat?.target) {
+        const los = computeLosFromCombat(next);
+        next = { ...next, battleMap: { ...next.battleMap, losPreview: los } };
+      }
+      return next;
+    }
+
+    case 'MAP_RESET_ORIENTATION': {
+      const battleMap = state.battleMap || createEmptyBattleMap();
+      const ops = normalizeLayoutTransform(battleMap.layoutTransform).ops;
+      if (!ops.length) return state;
+      // Undo by remapping through inverse of each op in reverse... easier: re-apply
+      // inverse ops. Inverse of rotate90 CW is rotate90 x3; inverse of flipH is flipH.
+      let unitsOnMap = battleMap.unitsOnMap;
+      let specialMarkers = battleMap.specialMarkers;
+      let width = getActiveBattleLayout(battleMap).width ?? 60;
+      let height = getActiveBattleLayout(battleMap).height ?? 44;
+      for (let i = ops.length - 1; i >= 0; i--) {
+        const op = ops[i];
+        if (op === 'flipH') {
+          const remapped = remapMapEntities(unitsOnMap, specialMarkers, width, height, 'flipH');
+          unitsOnMap = remapped.unitsOnMap;
+          specialMarkers = remapped.specialMarkers;
+        } else if (op === 'rotate90') {
+          // Inverse of 90 CW is 90 CCW = (x,y)->(y, W-x) with size swap, equiv three CW on current board
+          for (let k = 0; k < 3; k++) {
+            const remapped = remapMapEntities(unitsOnMap, specialMarkers, width, height, 'rotate90');
+            unitsOnMap = remapped.unitsOnMap;
+            specialMarkers = remapped.specialMarkers;
+            const tmp = width;
+            width = height;
+            height = tmp;
+          }
+        }
+      }
+      return {
+        ...state,
+        battleMap: {
+          ...battleMap,
+          layoutTransform: identityLayoutTransform(),
+          unitsOnMap,
+          specialMarkers,
+          camera: { x: 0, y: 0, zoom: 1 },
+          losPreview: null,
+        },
+      };
+    }
+
     case 'MAP_DEPLOY_UNIT': {
       const { player, unitId } = action;
       const army = state[player]?.army;
@@ -1036,7 +1123,7 @@ export function guideReducer(state, action) {
       const battleMap = state.battleMap || createEmptyBattleMap();
       if (battleMap.unitsOnMap?.[key]) return state;
 
-      const layout = getLayoutById(battleMap.layoutId);
+      const layout = getActiveBattleLayout(battleMap);
       const board = boardSizeForLayout(layout);
       const staging = getStagingOrigin(player, board);
       const remaining = getRemainingModels(bodyguard, getUnitWoundsTaken(state, player, bodyguardId));
@@ -1226,7 +1313,7 @@ export function guideReducer(state, action) {
 
     case 'MAP_ADD_SPECIAL_MARKER': {
       const battleMap = state.battleMap || createEmptyBattleMap();
-      const layout = getLayoutById(battleMap.layoutId);
+      const layout = getActiveBattleLayout(battleMap);
       const board = boardSizeForLayout(layout);
       const id = `special-${Date.now()}`;
       const marker = {
