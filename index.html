@@ -4375,50 +4375,6 @@ function renderTerrainFeatures(features) {
     .join('');
 }
 
-function renderObjectives(objectives) {
-  return (objectives || [])
-    .map((o) => {
-      const x = toPx(o.x);
-      const y = toPx(o.y);
-      const type = o.type || 'centre';
-      if (type === 'home') {
-        const fill = o.owner === 'attacker' ? '#dc2626' : '#2563eb';
-        const s = toPx(1.1);
-        // castle-style square with battlements
-        return `
-          <g class="map-objective map-objective-home" pointer-events="none">
-            <rect x="${x - s}" y="${y - s}" width="${s * 2}" height="${s * 2}" fill="${fill}" stroke="#fff" stroke-width="2" />
-            <rect x="${x - s}" y="${y - s - toPx(0.35)}" width="${toPx(0.45)}" height="${toPx(0.4)}" fill="${fill}" stroke="#fff" stroke-width="1" />
-            <rect x="${x - toPx(0.22)}" y="${y - s - toPx(0.35)}" width="${toPx(0.45)}" height="${toPx(0.4)}" fill="${fill}" stroke="#fff" stroke-width="1" />
-            <rect x="${x + s - toPx(0.45)}" y="${y - s - toPx(0.35)}" width="${toPx(0.45)}" height="${toPx(0.4)}" fill="${fill}" stroke="#fff" stroke-width="1" />
-          </g>`;
-      }
-      if (type === 'expansion') {
-        const s = toPx(1.35);
-        const diamond = `${x},${y - s} ${x + s},${y} ${x},${y + s} ${x - s},${y}`;
-        return `
-          <g class="map-objective map-objective-expansion" pointer-events="none">
-            <polygon points="${diamond}" fill="#16a34a" stroke="#fff" stroke-width="2" />
-            <circle cx="${x}" cy="${y}" r="${toPx(0.35)}" fill="#052e16" />
-            <path d="M ${x - toPx(0.22)} ${y - toPx(0.08)} Q ${x} ${y - toPx(0.35)} ${x + toPx(0.22)} ${y - toPx(0.08)} Q ${x + toPx(0.18)} ${y + toPx(0.22)} ${x} ${y + toPx(0.28)} Q ${x - toPx(0.18)} ${y + toPx(0.22)} ${x - toPx(0.22)} ${y - toPx(0.08)} Z" fill="#fff" />
-            <circle cx="${x - toPx(0.08)}" cy="${y - toPx(0.02)}" r="${toPx(0.06)}" fill="#052e16" />
-            <circle cx="${x + toPx(0.08)}" cy="${y - toPx(0.02)}" r="${toPx(0.06)}" fill="#052e16" />
-          </g>`;
-      }
-      // centre
-      const r = toPx(1.35);
-      return `
-        <g class="map-objective map-objective-centre" pointer-events="none">
-          <circle cx="${x}" cy="${y}" r="${r}" fill="#16a34a" stroke="#fff" stroke-width="2" />
-          <circle cx="${x}" cy="${y}" r="${toPx(0.4)}" fill="#052e16" />
-          <path d="M ${x - toPx(0.25)} ${y - toPx(0.1)} Q ${x} ${y - toPx(0.4)} ${x + toPx(0.25)} ${y - toPx(0.1)} Q ${x + toPx(0.2)} ${y + toPx(0.25)} ${x} ${y + toPx(0.32)} Q ${x - toPx(0.2)} ${y + toPx(0.25)} ${x - toPx(0.25)} ${y - toPx(0.1)} Z" fill="#fff" />
-          <circle cx="${x - toPx(0.09)}" cy="${y - toPx(0.02)}" r="${toPx(0.07)}" fill="#052e16" />
-          <circle cx="${x + toPx(0.09)}" cy="${y - toPx(0.02)}" r="${toPx(0.07)}" fill="#052e16" />
-        </g>`;
-    })
-    .join('');
-}
-
 function renderMeasurements(measurements) {
   if (!measurements) return '';
   const lines = (measurements.lines || [])
@@ -4582,7 +4538,6 @@ function renderMapSvg(state, options = {}) {
             ${renderDeploymentZones(layout.deploymentZones)}
             ${renderTerrainAreas(layout.terrainAreas)}
             ${renderTerrainFeatures(layout.terrainFeatures)}
-            ${renderObjectives(layout.objectives)}
             ${renderRadii(options.radii)}
             ${renderModels(
               state.battleMap?.unitsOnMap,
