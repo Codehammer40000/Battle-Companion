@@ -174,16 +174,27 @@ export function getGroupStrengthStats(state, playerKey, groupInfo, army) {
 
 export function isGroupBattleShockEligible(state, playerKey, groupInfo, army) {
   const stats = getGroupStrengthStats(state, playerKey, groupInfo, army);
-  if (stats.allDead || stats.totalInitialModels <= 0) return false;
+  if (stats.allDead) return false;
 
-  // Single-model groups: half or fewer wounds remaining on the model
-  if (stats.totalInitialModels === 1) {
-    if (stats.totalWoundCapacity <= 0) return false;
-    return stats.totalWoundsTaken >= stats.totalWoundCapacity / 2;
+  const startingModels = Math.max(0, stats.totalInitialModels);
+  const capacity = Math.max(0, stats.totalWoundCapacity);
+  if (startingModels <= 0 && capacity <= 0) return false;
+
+  // Single-model units (Knights, vehicles, monsters, etc.): below half-strength by wounds.
+  // Prefer this whenever the group starts as one model — including cases where an old
+  // saved initialModelCount over-counted nested roster entries but composition is 1×NW.
+  if (startingModels <= 1) {
+    if (capacity <= 1) {
+      // True 1W single model: destroyed when the wound is gone (handled as dead), not half-strength
+      return false;
+    }
+    const remainingWounds = Math.max(0, capacity - stats.totalWoundsTaken);
+    // At or below half starting wounds remaining
+    return remainingWounds <= capacity / 2;
   }
 
   // Multi-model groups: at or below half starting model count (combined for leader + bodyguard)
-  const halfStrength = Math.floor(stats.totalInitialModels / 2);
+  const halfStrength = Math.floor(startingModels / 2);
   return stats.totalRemainingModels <= halfStrength;
 }
 

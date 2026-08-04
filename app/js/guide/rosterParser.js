@@ -256,6 +256,11 @@ export function getUnitWoundsPerModel(unit) {
 }
 
 export function getUnitInitialModelCount(unit) {
+  const comp = unit?.modelComposition;
+  if (Array.isArray(comp) && comp.length) {
+    const n = comp.reduce((sum, c) => sum + Math.max(0, Number(c.count) || 0), 0);
+    if (n > 0) return n;
+  }
   if (unit?.initialModelCount > 0) return unit.initialModelCount;
   return Math.max(1, unit?.modelCount ?? 1);
 }
@@ -521,14 +526,20 @@ export function normalizeArmyUnits(army) {
   if (!army?.units) return army;
   return {
     ...army,
-    units: army.units.map((u) => ({
-      ...u,
-      woundsPerModel: getUnitWoundsPerModel(u),
-      initialModelCount: getUnitInitialModelCount(u),
-      modelComposition: Array.isArray(u.modelComposition) ? u.modelComposition : undefined,
-      totalWounds: getUnitWoundCapacityFromUnit(u),
-      keywordRules: u.keywordRules || indexKeywordRules(u.rules),
-    })),
+    units: army.units.map((u) => {
+      const modelComposition = Array.isArray(u.modelComposition) ? u.modelComposition : undefined;
+      const withComp = modelComposition ? { ...u, modelComposition } : { ...u };
+      const initialModelCount = getUnitInitialModelCount(withComp);
+      return {
+        ...withComp,
+        woundsPerModel: getUnitWoundsPerModel(withComp),
+        initialModelCount,
+        modelCount: initialModelCount,
+        modelComposition,
+        totalWounds: getUnitWoundCapacityFromUnit({ ...withComp, initialModelCount }),
+        keywordRules: u.keywordRules || indexKeywordRules(u.rules),
+      };
+    }),
   };
 }
 
@@ -543,7 +554,6 @@ function unitHasSupport(abilities, unitRules, keywords) {
 }
 
 function parseUnit(sel) {
-  const modelCount = countModels(sel);
   const allRules = dedupeByKey(collectRulesRecursive(sel), (r) => r.id || `${r.name}::${r.description.slice(0, 80)}`);
   const abilities = dedupeByKey(collectProfileAbilities(sel, [], sel.name), (a) => `${a.name}::${a.description.slice(0, 80)}`);
   const allKeywords = collectAllKeywords(sel);
@@ -556,6 +566,10 @@ function parseUnit(sel) {
   const charStats = pickPrimaryStats(statProfiles, sel.name);
   const stats = buildUnitStats(charStats, unitRules, abilities);
   const modelComposition = collectModelComposition(sel);
+  const compositionModels = modelComposition.reduce(
+    (sum, c) => sum + Math.max(0, c.count),
+    0,
+  );
   const compositionWounds = modelComposition.reduce(
     (sum, c) => sum + Math.max(0, c.count) * Math.max(1, c.wounds),
     0,
@@ -564,6 +578,9 @@ function parseUnit(sel) {
   const majorityWounds =
     modelComposition.slice().sort((a, b) => b.count - a.count)[0]?.wounds ||
     parseWoundValue(stats.W);
+  // Prefer composition counts when present so single multi-wound models (Knights, etc.)
+  // are not over-counted from nested roster selections.
+  const modelCount = compositionModels > 0 ? compositionModels : countModels(sel);
 
   const rangedWeapons = dedupeByKey(collectWeapons(sel, 'Ranged Weapons'), (w) =>
     `${w.name}::${w.range}::${w.a}::${w.bs}::${w.s}::${w.ap}::${w.d}`,
