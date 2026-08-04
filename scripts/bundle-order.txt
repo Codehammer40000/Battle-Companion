@@ -8,6 +8,7 @@ battleSim\layoutData\unstoppableForce.js
 battleSim\layoutData\purgeVsTakeAndHoldC.js
 battleSim\layoutData\priorityAssetsVsPriorityAssetsB.js
 battleSim\layoutData\priorityAssetsVsTakeAndHoldB.js
+battleSim\layoutData\priorityAssetsVsPurgeTheFoeA.js
 battleSim\layoutImport.js
 battleSim\layoutTransform.js
 battleSim\layouts.js

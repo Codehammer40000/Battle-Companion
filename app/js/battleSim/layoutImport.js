@@ -81,15 +81,6 @@ function aabb(pts) {
   };
 }
 
-function aabbTouch(a, b, gap = 0.35) {
-  return !(
-    a.x + a.w + gap < b.x ||
-    b.x + b.w + gap < a.x ||
-    a.y + a.h + gap < b.y ||
-    b.y + b.h + gap < a.y
-  );
-}
-
 /**
  * Rapid Ingress URL slug → data id.
  * Slug order follows the page title (e.g. pfdia = PF vs DI, Layout A),
@@ -217,15 +208,6 @@ export function convertRapidIngressLayout(src, options = {}) {
     }
   }
 
-  const centrals = areas.filter((a) => a.isObjective && a.objectiveType === 'centre');
-  for (const a of areas) {
-    if (a.isObjective) continue;
-    if (centrals.some((c) => aabbTouch(a.bounds, c.bounds))) {
-      a.isObjective = true;
-      a.objectiveType = 'centre';
-    }
-  }
-
   const deploymentZones = [];
   for (const z of src.deploymentZones || []) {
     const pts = roundPts(rdp(z.points || [], 0.08));
@@ -236,6 +218,26 @@ export function convertRapidIngressLayout(src, options = {}) {
       role: color === 'red' ? 'attacker' : 'defender',
       polygon: pts,
       bounds: aabb(pts),
+    });
+  }
+
+  // Marker icons only for terrain pieces that carry an RI objective (circle/diamond/home).
+  const objectives = [];
+  for (const t of src.terrain || []) {
+    const obj = t.objective;
+    if (!obj || !t.points?.length) continue;
+    let otype = obj.type || 'centre';
+    if (otype === 'central') otype = 'centre';
+    const pts = t.points;
+    const x = pts.reduce((s, p) => s + p.x, 0) / pts.length;
+    const y = pts.reduce((s, p) => s + p.y, 0) / pts.length;
+    objectives.push({
+      id: `obj-${t.areaId || t.id}`,
+      type: otype,
+      owner: obj.owner || null,
+      number: obj.number || null,
+      x: Math.round(x * 100) / 100,
+      y: Math.round(y * 100) / 100,
     });
   }
 
@@ -251,7 +253,7 @@ export function convertRapidIngressLayout(src, options = {}) {
     deploymentZones,
     terrainAreas: areas,
     terrainFeatures: features,
-    objectives: [],
+    objectives,
     measurements: { lines: [], labels: [] },
   };
 }

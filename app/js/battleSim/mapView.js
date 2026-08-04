@@ -297,6 +297,7 @@ export function renderMapSvg(state, options = {}) {
             ${renderDeploymentZones(layout.deploymentZones)}
             ${renderTerrainAreas(layout.terrainAreas)}
             ${renderTerrainFeatures(layout.terrainFeatures)}
+            ${renderObjectives(layout.objectives)}
             ${renderRadii(options.radii)}
             ${renderModels(
               state.battleMap?.unitsOnMap,

@@ -1,4 +1,4 @@
-"""Convert Rapid Ingress PA-TH-B into Battle Companion layout JS (Priority Assets vs Take and Hold Layout B).
+"""Convert Rapid Ingress PA-PF-A into Battle Companion layout JS (Priority Assets vs Purge the Foe Layout A).
 
 Only terrain pieces that include an RI objective marker (circle/diamond/home) are objectives.
 """
@@ -12,11 +12,11 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 SRC = (
     ROOT
-    / "Priority Assets vs Take and Hold Layout B - 40k 11th Edition Deployment Map_files"
+    / "Priority Assets vs Purge the Foe Layout A - 40k 11th Edition Deployment Map_files"
     / "terrain-data-11e.js.download"
 )
-OUT = ROOT / "app" / "js" / "battleSim" / "layoutData" / "priorityAssetsVsTakeAndHoldB.js"
-LAYOUT_ID = "PA-TH-B"
+OUT = ROOT / "app" / "js" / "battleSim" / "layoutData" / "priorityAssetsVsPurgeTheFoeA.js"
+LAYOUT_ID = "PA-PF-A"
 
 
 def rdp(points: list[dict], epsilon: float) -> list[dict]:
@@ -142,10 +142,10 @@ def main() -> None:
         )
 
     layout = {
-        "id": "priority-assets-vs-take-and-hold-b",
-        "name": "Priority Assets vs Take and Hold Layout B",
-        "page": 5,
-        "source": "Rapid Ingress PA-TH-B (Priority Assets vs Take and Hold Layout B)",
+        "id": "priority-assets-vs-purge-the-foe-a",
+        "name": "Priority Assets vs Purge the Foe Layout A",
+        "page": 6,
+        "source": "Rapid Ingress PA-PF-A (Priority Assets vs Purge the Foe Layout A)",
         "width": src["boardWidth"],
         "height": src["boardHeight"],
         "deploymentZones": deployment_zones,
@@ -158,8 +158,8 @@ def main() -> None:
     OUT.parent.mkdir(parents=True, exist_ok=True)
     body = json.dumps(layout, separators=(",", ":"))
     OUT.write_text(
-        "/** Auto-generated from Rapid Ingress PA-TH-B — do not hand-edit polygons. */\n"
-        f"export const PRIORITY_ASSETS_VS_TAKE_AND_HOLD_B_LAYOUT = {body};\n",
+        "/** Auto-generated from Rapid Ingress PA-PF-A — do not hand-edit polygons. */\n"
+        f"export const PRIORITY_ASSETS_VS_PURGE_THE_FOE_A_LAYOUT = {body};\n",
         encoding="utf-8",
     )
     print(

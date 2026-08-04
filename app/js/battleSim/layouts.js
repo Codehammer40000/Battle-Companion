@@ -8,6 +8,7 @@ import { UNSTOPPABLE_FORCE_LAYOUT } from './layoutData/unstoppableForce.js';
 import { PURGE_VS_TAKE_AND_HOLD_C_LAYOUT } from './layoutData/purgeVsTakeAndHoldC.js';
 import { PRIORITY_ASSETS_VS_PRIORITY_ASSETS_B_LAYOUT } from './layoutData/priorityAssetsVsPriorityAssetsB.js';
 import { PRIORITY_ASSETS_VS_TAKE_AND_HOLD_B_LAYOUT } from './layoutData/priorityAssetsVsTakeAndHoldB.js';
+import { PRIORITY_ASSETS_VS_PURGE_THE_FOE_A_LAYOUT } from './layoutData/priorityAssetsVsPurgeTheFoeA.js';
 import { loadCustomLayouts } from './layoutImport.js';
 import { applyLayoutTransform, identityLayoutTransform } from './layoutTransform.js';
 
@@ -32,6 +33,7 @@ export const BUILTIN_LAYOUTS = [
   PURGE_VS_TAKE_AND_HOLD_C_LAYOUT,
   PRIORITY_ASSETS_VS_PRIORITY_ASSETS_B_LAYOUT,
   PRIORITY_ASSETS_VS_TAKE_AND_HOLD_B_LAYOUT,
+  PRIORITY_ASSETS_VS_PURGE_THE_FOE_A_LAYOUT,
 ];
 
 /** Built-in layouts only (no custom). Prefer getAllLayouts() for UI. */
