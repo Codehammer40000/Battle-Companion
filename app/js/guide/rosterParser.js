@@ -242,22 +242,41 @@ export function formatUnitStatsLine(stats) {
   return parts.join(' · ');
 }
 
+function parseWoundCharacteristic(w) {
+  if (w == null) return 0;
+  const raw = String(w).trim();
+  if (!raw || raw === '-' || raw.toUpperCase() === 'N/A') return 0;
+  const n = parseInt(raw.replace(/[^\d]/g, ''), 10);
+  return Number.isFinite(n) && n > 0 ? n : 0;
+}
+
 function parseWoundValue(w) {
-  if (w == null || w === '' || w === '-') return 1;
-  const n = parseInt(String(w).replace(/[^\d]/g, ''), 10);
-  return Number.isFinite(n) && n > 0 ? n : 1;
+  return parseWoundCharacteristic(w) || 1;
 }
 
 export { parseWoundValue };
 
+function majorityCompositionWounds(comp) {
+  if (!Array.isArray(comp) || !comp.length) return 0;
+  const majority = [...comp].sort((a, b) => (Number(b.count) || 0) - (Number(a.count) || 0))[0];
+  return parseWoundCharacteristic(majority?.wounds);
+}
+
 export function getUnitWoundsPerModel(unit) {
+  const fromComp = majorityCompositionWounds(
+    repairModelCompositionWounds(unit, unit?.modelComposition),
+  );
+  if (fromComp > 1) return fromComp;
+  const fromStats = parseWoundCharacteristic(unit?.stats?.W ?? unit?.stats?.Wounds);
+  if (fromStats > 0) return fromStats;
+  if (fromComp > 0) return fromComp;
   if (unit?.woundsPerModel > 0) return unit.woundsPerModel;
-  return parseWoundValue(unit?.stats?.W ?? unit?.stats?.Wounds);
+  return 1;
 }
 
 export function getUnitInitialModelCount(unit) {
-  const comp = unit?.modelComposition;
-  if (Array.isArray(comp) && comp.length) {
+  const comp = repairModelCompositionWounds(unit, unit?.modelComposition);
+  if (comp.length) {
     const n = comp.reduce((sum, c) => sum + Math.max(0, Number(c.count) || 0), 0);
     if (n > 0) return n;
   }
@@ -267,8 +286,8 @@ export function getUnitInitialModelCount(unit) {
 
 /** Total wound capacity across mixed profiles (e.g. 4×3W + 1×6W). */
 export function getUnitWoundCapacityFromUnit(unit) {
-  const comp = unit?.modelComposition;
-  if (Array.isArray(comp) && comp.length) {
+  const comp = repairModelCompositionWounds(unit, unit?.modelComposition);
+  if (comp.length) {
     return comp.reduce(
       (sum, c) => sum + Math.max(0, Number(c.count) || 0) * Math.max(1, Number(c.wounds) || 1),
       0,
@@ -283,8 +302,8 @@ export function getUnitWoundCapacityFromUnit(unit) {
  */
 export function getRemainingModelsFromUnit(unit, woundsTaken) {
   const dmg = Math.max(0, Number(woundsTaken) || 0);
-  const comp = unit?.modelComposition;
-  if (Array.isArray(comp) && comp.length) {
+  const comp = repairModelCompositionWounds(unit, unit?.modelComposition);
+  if (comp.length) {
     const pools = [];
     for (const c of comp) {
       const w = Math.max(1, Number(c.wounds) || 1);
@@ -310,34 +329,69 @@ export function getRemainingModelsFromUnit(unit, woundsTaken) {
   return Math.max(0, initial - Math.floor(dmg / w));
 }
 
+function getOwnUnitProfileWounds(sel) {
+  const profiles = [];
+  for (const profile of sel.profiles || []) {
+    if (profile.typeName === 'Unit') {
+      profiles.push({ name: profile.name, chars: getProfileChars(profile) });
+    }
+  }
+  if (!profiles.length) return 0;
+  const chars = pickPrimaryStats(profiles, sel.name);
+  return parseWoundCharacteristic(chars.W || chars.Wounds);
+}
+
+function getModelWounds(sel, inheritedWounds) {
+  const own = getOwnUnitProfileWounds(sel);
+  if (own > 0) return own;
+  const nestedProfiles = collectUnitStatProfiles(sel);
+  if (nestedProfiles.length) {
+    const chars = pickPrimaryStats(nestedProfiles, sel.name);
+    const nested = parseWoundCharacteristic(chars.W || chars.Wounds);
+    if (nested > 0) return nested;
+  }
+  if (inheritedWounds > 0) return inheritedWounds;
+  return 1;
+}
+
+/**
+ * Repair composition that defaulted every model to 1W while the unit profile has W > 1.
+ * New Recruit often puts the Unit W profile on the parent unit, not each child model.
+ */
+export function repairModelCompositionWounds(unit, composition) {
+  const comp = Array.isArray(composition) ? composition : [];
+  if (!comp.length) return comp;
+  const unitW = parseWoundCharacteristic(unit?.stats?.W ?? unit?.stats?.Wounds);
+  if (unitW <= 1) return comp;
+  const allMissingOrOne = comp.every((c) => parseWoundCharacteristic(c.wounds) <= 1);
+  if (!allMissingOrOne) return comp;
+  return comp.map((c) => ({ ...c, wounds: unitW }));
+}
+
 /**
  * Per model-type composition under a unit selection (count + wounds each).
  * Used for multi-profile leader units like Hyperadapted Raveners.
+ * Child models without their own Unit profile inherit W from the parent unit.
  */
-function collectModelComposition(sel, out = []) {
+function collectModelComposition(sel, out = [], inheritedWounds = 0) {
+  const fallbackWounds = getOwnUnitProfileWounds(sel) || inheritedWounds;
   let found = false;
   for (const child of sel.selections || []) {
     if (child.type === 'model') {
       found = true;
       const count = Math.max(1, child.number || 1);
-      const profiles = collectUnitStatProfiles(child);
-      const chars = profiles.length
-        ? pickPrimaryStats(profiles, child.name)
-        : {};
-      const wounds = parseWoundValue(chars.W || chars.Wounds);
+      const wounds = getModelWounds(child, fallbackWounds);
       const existing = out.find((c) => c.name === child.name && c.wounds === wounds);
       if (existing) existing.count += count;
       else out.push({ name: child.name, count, wounds });
     } else if (child.selections?.length) {
       const before = out.length;
-      collectModelComposition(child, out);
+      collectModelComposition(child, out, fallbackWounds);
       if (out.length > before) found = true;
     }
   }
   if (!found && (sel.type === 'model' || sel.type === 'unit')) {
-    const profiles = collectUnitStatProfiles(sel);
-    const chars = profiles.length ? pickPrimaryStats(profiles, sel.name) : {};
-    const wounds = parseWoundValue(chars.W || chars.Wounds);
+    const wounds = getModelWounds(sel, fallbackWounds);
     const count =
       sel.type === 'model' ? Math.max(1, sel.number || 1) : Math.max(1, countModels(sel));
     out.push({ name: sel.name, count, wounds });
@@ -527,7 +581,8 @@ export function normalizeArmyUnits(army) {
   return {
     ...army,
     units: army.units.map((u) => {
-      const modelComposition = Array.isArray(u.modelComposition) ? u.modelComposition : undefined;
+      const rawComp = Array.isArray(u.modelComposition) ? u.modelComposition : undefined;
+      const modelComposition = rawComp ? repairModelCompositionWounds(u, rawComp) : undefined;
       const withComp = modelComposition ? { ...u, modelComposition } : { ...u };
       const initialModelCount = getUnitInitialModelCount(withComp);
       return {
@@ -565,7 +620,10 @@ function parseUnit(sel) {
   const statProfiles = collectUnitStatProfiles(sel);
   const charStats = pickPrimaryStats(statProfiles, sel.name);
   const stats = buildUnitStats(charStats, unitRules, abilities);
-  const modelComposition = collectModelComposition(sel);
+  const modelComposition = repairModelCompositionWounds(
+    { stats },
+    collectModelComposition(sel),
+  );
   const compositionModels = modelComposition.reduce(
     (sum, c) => sum + Math.max(0, c.count),
     0,
@@ -576,8 +634,7 @@ function parseUnit(sel) {
   );
   // Prefer majority-profile W for "wounds per model" display helpers; capacity uses composition
   const majorityWounds =
-    modelComposition.slice().sort((a, b) => b.count - a.count)[0]?.wounds ||
-    parseWoundValue(stats.W);
+    majorityCompositionWounds(modelComposition) || parseWoundValue(stats.W);
   // Prefer composition counts when present so single multi-wound models (Knights, etc.)
   // are not over-counted from nested roster selections.
   const modelCount = compositionModels > 0 ? compositionModels : countModels(sel);
