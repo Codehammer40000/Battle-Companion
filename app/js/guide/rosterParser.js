@@ -3,6 +3,7 @@
  */
 
 import { cleanRuleText } from './abilityMapper.js';
+import { getCoreKeywordRuleIndex } from './coreKeywordRules.js';
 
 const CONFIG_NAMES = new Set(['Battle Size', 'Detachment', 'Force Disposition', 'Show/Hide Options']);
 
@@ -549,9 +550,19 @@ export function getUnitKeywordRules(unit) {
   return indexKeywordRules(unit?.rules);
 }
 
-/** Merge army-wide + unit rule indexes so weapon/unit keyword chips resolve more often. */
+/** Merge core glossary + army-wide + unit rules so keyword chips resolve even if roster omits text. */
 export function buildKeywordRuleIndex(unit, army) {
+  const core = {};
+  for (const [name, rule] of Object.entries(getCoreKeywordRuleIndex())) {
+    if (!rule?.name || !rule.description) continue;
+    core[name] = {
+      id: rule.id,
+      name: rule.name,
+      description: cleanRuleText(rule.description),
+    };
+  }
   return {
+    ...core,
     ...indexKeywordRules(army?.armyRules || army?.forceRules || []),
     ...indexKeywordRules(army?.detachmentRules || []),
     ...getUnitKeywordRules(unit),
