@@ -868,6 +868,15 @@ function bindBattleSimEvents(root, state, dispatch) {
   root.querySelector('[data-action="map-reset-orientation"]')?.addEventListener('click', () =>
     dispatch({ type: 'MAP_RESET_ORIENTATION' }),
   );
+  root.querySelector('[data-action="map-rotate-model"]')?.addEventListener('click', (e) => {
+    const btn = e.currentTarget;
+    dispatch({
+      type: 'MAP_ROTATE_MODEL',
+      unitKey: btn.dataset.unitKey,
+      modelId: btn.dataset.modelId,
+      delta: 90,
+    });
+  });
   root.querySelector('[data-action="add-special-marker"]')?.addEventListener('click', () => {
     const name = prompt('Special marker name', 'OOM target');
     if (name) dispatch({ type: 'MAP_ADD_SPECIAL_MARKER', name });
@@ -1065,10 +1074,13 @@ function ensureMapPointerHandlers() {
         const ny = m.y + dy;
         moves.push({ id: m.id, x: nx, y: ny });
         const g = findModelGroup(svg, drag.unitKey, m.id);
-        g?.querySelectorAll('circle').forEach((c) => {
-          c.setAttribute('cx', String(nx * ppi));
-          c.setAttribute('cy', String(ny * ppi));
-        });
+        if (!g) continue;
+        const rot = Number(m.rotation) || 0;
+        if (m.shape === 'rect' || g.dataset.shape === 'rect') {
+          g.setAttribute('transform', `translate(${nx * ppi} ${ny * ppi}) rotate(${rot})`);
+        } else {
+          g.setAttribute('transform', `translate(${nx * ppi} ${ny * ppi})`);
+        }
       }
       drag.liveMoves = moves;
     }
@@ -1109,6 +1121,26 @@ function ensureMapPointerHandlers() {
 
   window.addEventListener('pointercancel', () => {
     mapInteractionRuntime.drag = null;
+  });
+
+  window.addEventListener('keydown', (e) => {
+    if (e.key !== 'r' && e.key !== 'R') return;
+    if (e.target && /^(INPUT|TEXTAREA|SELECT)$/i.test(e.target.tagName)) return;
+    const state = mapInteractionRuntime.state;
+    const dispatch = mapInteractionRuntime.dispatch;
+    if (!state || !dispatch) return;
+    const bm = state.battleMap;
+    if (!bm?.selectedUnitKey || !bm?.selectedModelId) return;
+    const entry = bm.unitsOnMap?.[bm.selectedUnitKey];
+    const model = entry?.models?.find((m) => m.id === bm.selectedModelId);
+    if (!model || (model.shape !== 'rect' && !(model.widthIn > 0))) return;
+    e.preventDefault();
+    dispatch({
+      type: 'MAP_ROTATE_MODEL',
+      unitKey: bm.selectedUnitKey,
+      modelId: bm.selectedModelId,
+      delta: 90,
+    });
   });
 }
 

@@ -16,10 +16,11 @@ import {
   buildDeployedModels,
   getStagingOrigin,
   boardSizeForLayout,
-  getModelMarkerRadius,
+  getModelFootprint,
   ensureUniqueModelIds,
   migrateBattleMapModelIds,
   modelBelongsToUnit,
+  unitIsFrame,
 } from '../battleSim/battleMapState.js';
 import { getLayoutById, getActiveBattleLayout } from '../battleSim/layouts.js';
 import {
@@ -514,16 +515,21 @@ function syncBattleMapModels(state) {
           } else if (mine[0]?.role) {
             role = mine[0].role;
           }
-          const radiusIn = getModelMarkerRadius(unit, role);
-          const step = (anchor?.radiusIn || radiusIn) * 2 + 0.4;
+          const footprint = getModelFootprint(unit, role);
+          const step =
+            Math.max(
+              footprint.widthIn || 0,
+              footprint.lengthIn || 0,
+              (anchor?.radiusIn || footprint.radiusIn) * 2,
+            ) + 0.4;
           const n = i - mine.length + 1;
           const angle = n * 1.2;
           added.push({
-            id: `${uid}-m${i}`,
+            id: `${entry.player}:${uid}-m${i}`,
             unitId: uid,
             player: entry.player,
             role,
-            radiusIn,
+            ...footprint,
             x: ax + Math.cos(angle) * step,
             y: ay + Math.sin(angle) * step,
           });
@@ -1208,7 +1214,24 @@ export function guideReducer(state, action) {
       const group = getUnitGroupInfo(army, attachments, unitId);
       const key = mapUnitKey(player, group.groupId);
       const battleMap = state.battleMap || createEmptyBattleMap();
-      const entry = battleMap.unitsOnMap?.[key];
+      let entry = battleMap.unitsOnMap?.[key];
+      // Upgrade legacy Hull/vehicle circles to Frame rectangles when datasheet has Frame.
+      if (entry?.models?.length && army?.units) {
+        let footprintChanged = false;
+        const models = entry.models.map((m) => {
+          const u = army.units.find((x) => x.id === m.unitId);
+          if (!unitIsFrame(u) || m.shape === 'rect') return m;
+          footprintChanged = true;
+          return {
+            ...m,
+            ...getModelFootprint(u, m.role || 'vehicle'),
+            rotation: Number(m.rotation) || 0,
+          };
+        });
+        if (footprintChanged) {
+          entry = { ...entry, models };
+        }
+      }
       let modelId = action.modelId || null;
       if (!modelId && entry?.models?.length) {
         modelId =
@@ -1242,10 +1265,15 @@ export function guideReducer(state, action) {
           ? battleMap.selectedWeapon
           : null;
 
+      const unitsOnMap = entry
+        ? { ...battleMap.unitsOnMap, [key]: entry }
+        : battleMap.unitsOnMap;
+
       const next = {
         ...state,
         battleMap: {
           ...battleMap,
+          unitsOnMap,
           selectedUnitKey: entry ? key : null,
           selectedModelId: entry ? modelId : null,
           selectedWeapon,
@@ -1328,6 +1356,42 @@ export function guideReducer(state, action) {
         next.battleMap = { ...next.battleMap, losPreview: los };
       }
       return next;
+    }
+
+    case 'MAP_ROTATE_MODEL': {
+      const battleMap = state.battleMap || createEmptyBattleMap();
+      const unitKey = action.unitKey || battleMap.selectedUnitKey;
+      const modelId = action.modelId || battleMap.selectedModelId;
+      const entry = battleMap.unitsOnMap?.[unitKey];
+      if (!entry || !modelId) return state;
+      const army = state[entry.player]?.army;
+      const delta = Number(action.delta);
+      const turn = Number.isFinite(delta) ? delta : 90;
+      let changed = false;
+      const models = entry.models.map((m) => {
+        if (m.id !== modelId) return m;
+        const unit = army?.units?.find((u) => u.id === m.unitId);
+        let next = m;
+        if (unitIsFrame(unit) && m.shape !== 'rect') {
+          const footprint = getModelFootprint(unit, m.role || 'vehicle');
+          next = { ...m, ...footprint, rotation: m.rotation || 0 };
+          changed = true;
+        }
+        if (next.shape !== 'rect') return m;
+        const rotation = (((Number(next.rotation) || 0) + turn) % 360 + 360) % 360;
+        changed = true;
+        return { ...next, rotation };
+      });
+      if (!changed) return state;
+      return {
+        ...state,
+        battleMap: {
+          ...battleMap,
+          unitsOnMap: { ...battleMap.unitsOnMap, [unitKey]: { ...entry, models } },
+          selectedUnitKey: unitKey,
+          selectedModelId: modelId,
+        },
+      };
     }
 
     case 'MAP_SET_LOS':

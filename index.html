@@ -3144,6 +3144,13 @@ const MARKER_RADIUS = {
   vehicle: 2,
 };
 
+/** Redemptor / typical dreadnought round base used as Frame size reference. */
+const DREADNOUGHT_BASE_MM = 90;
+/** Frame hull footprint ≈ 1.25× dreadnought base on the short side. */
+const FRAME_SCALE = 1.25;
+/** Tank-like length/width ratio for Frame rectangles. */
+const FRAME_ASPECT = 1.5;
+
 /** Convert datasheet base diameter (mm) to map marker radius in inches. */
 function baseMmToRadiusInches(baseMm) {
   const mm = Number(baseMm);
@@ -3151,6 +3158,17 @@ function baseMmToRadiusInches(baseMm) {
   // Base size is diameter; marker uses radius. Clamp for clickability on the 60×44" board.
   const radius = mm / 25.4 / 2;
   return Math.max(0.28, Math.min(radius, 3));
+}
+
+function unitIsFrame(unit) {
+  return hasKeyword(unit, /^frame$/i);
+}
+
+/** Frame hull size in inches (width × length). */
+function getFrameFootprintInches() {
+  const widthIn = (DREADNOUGHT_BASE_MM * FRAME_SCALE) / 25.4;
+  const lengthIn = widthIn * FRAME_ASPECT;
+  return { widthIn, lengthIn };
 }
 
 function createEmptyBattleMap() {
@@ -3205,6 +3223,11 @@ function getUnitInitialCountHint(unit) {
 }
 
 function getModelMarkerRadius(unit, role = 'standard') {
+  if (unitIsFrame(unit)) {
+    const { widthIn, lengthIn } = getFrameFootprintInches();
+    return Math.hypot(widthIn / 2, lengthIn / 2);
+  }
+
   const fromBase = baseMmToRadiusInches(unit?.baseMm);
   if (fromBase != null) return fromBase;
 
@@ -3222,6 +3245,30 @@ function getModelMarkerRadius(unit, role = 'standard') {
     return MARKER_RADIUS.leader;
   }
   return MARKER_RADIUS.standard;
+}
+
+/**
+ * Full footprint for deploy/render: circles for normal bases, rotatable rect for Frame.
+ * radiusIn is kept as an effective half-extent for range rings / LoS helpers.
+ */
+function getModelFootprint(unit, role = 'standard') {
+  if (unitIsFrame(unit)) {
+    const { widthIn, lengthIn } = getFrameFootprintInches();
+    return {
+      shape: 'rect',
+      widthIn,
+      lengthIn,
+      rotation: 0,
+      radiusIn: Math.hypot(widthIn / 2, lengthIn / 2),
+    };
+  }
+  return {
+    shape: 'circle',
+    widthIn: 0,
+    lengthIn: 0,
+    rotation: 0,
+    radiusIn: getModelMarkerRadius(unit, role),
+  };
 }
 
 function getStagingOrigin(player, board) {
@@ -3245,7 +3292,7 @@ function buildDeployedModels(unit, player, remainingModels, stagingOrigin, attac
   const pushOne = (u, modelIndex, forceRole) => {
     let role = forceRole;
     if (!role) {
-      if (hasKeyword(u, /^(monster|vehicle)$/i)) role = 'vehicle';
+      if (unitIsFrame(u) || hasKeyword(u, /^(monster|vehicle)$/i)) role = 'vehicle';
       else if (unitCanLeadLocal(u) && (getUnitInitialCountHint(u) <= 1 || modelIndex === 0)) {
         role = unitIsSupportLocal(u) ? 'support' : 'leader';
       } else role = 'standard';
@@ -3254,7 +3301,8 @@ function buildDeployedModels(unit, player, remainingModels, stagingOrigin, attac
     if (!forceRole && !unitCanLeadLocal(u)) role = 'standard';
     if (!forceRole && unitCanLeadLocal(u) && modelIndex > 0) role = 'standard';
 
-    const radiusIn = getModelMarkerRadius(u, role);
+    const footprint = getModelFootprint(u, role);
+    const step = Math.max(footprint.widthIn || 0, footprint.lengthIn || 0, footprint.radiusIn * 2) + 0.4;
     const col = index % 4;
     const row = Math.floor(index / 4);
     models.push({
@@ -3262,9 +3310,9 @@ function buildDeployedModels(unit, player, remainingModels, stagingOrigin, attac
       unitId: u.id,
       player,
       role,
-      radiusIn,
-      x: stagingOrigin.x + col * (radiusIn * 2 + 0.4),
-      y: stagingOrigin.y + row * (radiusIn * 2 + 0.4),
+      ...footprint,
+      x: stagingOrigin.x + col * step,
+      y: stagingOrigin.y + row * step,
     });
     index += 1;
   };
@@ -4019,6 +4067,79 @@ function sampleCircle(cx, cy, r, n) {
   return pts;
 }
 
+/** Sample perimeter of a Frame rect (SVG rotate: +degrees clockwise with y-down). */
+function sampleRotatedRect(model, n = 24) {
+  const hw = Math.max(0, Number(model.widthIn) || 0) / 2;
+  const hl = Math.max(0, Number(model.lengthIn) || 0) / 2;
+  if (hw <= 0.01 && hl <= 0.01) {
+    return [{ x: model.x, y: model.y }];
+  }
+  const rot = ((Number(model.rotation) || 0) * Math.PI) / 180;
+  const cos = Math.cos(rot);
+  const sin = Math.sin(rot);
+  const toWorld = (lx, ly) => ({
+    x: model.x + lx * cos - ly * sin,
+    y: model.y + lx * sin + ly * cos,
+  });
+  const peri = 2 * (hw * 2 + hl * 2);
+  const pts = [];
+  const count = Math.max(8, n);
+  for (let i = 0; i < count; i++) {
+    let d = (i / count) * peri;
+    let lx;
+    let ly;
+    const w = hw * 2;
+    const h = hl * 2;
+    if (d < w) {
+      lx = -hw + d;
+      ly = -hl;
+    } else if (d < w + h) {
+      lx = hw;
+      ly = -hl + (d - w);
+    } else if (d < w + h + w) {
+      lx = hw - (d - w - h);
+      ly = hl;
+    } else {
+      lx = -hw;
+      ly = hl - (d - w - h - w);
+    }
+    pts.push(toWorld(lx, ly));
+  }
+  return pts;
+}
+
+function sampleModelPerimeter(model, n = 28) {
+  if (model?.shape === 'rect' && model.widthIn > 0 && model.lengthIn > 0) {
+    return sampleRotatedRect(model, n);
+  }
+  return sampleCircle(model.x, model.y, model.radiusIn, n);
+}
+
+function edgePointOnModel(model, toward) {
+  if (model?.shape === 'rect' && model.widthIn > 0 && model.lengthIn > 0) {
+    const hw = model.widthIn / 2;
+    const hl = model.lengthIn / 2;
+    const rot = ((Number(model.rotation) || 0) * Math.PI) / 180;
+    const cos = Math.cos(rot);
+    const sin = Math.sin(rot);
+    const dx = toward.x - model.x;
+    const dy = toward.y - model.y;
+    const lx = dx * cos + dy * sin;
+    const ly = -dx * sin + dy * cos;
+    const sx = Math.abs(lx) > 1e-9 ? hw / Math.abs(lx) : Infinity;
+    const sy = Math.abs(ly) > 1e-9 ? hl / Math.abs(ly) : Infinity;
+    const s = Math.min(sx, sy);
+    if (!Number.isFinite(s) || s <= 0) return { x: model.x, y: model.y };
+    const elx = lx * s;
+    const ely = ly * s;
+    return {
+      x: model.x + elx * cos - ely * sin,
+      y: model.y + elx * sin + ely * cos,
+    };
+  }
+  return edgePointToward({ x: model.x, y: model.y }, model.radiusIn || 0, toward);
+}
+
 function pointInFeature(point, feature) {
   if (feature?.polygon?.length >= 3) return pointInPolygon(point, feature.polygon);
   if (feature?.bounds) return pointInRect(point, feature.bounds);
@@ -4027,15 +4148,9 @@ function pointInFeature(point, feature) {
 
 function modelTouchesArea(model, area) {
   if (!model || !area) return false;
-  const r = Math.max(0, Number(model.radiusIn) || 0);
   if (pointInArea({ x: model.x, y: model.y }, area)) return true;
-  if (r <= 0) return false;
-  // Base circle samples — toes-in counts as inside
-  for (let i = 0; i < 20; i++) {
-    const a = (i / 20) * Math.PI * 2;
-    if (pointInArea({ x: model.x + Math.cos(a) * r, y: model.y + Math.sin(a) * r }, area)) {
-      return true;
-    }
+  for (const p of sampleModelPerimeter(model, 20)) {
+    if (pointInArea(p, area)) return true;
   }
   return false;
 }
@@ -4193,7 +4308,7 @@ function firstObstructionAlongRay(from, to, layout, attackerModel) {
  * Best edge-to-edge attempt from one attacker model to one target model.
  */
 function rayBetweenModels(attacker, targetModel, layout) {
-  const tSamples = sampleCircle(targetModel.x, targetModel.y, targetModel.radiusIn, 28);
+  const tSamples = sampleModelPerimeter(targetModel, 28);
   // Also try toward center for peeking edges
   tSamples.push({ x: targetModel.x, y: targetModel.y });
 
@@ -4201,11 +4316,7 @@ function rayBetweenModels(attacker, targetModel, layout) {
   let bestBlocked = null;
 
   for (const to of tSamples) {
-    const from = edgePointToward(
-      { x: attacker.x, y: attacker.y },
-      attacker.radiusIn || 0,
-      to,
-    );
+    const from = edgePointOnModel(attacker, to);
     const hit = firstObstructionAlongRay(from, to, layout, attacker);
     const dist = distance(from, to);
     if (!hit) {
@@ -4459,6 +4570,15 @@ function renderLos(los) {
     .join('')}</g>`;
 }
 
+function renderRectRing(hw, hl, pad, stroke, opts = {}) {
+  const w = (hw + pad) * 2;
+  const h = (hl + pad) * 2;
+  const dash = opts.dash ? ` stroke-dasharray="${opts.dash}"` : '';
+  const fill = opts.fill || 'none';
+  const sw = opts.strokeWidth ?? 1.5;
+  return `<rect x="${-w / 2}" y="${-h / 2}" width="${w}" height="${h}" fill="${fill}" stroke="${stroke}" stroke-width="${sw}"${dash} pointer-events="none" />`;
+}
+
 function renderModels(unitsOnMap, selectedUnitKey, selectedModelId, highlights = {}) {
   const mustTest = highlights.mustTestKeys || new Set();
   const shocked = highlights.shockedKeys || new Set();
@@ -4469,29 +4589,54 @@ function renderModels(unitsOnMap, selectedUnitKey, selectedModelId, highlights =
         const isUnitSel = key === selectedUnitKey;
         const isModelSel = key === selectedUnitKey && m.id === selectedModelId;
         const fill = entry.player === 'player1' ? '#3b82f6' : '#22c55e';
+        const isRect = m.shape === 'rect' && m.widthIn > 0 && m.lengthIn > 0;
         const r = toPx(m.radiusIn);
         const cx = toPx(m.x);
         const cy = toPx(m.y);
-        const mustTestRing = mustTest.has(key)
-          ? `<circle cx="${cx}" cy="${cy}" r="${r + 5}" fill="none" stroke="#5a8fd0" stroke-width="2.5" stroke-dasharray="5 3" pointer-events="none" />`
-          : '';
-        const shockedRing = shocked.has(key)
-          ? `<circle cx="${cx}" cy="${cy}" r="${r + 3.5}" fill="rgba(45, 75, 130, 0.4)" stroke="#5a8fd0" stroke-width="2.5" pointer-events="none" />`
-          : '';
-        // Clear LoS: models that can shoot this target
-        const losRing = losCanSee.has(m.id)
-          ? `<circle cx="${cx}" cy="${cy}" r="${r + 4}" fill="none" stroke="#ff1a1a" stroke-width="2.25" pointer-events="none" />`
-          : '';
-        const ring = isUnitSel
-          ? `<circle cx="${cx}" cy="${cy}" r="${r + 2}" fill="none" stroke="#f8fafc" stroke-width="1.5" pointer-events="none" />`
-          : '';
-        const sel = isModelSel
-          ? `<circle cx="${cx}" cy="${cy}" r="${r + 3.5}" fill="none" stroke="#fbbf24" stroke-width="1.5" stroke-dasharray="3 2" pointer-events="none" />`
-          : '';
+        const rot = Number(m.rotation) || 0;
+        const hw = toPx((m.widthIn || 0) / 2);
+        const hl = toPx((m.lengthIn || 0) / 2);
+        let body;
+        let rings;
+        if (isRect) {
+          body = `<rect x="${-hw}" y="${-hl}" width="${hw * 2}" height="${hl * 2}" fill="${fill}" stroke="#0a0a0a" stroke-width="1.5" />`;
+          // Nose mark so facing is obvious when rotating
+          body += `<line x1="0" y1="${-hl}" x2="0" y2="${-hl + Math.min(hl * 0.35, toPx(0.45))}" stroke="#0a0a0a" stroke-width="2" pointer-events="none" />`;
+          rings = [
+            mustTest.has(key) ? renderRectRing(hw, hl, 5, '#5a8fd0', { dash: '5 3', strokeWidth: 2.5 }) : '',
+            shocked.has(key)
+              ? renderRectRing(hw, hl, 3.5, '#5a8fd0', { fill: 'rgba(45, 75, 130, 0.4)', strokeWidth: 2.5 })
+              : '',
+            losCanSee.has(m.id) ? renderRectRing(hw, hl, 4, '#ff1a1a', { strokeWidth: 2.25 }) : '',
+            isUnitSel ? renderRectRing(hw, hl, 2, '#f8fafc') : '',
+            isModelSel ? renderRectRing(hw, hl, 3.5, '#fbbf24', { dash: '3 2' }) : '',
+          ].join('');
+        } else {
+          body = `<circle cx="0" cy="0" r="${r}" fill="${fill}" stroke="#0a0a0a" stroke-width="1.5" />`;
+          rings = [
+            mustTest.has(key)
+              ? `<circle cx="0" cy="0" r="${r + 5}" fill="none" stroke="#5a8fd0" stroke-width="2.5" stroke-dasharray="5 3" pointer-events="none" />`
+              : '',
+            shocked.has(key)
+              ? `<circle cx="0" cy="0" r="${r + 3.5}" fill="rgba(45, 75, 130, 0.4)" stroke="#5a8fd0" stroke-width="2.5" pointer-events="none" />`
+              : '',
+            losCanSee.has(m.id)
+              ? `<circle cx="0" cy="0" r="${r + 4}" fill="none" stroke="#ff1a1a" stroke-width="2.25" pointer-events="none" />`
+              : '',
+            isUnitSel
+              ? `<circle cx="0" cy="0" r="${r + 2}" fill="none" stroke="#f8fafc" stroke-width="1.5" pointer-events="none" />`
+              : '',
+            isModelSel
+              ? `<circle cx="0" cy="0" r="${r + 3.5}" fill="none" stroke="#fbbf24" stroke-width="1.5" stroke-dasharray="3 2" pointer-events="none" />`
+              : '',
+          ].join('');
+        }
+        const transform = isRect
+          ? `translate(${cx} ${cy}) rotate(${rot})`
+          : `translate(${cx} ${cy})`;
         return `
-          <g class="map-model" data-unit-key="${esc(key)}" data-model-id="${esc(m.id)}" data-player="${esc(entry.player)}" data-unit-id="${esc(entry.unitId)}" style="cursor:grab">
-            ${mustTestRing}${shockedRing}${losRing}${ring}${sel}
-            <circle cx="${cx}" cy="${cy}" r="${r}" fill="${fill}" stroke="#0a0a0a" stroke-width="1.5" />
+          <g class="map-model" data-unit-key="${esc(key)}" data-model-id="${esc(m.id)}" data-player="${esc(entry.player)}" data-unit-id="${esc(entry.unitId)}" data-shape="${isRect ? 'rect' : 'circle'}" data-rotation="${rot}" style="cursor:grab" transform="${transform}">
+            ${rings}${body}
           </g>`;
       }),
     )
@@ -4527,6 +4672,14 @@ function renderMapSvg(state, options = {}) {
   const selectedSpecial = (state.battleMap?.specialMarkers || []).find(
     (m) => m.id === state.battleMap?.selectedModelId,
   );
+  const selectedEntry = state.battleMap?.selectedUnitKey
+    ? state.battleMap?.unitsOnMap?.[state.battleMap.selectedUnitKey]
+    : null;
+  const selectedModel = selectedEntry?.models?.find((m) => m.id === state.battleMap?.selectedModelId);
+  const canRotateModel =
+    selectedModel &&
+    (selectedModel.shape === 'rect' ||
+      (selectedModel.widthIn > 0 && selectedModel.lengthIn > 0));
   const orient = state.battleMap?.layoutTransform?.ops?.length
     ? `<span class="battle-map-orient-badge" title="Layout orientation applied">Oriented</span>`
     : '';
@@ -4548,6 +4701,11 @@ function renderMapSvg(state, options = {}) {
         <button type="button" data-action="map-zoom" data-delta="-0.15">Zoom −</button>
         <button type="button" data-action="map-reset-camera">Reset view</button>
         <button type="button" data-action="add-special-marker">Add special marker</button>
+        ${
+          canRotateModel
+            ? `<button type="button" data-action="map-rotate-model" data-unit-key="${esc(state.battleMap.selectedUnitKey)}" data-model-id="${esc(selectedModel.id)}" title="Rotate Frame hull 90° clockwise (R)">Rotate model</button>`
+            : ''
+        }
         <button type="button" class="help-q-btn help-q-btn-toolbar" data-action="open-help-guide" title="Instructions / Guides" aria-label="Open instructions and guides">?</button>
         ${
           selectedSpecial
@@ -6749,12 +6907,13 @@ const HELP_GUIDE_SECTIONS = [
       {
         id: 'map-move',
         title: 'Select and move models',
-        keywords: 'drag move pan select unit right click',
+        keywords: 'drag move pan select unit right click rotate frame',
         body: [
           'Left-drag a model to move that model. Right-drag (or secondary button drag) moves the whole unit group.',
           'Click a model or use the side list to select a unit; the selected unit and model are highlighted.',
           'Click empty board space (without dragging) to clear selection.',
           'Drag empty space to pan. Use Zoom + / −, mouse wheel over the map, or Reset view for the camera.',
+          'Frame hulls (e.g. Land Raiders) deploy as rectangles ~1.25× a dreadnought base. Select one and use Rotate model or press R to turn 90°.',
         ],
       },
       {
@@ -7590,16 +7749,21 @@ function syncBattleMapModels(state) {
           } else if (mine[0]?.role) {
             role = mine[0].role;
           }
-          const radiusIn = getModelMarkerRadius(unit, role);
-          const step = (anchor?.radiusIn || radiusIn) * 2 + 0.4;
+          const footprint = getModelFootprint(unit, role);
+          const step =
+            Math.max(
+              footprint.widthIn || 0,
+              footprint.lengthIn || 0,
+              (anchor?.radiusIn || footprint.radiusIn) * 2,
+            ) + 0.4;
           const n = i - mine.length + 1;
           const angle = n * 1.2;
           added.push({
-            id: `${uid}-m${i}`,
+            id: `${entry.player}:${uid}-m${i}`,
             unitId: uid,
             player: entry.player,
             role,
-            radiusIn,
+            ...footprint,
             x: ax + Math.cos(angle) * step,
             y: ay + Math.sin(angle) * step,
           });
@@ -8284,7 +8448,24 @@ function guideReducer(state, action) {
       const group = getUnitGroupInfo(army, attachments, unitId);
       const key = mapUnitKey(player, group.groupId);
       const battleMap = state.battleMap || createEmptyBattleMap();
-      const entry = battleMap.unitsOnMap?.[key];
+      let entry = battleMap.unitsOnMap?.[key];
+      // Upgrade legacy Hull/vehicle circles to Frame rectangles when datasheet has Frame.
+      if (entry?.models?.length && army?.units) {
+        let footprintChanged = false;
+        const models = entry.models.map((m) => {
+          const u = army.units.find((x) => x.id === m.unitId);
+          if (!unitIsFrame(u) || m.shape === 'rect') return m;
+          footprintChanged = true;
+          return {
+            ...m,
+            ...getModelFootprint(u, m.role || 'vehicle'),
+            rotation: Number(m.rotation) || 0,
+          };
+        });
+        if (footprintChanged) {
+          entry = { ...entry, models };
+        }
+      }
       let modelId = action.modelId || null;
       if (!modelId && entry?.models?.length) {
         modelId =
@@ -8318,10 +8499,15 @@ function guideReducer(state, action) {
           ? battleMap.selectedWeapon
           : null;
 
+      const unitsOnMap = entry
+        ? { ...battleMap.unitsOnMap, [key]: entry }
+        : battleMap.unitsOnMap;
+
       const next = {
         ...state,
         battleMap: {
           ...battleMap,
+          unitsOnMap,
           selectedUnitKey: entry ? key : null,
           selectedModelId: entry ? modelId : null,
           selectedWeapon,
@@ -8404,6 +8590,42 @@ function guideReducer(state, action) {
         next.battleMap = { ...next.battleMap, losPreview: los };
       }
       return next;
+    }
+
+    case 'MAP_ROTATE_MODEL': {
+      const battleMap = state.battleMap || createEmptyBattleMap();
+      const unitKey = action.unitKey || battleMap.selectedUnitKey;
+      const modelId = action.modelId || battleMap.selectedModelId;
+      const entry = battleMap.unitsOnMap?.[unitKey];
+      if (!entry || !modelId) return state;
+      const army = state[entry.player]?.army;
+      const delta = Number(action.delta);
+      const turn = Number.isFinite(delta) ? delta : 90;
+      let changed = false;
+      const models = entry.models.map((m) => {
+        if (m.id !== modelId) return m;
+        const unit = army?.units?.find((u) => u.id === m.unitId);
+        let next = m;
+        if (unitIsFrame(unit) && m.shape !== 'rect') {
+          const footprint = getModelFootprint(unit, m.role || 'vehicle');
+          next = { ...m, ...footprint, rotation: m.rotation || 0 };
+          changed = true;
+        }
+        if (next.shape !== 'rect') return m;
+        const rotation = (((Number(next.rotation) || 0) + turn) % 360 + 360) % 360;
+        changed = true;
+        return { ...next, rotation };
+      });
+      if (!changed) return state;
+      return {
+        ...state,
+        battleMap: {
+          ...battleMap,
+          unitsOnMap: { ...battleMap.unitsOnMap, [unitKey]: { ...entry, models } },
+          selectedUnitKey: unitKey,
+          selectedModelId: modelId,
+        },
+      };
     }
 
     case 'MAP_SET_LOS':
@@ -9440,6 +9662,15 @@ function bindBattleSimEvents(root, state, dispatch) {
   root.querySelector('[data-action="map-reset-orientation"]')?.addEventListener('click', () =>
     dispatch({ type: 'MAP_RESET_ORIENTATION' }),
   );
+  root.querySelector('[data-action="map-rotate-model"]')?.addEventListener('click', (e) => {
+    const btn = e.currentTarget;
+    dispatch({
+      type: 'MAP_ROTATE_MODEL',
+      unitKey: btn.dataset.unitKey,
+      modelId: btn.dataset.modelId,
+      delta: 90,
+    });
+  });
   root.querySelector('[data-action="add-special-marker"]')?.addEventListener('click', () => {
     const name = prompt('Special marker name', 'OOM target');
     if (name) dispatch({ type: 'MAP_ADD_SPECIAL_MARKER', name });
@@ -9637,10 +9868,13 @@ function ensureMapPointerHandlers() {
         const ny = m.y + dy;
         moves.push({ id: m.id, x: nx, y: ny });
         const g = findModelGroup(svg, drag.unitKey, m.id);
-        g?.querySelectorAll('circle').forEach((c) => {
-          c.setAttribute('cx', String(nx * ppi));
-          c.setAttribute('cy', String(ny * ppi));
-        });
+        if (!g) continue;
+        const rot = Number(m.rotation) || 0;
+        if (m.shape === 'rect' || g.dataset.shape === 'rect') {
+          g.setAttribute('transform', `translate(${nx * ppi} ${ny * ppi}) rotate(${rot})`);
+        } else {
+          g.setAttribute('transform', `translate(${nx * ppi} ${ny * ppi})`);
+        }
       }
       drag.liveMoves = moves;
     }
@@ -9681,6 +9915,26 @@ function ensureMapPointerHandlers() {
 
   window.addEventListener('pointercancel', () => {
     mapInteractionRuntime.drag = null;
+  });
+
+  window.addEventListener('keydown', (e) => {
+    if (e.key !== 'r' && e.key !== 'R') return;
+    if (e.target && /^(INPUT|TEXTAREA|SELECT)$/i.test(e.target.tagName)) return;
+    const state = mapInteractionRuntime.state;
+    const dispatch = mapInteractionRuntime.dispatch;
+    if (!state || !dispatch) return;
+    const bm = state.battleMap;
+    if (!bm?.selectedUnitKey || !bm?.selectedModelId) return;
+    const entry = bm.unitsOnMap?.[bm.selectedUnitKey];
+    const model = entry?.models?.find((m) => m.id === bm.selectedModelId);
+    if (!model || (model.shape !== 'rect' && !(model.widthIn > 0))) return;
+    e.preventDefault();
+    dispatch({
+      type: 'MAP_ROTATE_MODEL',
+      unitKey: bm.selectedUnitKey,
+      modelId: bm.selectedModelId,
+      delta: 90,
+    });
   });
 }
 

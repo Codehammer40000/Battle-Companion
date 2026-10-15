@@ -147,6 +147,15 @@ function renderLos(los) {
     .join('')}</g>`;
 }
 
+function renderRectRing(hw, hl, pad, stroke, opts = {}) {
+  const w = (hw + pad) * 2;
+  const h = (hl + pad) * 2;
+  const dash = opts.dash ? ` stroke-dasharray="${opts.dash}"` : '';
+  const fill = opts.fill || 'none';
+  const sw = opts.strokeWidth ?? 1.5;
+  return `<rect x="${-w / 2}" y="${-h / 2}" width="${w}" height="${h}" fill="${fill}" stroke="${stroke}" stroke-width="${sw}"${dash} pointer-events="none" />`;
+}
+
 function renderModels(unitsOnMap, selectedUnitKey, selectedModelId, highlights = {}) {
   const mustTest = highlights.mustTestKeys || new Set();
   const shocked = highlights.shockedKeys || new Set();
@@ -157,29 +166,54 @@ function renderModels(unitsOnMap, selectedUnitKey, selectedModelId, highlights =
         const isUnitSel = key === selectedUnitKey;
         const isModelSel = key === selectedUnitKey && m.id === selectedModelId;
         const fill = entry.player === 'player1' ? '#3b82f6' : '#22c55e';
+        const isRect = m.shape === 'rect' && m.widthIn > 0 && m.lengthIn > 0;
         const r = toPx(m.radiusIn);
         const cx = toPx(m.x);
         const cy = toPx(m.y);
-        const mustTestRing = mustTest.has(key)
-          ? `<circle cx="${cx}" cy="${cy}" r="${r + 5}" fill="none" stroke="#5a8fd0" stroke-width="2.5" stroke-dasharray="5 3" pointer-events="none" />`
-          : '';
-        const shockedRing = shocked.has(key)
-          ? `<circle cx="${cx}" cy="${cy}" r="${r + 3.5}" fill="rgba(45, 75, 130, 0.4)" stroke="#5a8fd0" stroke-width="2.5" pointer-events="none" />`
-          : '';
-        // Clear LoS: models that can shoot this target
-        const losRing = losCanSee.has(m.id)
-          ? `<circle cx="${cx}" cy="${cy}" r="${r + 4}" fill="none" stroke="#ff1a1a" stroke-width="2.25" pointer-events="none" />`
-          : '';
-        const ring = isUnitSel
-          ? `<circle cx="${cx}" cy="${cy}" r="${r + 2}" fill="none" stroke="#f8fafc" stroke-width="1.5" pointer-events="none" />`
-          : '';
-        const sel = isModelSel
-          ? `<circle cx="${cx}" cy="${cy}" r="${r + 3.5}" fill="none" stroke="#fbbf24" stroke-width="1.5" stroke-dasharray="3 2" pointer-events="none" />`
-          : '';
+        const rot = Number(m.rotation) || 0;
+        const hw = toPx((m.widthIn || 0) / 2);
+        const hl = toPx((m.lengthIn || 0) / 2);
+        let body;
+        let rings;
+        if (isRect) {
+          body = `<rect x="${-hw}" y="${-hl}" width="${hw * 2}" height="${hl * 2}" fill="${fill}" stroke="#0a0a0a" stroke-width="1.5" />`;
+          // Nose mark so facing is obvious when rotating
+          body += `<line x1="0" y1="${-hl}" x2="0" y2="${-hl + Math.min(hl * 0.35, toPx(0.45))}" stroke="#0a0a0a" stroke-width="2" pointer-events="none" />`;
+          rings = [
+            mustTest.has(key) ? renderRectRing(hw, hl, 5, '#5a8fd0', { dash: '5 3', strokeWidth: 2.5 }) : '',
+            shocked.has(key)
+              ? renderRectRing(hw, hl, 3.5, '#5a8fd0', { fill: 'rgba(45, 75, 130, 0.4)', strokeWidth: 2.5 })
+              : '',
+            losCanSee.has(m.id) ? renderRectRing(hw, hl, 4, '#ff1a1a', { strokeWidth: 2.25 }) : '',
+            isUnitSel ? renderRectRing(hw, hl, 2, '#f8fafc') : '',
+            isModelSel ? renderRectRing(hw, hl, 3.5, '#fbbf24', { dash: '3 2' }) : '',
+          ].join('');
+        } else {
+          body = `<circle cx="0" cy="0" r="${r}" fill="${fill}" stroke="#0a0a0a" stroke-width="1.5" />`;
+          rings = [
+            mustTest.has(key)
+              ? `<circle cx="0" cy="0" r="${r + 5}" fill="none" stroke="#5a8fd0" stroke-width="2.5" stroke-dasharray="5 3" pointer-events="none" />`
+              : '',
+            shocked.has(key)
+              ? `<circle cx="0" cy="0" r="${r + 3.5}" fill="rgba(45, 75, 130, 0.4)" stroke="#5a8fd0" stroke-width="2.5" pointer-events="none" />`
+              : '',
+            losCanSee.has(m.id)
+              ? `<circle cx="0" cy="0" r="${r + 4}" fill="none" stroke="#ff1a1a" stroke-width="2.25" pointer-events="none" />`
+              : '',
+            isUnitSel
+              ? `<circle cx="0" cy="0" r="${r + 2}" fill="none" stroke="#f8fafc" stroke-width="1.5" pointer-events="none" />`
+              : '',
+            isModelSel
+              ? `<circle cx="0" cy="0" r="${r + 3.5}" fill="none" stroke="#fbbf24" stroke-width="1.5" stroke-dasharray="3 2" pointer-events="none" />`
+              : '',
+          ].join('');
+        }
+        const transform = isRect
+          ? `translate(${cx} ${cy}) rotate(${rot})`
+          : `translate(${cx} ${cy})`;
         return `
-          <g class="map-model" data-unit-key="${esc(key)}" data-model-id="${esc(m.id)}" data-player="${esc(entry.player)}" data-unit-id="${esc(entry.unitId)}" style="cursor:grab">
-            ${mustTestRing}${shockedRing}${losRing}${ring}${sel}
-            <circle cx="${cx}" cy="${cy}" r="${r}" fill="${fill}" stroke="#0a0a0a" stroke-width="1.5" />
+          <g class="map-model" data-unit-key="${esc(key)}" data-model-id="${esc(m.id)}" data-player="${esc(entry.player)}" data-unit-id="${esc(entry.unitId)}" data-shape="${isRect ? 'rect' : 'circle'}" data-rotation="${rot}" style="cursor:grab" transform="${transform}">
+            ${rings}${body}
           </g>`;
       }),
     )
@@ -215,6 +249,14 @@ export function renderMapSvg(state, options = {}) {
   const selectedSpecial = (state.battleMap?.specialMarkers || []).find(
     (m) => m.id === state.battleMap?.selectedModelId,
   );
+  const selectedEntry = state.battleMap?.selectedUnitKey
+    ? state.battleMap?.unitsOnMap?.[state.battleMap.selectedUnitKey]
+    : null;
+  const selectedModel = selectedEntry?.models?.find((m) => m.id === state.battleMap?.selectedModelId);
+  const canRotateModel =
+    selectedModel &&
+    (selectedModel.shape === 'rect' ||
+      (selectedModel.widthIn > 0 && selectedModel.lengthIn > 0));
   const orient = state.battleMap?.layoutTransform?.ops?.length
     ? `<span class="battle-map-orient-badge" title="Layout orientation applied">Oriented</span>`
     : '';
@@ -236,6 +278,11 @@ export function renderMapSvg(state, options = {}) {
         <button type="button" data-action="map-zoom" data-delta="-0.15">Zoom −</button>
         <button type="button" data-action="map-reset-camera">Reset view</button>
         <button type="button" data-action="add-special-marker">Add special marker</button>
+        ${
+          canRotateModel
+            ? `<button type="button" data-action="map-rotate-model" data-unit-key="${esc(state.battleMap.selectedUnitKey)}" data-model-id="${esc(selectedModel.id)}" title="Rotate Frame hull 90° clockwise (R)">Rotate model</button>`
+            : ''
+        }
         <button type="button" class="help-q-btn help-q-btn-toolbar" data-action="open-help-guide" title="Instructions / Guides" aria-label="Open instructions and guides">?</button>
         ${
           selectedSpecial

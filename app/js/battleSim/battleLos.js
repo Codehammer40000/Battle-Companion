@@ -46,6 +46,79 @@ function sampleCircle(cx, cy, r, n) {
   return pts;
 }
 
+/** Sample perimeter of a Frame rect (SVG rotate: +degrees clockwise with y-down). */
+function sampleRotatedRect(model, n = 24) {
+  const hw = Math.max(0, Number(model.widthIn) || 0) / 2;
+  const hl = Math.max(0, Number(model.lengthIn) || 0) / 2;
+  if (hw <= 0.01 && hl <= 0.01) {
+    return [{ x: model.x, y: model.y }];
+  }
+  const rot = ((Number(model.rotation) || 0) * Math.PI) / 180;
+  const cos = Math.cos(rot);
+  const sin = Math.sin(rot);
+  const toWorld = (lx, ly) => ({
+    x: model.x + lx * cos - ly * sin,
+    y: model.y + lx * sin + ly * cos,
+  });
+  const peri = 2 * (hw * 2 + hl * 2);
+  const pts = [];
+  const count = Math.max(8, n);
+  for (let i = 0; i < count; i++) {
+    let d = (i / count) * peri;
+    let lx;
+    let ly;
+    const w = hw * 2;
+    const h = hl * 2;
+    if (d < w) {
+      lx = -hw + d;
+      ly = -hl;
+    } else if (d < w + h) {
+      lx = hw;
+      ly = -hl + (d - w);
+    } else if (d < w + h + w) {
+      lx = hw - (d - w - h);
+      ly = hl;
+    } else {
+      lx = -hw;
+      ly = hl - (d - w - h - w);
+    }
+    pts.push(toWorld(lx, ly));
+  }
+  return pts;
+}
+
+function sampleModelPerimeter(model, n = 28) {
+  if (model?.shape === 'rect' && model.widthIn > 0 && model.lengthIn > 0) {
+    return sampleRotatedRect(model, n);
+  }
+  return sampleCircle(model.x, model.y, model.radiusIn, n);
+}
+
+function edgePointOnModel(model, toward) {
+  if (model?.shape === 'rect' && model.widthIn > 0 && model.lengthIn > 0) {
+    const hw = model.widthIn / 2;
+    const hl = model.lengthIn / 2;
+    const rot = ((Number(model.rotation) || 0) * Math.PI) / 180;
+    const cos = Math.cos(rot);
+    const sin = Math.sin(rot);
+    const dx = toward.x - model.x;
+    const dy = toward.y - model.y;
+    const lx = dx * cos + dy * sin;
+    const ly = -dx * sin + dy * cos;
+    const sx = Math.abs(lx) > 1e-9 ? hw / Math.abs(lx) : Infinity;
+    const sy = Math.abs(ly) > 1e-9 ? hl / Math.abs(ly) : Infinity;
+    const s = Math.min(sx, sy);
+    if (!Number.isFinite(s) || s <= 0) return { x: model.x, y: model.y };
+    const elx = lx * s;
+    const ely = ly * s;
+    return {
+      x: model.x + elx * cos - ely * sin,
+      y: model.y + elx * sin + ely * cos,
+    };
+  }
+  return edgePointToward({ x: model.x, y: model.y }, model.radiusIn || 0, toward);
+}
+
 function pointInFeature(point, feature) {
   if (feature?.polygon?.length >= 3) return pointInPolygon(point, feature.polygon);
   if (feature?.bounds) return pointInRect(point, feature.bounds);
@@ -54,15 +127,9 @@ function pointInFeature(point, feature) {
 
 export function modelTouchesArea(model, area) {
   if (!model || !area) return false;
-  const r = Math.max(0, Number(model.radiusIn) || 0);
   if (pointInArea({ x: model.x, y: model.y }, area)) return true;
-  if (r <= 0) return false;
-  // Base circle samples — toes-in counts as inside
-  for (let i = 0; i < 20; i++) {
-    const a = (i / 20) * Math.PI * 2;
-    if (pointInArea({ x: model.x + Math.cos(a) * r, y: model.y + Math.sin(a) * r }, area)) {
-      return true;
-    }
+  for (const p of sampleModelPerimeter(model, 20)) {
+    if (pointInArea(p, area)) return true;
   }
   return false;
 }
@@ -220,7 +287,7 @@ export function firstObstructionAlongRay(from, to, layout, attackerModel) {
  * Best edge-to-edge attempt from one attacker model to one target model.
  */
 function rayBetweenModels(attacker, targetModel, layout) {
-  const tSamples = sampleCircle(targetModel.x, targetModel.y, targetModel.radiusIn, 28);
+  const tSamples = sampleModelPerimeter(targetModel, 28);
   // Also try toward center for peeking edges
   tSamples.push({ x: targetModel.x, y: targetModel.y });
 
@@ -228,11 +295,7 @@ function rayBetweenModels(attacker, targetModel, layout) {
   let bestBlocked = null;
 
   for (const to of tSamples) {
-    const from = edgePointToward(
-      { x: attacker.x, y: attacker.y },
-      attacker.radiusIn || 0,
-      to,
-    );
+    const from = edgePointOnModel(attacker, to);
     const hit = firstObstructionAlongRay(from, to, layout, attacker);
     const dist = distance(from, to);
     if (!hit) {

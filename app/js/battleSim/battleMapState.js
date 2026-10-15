@@ -8,6 +8,13 @@ export const MARKER_RADIUS = {
   vehicle: 2,
 };
 
+/** Redemptor / typical dreadnought round base used as Frame size reference. */
+export const DREADNOUGHT_BASE_MM = 90;
+/** Frame hull footprint ≈ 1.25× dreadnought base on the short side. */
+export const FRAME_SCALE = 1.25;
+/** Tank-like length/width ratio for Frame rectangles. */
+export const FRAME_ASPECT = 1.5;
+
 /** Convert datasheet base diameter (mm) to map marker radius in inches. */
 export function baseMmToRadiusInches(baseMm) {
   const mm = Number(baseMm);
@@ -15,6 +22,17 @@ export function baseMmToRadiusInches(baseMm) {
   // Base size is diameter; marker uses radius. Clamp for clickability on the 60×44" board.
   const radius = mm / 25.4 / 2;
   return Math.max(0.28, Math.min(radius, 3));
+}
+
+export function unitIsFrame(unit) {
+  return hasKeyword(unit, /^frame$/i);
+}
+
+/** Frame hull size in inches (width × length). */
+export function getFrameFootprintInches() {
+  const widthIn = (DREADNOUGHT_BASE_MM * FRAME_SCALE) / 25.4;
+  const lengthIn = widthIn * FRAME_ASPECT;
+  return { widthIn, lengthIn };
 }
 
 export function createEmptyBattleMap() {
@@ -69,6 +87,11 @@ function getUnitInitialCountHint(unit) {
 }
 
 export function getModelMarkerRadius(unit, role = 'standard') {
+  if (unitIsFrame(unit)) {
+    const { widthIn, lengthIn } = getFrameFootprintInches();
+    return Math.hypot(widthIn / 2, lengthIn / 2);
+  }
+
   const fromBase = baseMmToRadiusInches(unit?.baseMm);
   if (fromBase != null) return fromBase;
 
@@ -86,6 +109,30 @@ export function getModelMarkerRadius(unit, role = 'standard') {
     return MARKER_RADIUS.leader;
   }
   return MARKER_RADIUS.standard;
+}
+
+/**
+ * Full footprint for deploy/render: circles for normal bases, rotatable rect for Frame.
+ * radiusIn is kept as an effective half-extent for range rings / LoS helpers.
+ */
+export function getModelFootprint(unit, role = 'standard') {
+  if (unitIsFrame(unit)) {
+    const { widthIn, lengthIn } = getFrameFootprintInches();
+    return {
+      shape: 'rect',
+      widthIn,
+      lengthIn,
+      rotation: 0,
+      radiusIn: Math.hypot(widthIn / 2, lengthIn / 2),
+    };
+  }
+  return {
+    shape: 'circle',
+    widthIn: 0,
+    lengthIn: 0,
+    rotation: 0,
+    radiusIn: getModelMarkerRadius(unit, role),
+  };
 }
 
 export function getStagingOrigin(player, board) {
@@ -109,7 +156,7 @@ export function buildDeployedModels(unit, player, remainingModels, stagingOrigin
   const pushOne = (u, modelIndex, forceRole) => {
     let role = forceRole;
     if (!role) {
-      if (hasKeyword(u, /^(monster|vehicle)$/i)) role = 'vehicle';
+      if (unitIsFrame(u) || hasKeyword(u, /^(monster|vehicle)$/i)) role = 'vehicle';
       else if (unitCanLeadLocal(u) && (getUnitInitialCountHint(u) <= 1 || modelIndex === 0)) {
         role = unitIsSupportLocal(u) ? 'support' : 'leader';
       } else role = 'standard';
@@ -118,7 +165,8 @@ export function buildDeployedModels(unit, player, remainingModels, stagingOrigin
     if (!forceRole && !unitCanLeadLocal(u)) role = 'standard';
     if (!forceRole && unitCanLeadLocal(u) && modelIndex > 0) role = 'standard';
 
-    const radiusIn = getModelMarkerRadius(u, role);
+    const footprint = getModelFootprint(u, role);
+    const step = Math.max(footprint.widthIn || 0, footprint.lengthIn || 0, footprint.radiusIn * 2) + 0.4;
     const col = index % 4;
     const row = Math.floor(index / 4);
     models.push({
@@ -126,9 +174,9 @@ export function buildDeployedModels(unit, player, remainingModels, stagingOrigin
       unitId: u.id,
       player,
       role,
-      radiusIn,
-      x: stagingOrigin.x + col * (radiusIn * 2 + 0.4),
-      y: stagingOrigin.y + row * (radiusIn * 2 + 0.4),
+      ...footprint,
+      x: stagingOrigin.x + col * step,
+      y: stagingOrigin.y + row * step,
     });
     index += 1;
   };

@@ -213,12 +213,13 @@ export const HELP_GUIDE_SECTIONS = [
       {
         id: 'map-move',
         title: 'Select and move models',
-        keywords: 'drag move pan select unit right click',
+        keywords: 'drag move pan select unit right click rotate frame',
         body: [
           'Left-drag a model to move that model. Right-drag (or secondary button drag) moves the whole unit group.',
           'Click a model or use the side list to select a unit; the selected unit and model are highlighted.',
           'Click empty board space (without dragging) to clear selection.',
           'Drag empty space to pan. Use Zoom + / −, mouse wheel over the map, or Reset view for the camera.',
+          'Frame hulls (e.g. Land Raiders) deploy as rectangles ~1.25× a dreadnought base. Select one and use Rotate model or press R to turn 90°.',
         ],
       },
       {
