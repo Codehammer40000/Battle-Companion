@@ -104,13 +104,46 @@ function dedupeByKey(items, keyFn) {
   return out;
 }
 
+function ruleIdentityKey(rule) {
+  if (!rule) return '';
+  if (rule.id) return `id:${rule.id}`;
+  return `name:${String(rule.name || '').toLowerCase()}::${String(rule.description || '').slice(0, 80)}`;
+}
+
+/** Heuristic for army-wide rules embedded on unit entries (when force.rules is missing). */
 export function isArmyWideRule(rule) {
-  const text = (rule.description || '').toLowerCase();
+  const name = String(rule?.name || '');
+  const text = String(rule?.description || '');
+  if (/^army rule$/i.test(name)) return true;
   return (
     /if your army faction/i.test(text) ||
     /if your army includes/i.test(text) ||
-    /models in your army have/i.test(text)
+    /models in your army have/i.test(text) ||
+    // e.g. Combat Doctrines: "friendly ADEPTUS ASTARTES units with this ability"
+    /friendly [\w '-]+ units with this ability/i.test(text)
   );
+}
+
+/** Drop force/army-level rules that New Recruit also copies onto every datasheet. */
+export function stripArmyRulesFromUnit(unit, armyRuleKeys) {
+  if (!unit) return unit;
+  const keys = armyRuleKeys instanceof Set ? armyRuleKeys : new Set(armyRuleKeys || []);
+  const rules = (unit.rules || []).filter((r) => {
+    if (keys.has(ruleIdentityKey(r))) return false;
+    if (isArmyWideRule(r)) return false;
+    return true;
+  });
+  const abilities = (unit.abilities || []).filter((a) => {
+    if (keys.has(ruleIdentityKey(a))) return false;
+    if (isArmyWideRule(a)) return false;
+    return true;
+  });
+  return {
+    ...unit,
+    rules,
+    abilities,
+    keywordRules: indexKeywordRules(rules),
+  };
 }
 
 const KEYWORD_SKIP = new Set([
@@ -711,8 +744,28 @@ export function normalizeArmy(army) {
 
 export function normalizeArmyUnits(army) {
   if (!army?.units) return army;
+  const existingArmyRules = [...(army.armyRules || army.forceRules || [])];
+  const armyRuleKeys = new Set(existingArmyRules.map(ruleIdentityKey).filter(Boolean));
+  // Promote army-wide rules still stuck on datasheets (older saved armies)
+  const promoted = [];
+  for (const u of army.units) {
+    for (const r of [...(u.rules || []), ...(u.abilities || [])]) {
+      if (!isArmyWideRule(r)) continue;
+      const key = ruleIdentityKey(r);
+      if (!key || armyRuleKeys.has(key)) continue;
+      armyRuleKeys.add(key);
+      promoted.push({ id: r.id, name: r.name, description: r.description });
+    }
+  }
+  const armyRules = dedupeByKey(
+    [...existingArmyRules, ...promoted],
+    (r) => r.id || `${r.name}::${String(r.description || '').slice(0, 80)}`,
+  );
+
   return {
     ...army,
+    armyRules,
+    forceRules: armyRules,
     defaultAttachments:
       army.defaultAttachments && typeof army.defaultAttachments === 'object'
         ? army.defaultAttachments
@@ -723,19 +776,20 @@ export function normalizeArmyUnits(army) {
       const rawComp = Array.isArray(u.modelComposition) ? u.modelComposition : undefined;
       const modelComposition = rawComp ? repairModelCompositionWounds(u, rawComp) : undefined;
       const withComp = modelComposition ? { ...u, modelComposition } : { ...u };
-      const initialModelCount = getUnitInitialModelCount(withComp);
-      const baseInfo = getUnitBaseInfo(withComp);
+      const stripped = stripArmyRulesFromUnit(withComp, armyRuleKeys);
+      const initialModelCount = getUnitInitialModelCount(stripped);
+      const baseInfo = getUnitBaseInfo(stripped);
       return {
-        ...withComp,
-        woundsPerModel: getUnitWoundsPerModel(withComp),
+        ...stripped,
+        woundsPerModel: getUnitWoundsPerModel(stripped),
         initialModelCount,
         modelCount: initialModelCount,
         modelComposition,
-        baseLabel: baseInfo.label || withComp.baseLabel || '',
-        baseMm: baseInfo.mm || withComp.baseMm || 0,
-        baseKind: baseInfo.kind || withComp.baseKind || '',
-        totalWounds: getUnitWoundCapacityFromUnit({ ...withComp, initialModelCount }),
-        keywordRules: u.keywordRules || indexKeywordRules(u.rules),
+        baseLabel: baseInfo.label || stripped.baseLabel || '',
+        baseMm: baseInfo.mm || stripped.baseMm || 0,
+        baseKind: baseInfo.kind || stripped.baseKind || '',
+        totalWounds: getUnitWoundCapacityFromUnit({ ...stripped, initialModelCount }),
+        keywordRules: stripped.keywordRules || indexKeywordRules(stripped.rules),
       };
     }),
   };
@@ -890,9 +944,12 @@ export function parseRosterJson(json) {
     [...forceRules, ...units.flatMap((u) => u.armyWideRules || [])],
     (r) => r.id || `${r.name}::${r.description.slice(0, 80)}`,
   );
+  const armyRuleKeys = new Set(armyRules.map(ruleIdentityKey));
 
-  for (const unit of units) {
-    delete unit.armyWideRules;
+  for (let i = 0; i < units.length; i++) {
+    delete units[i].armyWideRules;
+    // Keep Army Rule text under armyRules only — not once per unit in Reminder!
+    units[i] = stripArmyRulesFromUnit(units[i], armyRuleKeys);
   }
 
   const { attachments: defaultAttachments, roles: attachmentRoles } = extractDefaultAttachments(

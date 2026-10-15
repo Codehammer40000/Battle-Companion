@@ -275,12 +275,31 @@ function forEachDetachmentRule(roster, cb) {
   }
 }
 
+function armyRuleIdentitySet(roster) {
+  const keys = new Set();
+  for (const rule of roster?.armyRules || roster?.forceRules || []) {
+    if (rule?.id) keys.add(`id:${rule.id}`);
+    if (rule?.name) keys.add(`name:${String(rule.name).toLowerCase()}`);
+  }
+  return keys;
+}
+
+function isListedArmyRule(rule, armyKeys) {
+  if (!rule || !armyKeys?.size) return false;
+  if (rule.id && armyKeys.has(`id:${rule.id}`)) return true;
+  if (rule.name && armyKeys.has(`name:${String(rule.name).toLowerCase()}`)) return true;
+  return false;
+}
+
 export function extractArmyAbilities(roster) {
   const abilities = [];
   const seen = new Set();
+  const armyKeys = armyRuleIdentitySet(roster);
 
   function addAbility(unitName, rule, source) {
     if (isSkippableRule(rule, source)) return;
+    // Force/army rules already listed under Army — ignore datasheet copies
+    if ((source === 'rule' || source === 'profile') && isListedArmyRule(rule, armyKeys)) return;
 
     const analyzed = analyzeAbility(rule.description || rule.name, rule.name);
     if (!analyzed.description || analyzed.description.length < 2) return;
@@ -493,9 +512,11 @@ export function injectAbilitiesIntoFlow(flow, abilities, playerKey) {
 export function listAllAbilities(roster) {
   const out = [];
   const seen = new Set();
+  const armyKeys = armyRuleIdentitySet(roster);
 
   function push(unitName, rule, source, unitId = null) {
     if (isSkippableRule(rule, source)) return;
+    if ((source === 'rule' || source === 'profile') && isListedArmyRule(rule, armyKeys)) return;
     const analyzed = analyzeAbility(rule.description || rule.name, rule.name);
     if (!analyzed.description || analyzed.description.length < 2) return;
     const key = makeAbilityKey(unitName, rule, source);
