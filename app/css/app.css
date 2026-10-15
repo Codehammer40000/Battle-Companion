@@ -2344,6 +2344,14 @@ tr.weapon-row-selected td {
   user-select: none;
 }
 
+.map-rotate-handle {
+  cursor: grab;
+}
+
+.map-rotate-handle:active {
+  cursor: grabbing;
+}
+
 .sim-step-nav {
   position: relative;
   width: 22rem;

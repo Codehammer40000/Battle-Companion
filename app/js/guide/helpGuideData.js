@@ -219,7 +219,7 @@ export const HELP_GUIDE_SECTIONS = [
           'Click a model or use the side list to select a unit; the selected unit and model are highlighted.',
           'Click empty board space (without dragging) to clear selection.',
           'Drag empty space to pan. Use Zoom + / −, mouse wheel over the map, or Reset view for the camera.',
-          'Frame hulls (e.g. Land Raiders) deploy as rectangles ~1.25× a dreadnought base. Select one and use Rotate model or press R to turn 90°.',
+          'Frame hulls (e.g. Land Raiders) deploy as rectangles ~1.25× a dreadnought base. Select one, then drag the yellow handle ahead of the nose to set facing (rotates about the hull center).',
         ],
       },
       {

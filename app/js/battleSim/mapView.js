@@ -188,6 +188,16 @@ function renderModels(unitsOnMap, selectedUnitKey, selectedModelId, highlights =
             isUnitSel ? renderRectRing(hw, hl, 2, '#f8fafc') : '',
             isModelSel ? renderRectRing(hw, hl, 3.5, '#fbbf24', { dash: '3 2' }) : '',
           ].join('');
+          // Drag handle: line from center to a point ahead of the nose (selected Frame only)
+          if (isModelSel) {
+            const handleY = -(hl + toPx(0.7));
+            const hitR = Math.max(9, toPx(0.35));
+            body += `<g class="map-rotate-handle" data-rotate-handle="1">
+              <line x1="0" y1="0" x2="0" y2="${handleY}" stroke="#fbbf24" stroke-width="2" pointer-events="none" />
+              <circle class="map-rotate-handle-hit" cx="0" cy="${handleY}" r="${hitR}" fill="transparent" stroke="none" />
+              <circle cx="0" cy="${handleY}" r="${Math.max(5, toPx(0.22))}" fill="#fbbf24" stroke="#0a0a0a" stroke-width="1.5" />
+            </g>`;
+          }
         } else {
           body = `<circle cx="0" cy="0" r="${r}" fill="${fill}" stroke="#0a0a0a" stroke-width="1.5" />`;
           rings = [
@@ -252,11 +262,6 @@ export function renderMapSvg(state, options = {}) {
   const selectedEntry = state.battleMap?.selectedUnitKey
     ? state.battleMap?.unitsOnMap?.[state.battleMap.selectedUnitKey]
     : null;
-  const selectedModel = selectedEntry?.models?.find((m) => m.id === state.battleMap?.selectedModelId);
-  const canRotateModel =
-    selectedModel &&
-    (selectedModel.shape === 'rect' ||
-      (selectedModel.widthIn > 0 && selectedModel.lengthIn > 0));
   const orient = state.battleMap?.layoutTransform?.ops?.length
     ? `<span class="battle-map-orient-badge" title="Layout orientation applied">Oriented</span>`
     : '';
@@ -278,11 +283,6 @@ export function renderMapSvg(state, options = {}) {
         <button type="button" data-action="map-zoom" data-delta="-0.15">Zoom −</button>
         <button type="button" data-action="map-reset-camera">Reset view</button>
         <button type="button" data-action="add-special-marker">Add special marker</button>
-        ${
-          canRotateModel
-            ? `<button type="button" data-action="map-rotate-model" data-unit-key="${esc(state.battleMap.selectedUnitKey)}" data-model-id="${esc(selectedModel.id)}" title="Rotate Frame hull 90° clockwise (R)">Rotate model</button>`
-            : ''
-        }
         <button type="button" class="help-q-btn help-q-btn-toolbar" data-action="open-help-guide" title="Instructions / Guides" aria-label="Open instructions and guides">?</button>
         ${
           selectedSpecial

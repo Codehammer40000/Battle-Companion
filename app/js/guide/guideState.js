@@ -1365,8 +1365,8 @@ export function guideReducer(state, action) {
       const entry = battleMap.unitsOnMap?.[unitKey];
       if (!entry || !modelId) return state;
       const army = state[entry.player]?.army;
+      const absolute = Number(action.rotation);
       const delta = Number(action.delta);
-      const turn = Number.isFinite(delta) ? delta : 90;
       let changed = false;
       const models = entry.models.map((m) => {
         if (m.id !== modelId) return m;
@@ -1374,16 +1374,22 @@ export function guideReducer(state, action) {
         let next = m;
         if (unitIsFrame(unit) && m.shape !== 'rect') {
           const footprint = getModelFootprint(unit, m.role || 'vehicle');
-          next = { ...m, ...footprint, rotation: m.rotation || 0 };
+          next = { ...m, ...footprint, rotation: Number(m.rotation) || 0 };
           changed = true;
         }
         if (next.shape !== 'rect') return m;
-        const rotation = (((Number(next.rotation) || 0) + turn) % 360 + 360) % 360;
+        let rotation;
+        if (Number.isFinite(absolute)) {
+          rotation = ((absolute % 360) + 360) % 360;
+        } else {
+          const turn = Number.isFinite(delta) ? delta : 90;
+          rotation = (((Number(next.rotation) || 0) + turn) % 360 + 360) % 360;
+        }
         changed = true;
         return { ...next, rotation };
       });
       if (!changed) return state;
-      return {
+      const next = {
         ...state,
         battleMap: {
           ...battleMap,
@@ -1392,6 +1398,14 @@ export function guideReducer(state, action) {
           selectedModelId: modelId,
         },
       };
+      const step = state.flow[state.stepIndex];
+      const isShoot =
+        step && (step.phase === 'shooting' || String(step.id || '').includes('-shoot'));
+      if (isShoot && state.combat?.active && state.combat?.target) {
+        const los = computeLosFromCombat(next);
+        next.battleMap = { ...next.battleMap, losPreview: los };
+      }
+      return next;
     }
 
     case 'MAP_SET_LOS':

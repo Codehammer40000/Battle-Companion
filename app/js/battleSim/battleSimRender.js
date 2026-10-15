@@ -868,15 +868,6 @@ function bindBattleSimEvents(root, state, dispatch) {
   root.querySelector('[data-action="map-reset-orientation"]')?.addEventListener('click', () =>
     dispatch({ type: 'MAP_RESET_ORIENTATION' }),
   );
-  root.querySelector('[data-action="map-rotate-model"]')?.addEventListener('click', (e) => {
-    const btn = e.currentTarget;
-    dispatch({
-      type: 'MAP_ROTATE_MODEL',
-      unitKey: btn.dataset.unitKey,
-      modelId: btn.dataset.modelId,
-      delta: 90,
-    });
-  });
   root.querySelector('[data-action="add-special-marker"]')?.addEventListener('click', () => {
     const name = prompt('Special marker name', 'OOM target');
     if (name) dispatch({ type: 'MAP_ADD_SPECIAL_MARKER', name });
@@ -934,6 +925,12 @@ function findModelGroup(root, unitKey, modelId) {
   );
 }
 
+/** Frame nose faces local -Y; SVG rotate(θ) maps that to board angle atan2(sinθ, -cosθ). */
+function boardAngleToFrameRotation(dx, dy) {
+  const deg = (Math.atan2(dx, -dy) * 180) / Math.PI;
+  return ((deg % 360) + 360) % 360;
+}
+
 function ensureMapPointerHandlers() {
   if (mapInteractionRuntime.bound) return;
   mapInteractionRuntime.bound = true;
@@ -961,6 +958,7 @@ function ensureMapPointerHandlers() {
     if (!svg.contains(e.target)) return;
 
     const cam = state.battleMap?.camera || { x: 0, y: 0, zoom: 1 };
+    const rotateHandle = e.target.closest('[data-rotate-handle]');
     const modelEl = e.target.closest('.map-model');
     const specialEl = e.target.closest('.map-special');
     const boardPt = clientToBoardInches(svg, e.clientX, e.clientY, cam);
@@ -984,6 +982,27 @@ function ensureMapPointerHandlers() {
       return;
     }
 
+    // Frame orientation: drag the selected handle about the hull center
+    if (rotateHandle && modelEl && e.button === 0) {
+      const unitKey = modelEl.dataset.unitKey;
+      const modelId = modelEl.dataset.modelId;
+      const entry = state.battleMap?.unitsOnMap?.[unitKey];
+      const model = entry?.models?.find((m) => m.id === modelId);
+      if (!entry || !model) return;
+      e.preventDefault();
+      mapInteractionRuntime.drag = {
+        type: 'rotate',
+        unitKey,
+        modelId,
+        player: entry.player,
+        unitId: entry.unitId,
+        center: { x: model.x, y: model.y },
+        moved: false,
+        pointerId: e.pointerId,
+      };
+      return;
+    }
+
     if (modelEl) {
       const unitKey = modelEl.dataset.unitKey;
       const modelId = modelEl.dataset.modelId;
@@ -997,7 +1016,13 @@ function ensureMapPointerHandlers() {
         player: entry.player,
         unitId: entry.unitId,
         startBoard: boardPt,
-        modelsOrigin: entry.models.map((m) => ({ id: m.id, x: m.x, y: m.y })),
+        modelsOrigin: entry.models.map((m) => ({
+          id: m.id,
+          x: m.x,
+          y: m.y,
+          rotation: Number(m.rotation) || 0,
+          shape: m.shape,
+        })),
         moved: false,
         pointerId: e.pointerId,
       };
@@ -1041,6 +1066,24 @@ function ensureMapPointerHandlers() {
         );
       }
       drag.liveCam = { x: drag.originCam.x + dx, y: drag.originCam.y + dy, zoom: cam.zoom || 1 };
+      return;
+    }
+
+    if (drag.type === 'rotate') {
+      const boardPt = clientToBoardInches(svg, e.clientX, e.clientY, cam);
+      const dx = boardPt.x - drag.center.x;
+      const dy = boardPt.y - drag.center.y;
+      if (Math.hypot(dx, dy) > 0.05) drag.moved = true;
+      const rotation = boardAngleToFrameRotation(dx, dy);
+      const g = findModelGroup(svg, drag.unitKey, drag.modelId);
+      if (g) {
+        g.setAttribute(
+          'transform',
+          `translate(${drag.center.x * ppi} ${drag.center.y * ppi}) rotate(${rotation})`,
+        );
+        g.dataset.rotation = String(rotation);
+      }
+      drag.liveRotation = rotation;
       return;
     }
 
@@ -1103,6 +1146,21 @@ function ensureMapPointerHandlers() {
       }
       // Select special marker (shows Remove button)
       dispatch({ type: 'MAP_SELECT_SPECIAL', id: drag.id });
+    } else if (drag.type === 'rotate') {
+      if (drag.moved && Number.isFinite(drag.liveRotation)) {
+        dispatch({
+          type: 'MAP_ROTATE_MODEL',
+          unitKey: drag.unitKey,
+          modelId: drag.modelId,
+          rotation: drag.liveRotation,
+        });
+      }
+      dispatch({
+        type: 'MAP_SELECT_UNIT',
+        player: drag.player,
+        unitId: drag.unitId,
+        modelId: drag.modelId,
+      });
     } else if (drag.type === 'model' || drag.type === 'unit') {
       if (drag.moved && drag.liveMoves?.length) {
         dispatch({ type: 'MAP_MOVE_MODELS', unitKey: drag.unitKey, moves: drag.liveMoves });
@@ -1121,26 +1179,6 @@ function ensureMapPointerHandlers() {
 
   window.addEventListener('pointercancel', () => {
     mapInteractionRuntime.drag = null;
-  });
-
-  window.addEventListener('keydown', (e) => {
-    if (e.key !== 'r' && e.key !== 'R') return;
-    if (e.target && /^(INPUT|TEXTAREA|SELECT)$/i.test(e.target.tagName)) return;
-    const state = mapInteractionRuntime.state;
-    const dispatch = mapInteractionRuntime.dispatch;
-    if (!state || !dispatch) return;
-    const bm = state.battleMap;
-    if (!bm?.selectedUnitKey || !bm?.selectedModelId) return;
-    const entry = bm.unitsOnMap?.[bm.selectedUnitKey];
-    const model = entry?.models?.find((m) => m.id === bm.selectedModelId);
-    if (!model || (model.shape !== 'rect' && !(model.widthIn > 0))) return;
-    e.preventDefault();
-    dispatch({
-      type: 'MAP_ROTATE_MODEL',
-      unitKey: bm.selectedUnitKey,
-      modelId: bm.selectedModelId,
-      delta: 90,
-    });
   });
 }
 
