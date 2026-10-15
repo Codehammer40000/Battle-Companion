@@ -13,12 +13,18 @@ import {
   isGroupBattleShocked,
   unitCanLead,
   unitIsSupport,
+  getLeadersOnBodyguard,
   isCombatActionStep,
   getCombatDisplayUnits,
 } from './guide/guideState.js';
 import { getPhaseGroupLabel, MAX_BATTLE_ROUNDS } from './guide/phaseFlow.js';
 import { getAllAbilitiesForStep, listAllAbilities } from './guide/abilityMapper.js';
-import { getUnitKeywordRules, getUnitDisplayAbilities, getUnitDisplayKeywords, unitHasDeepStrike } from './guide/rosterParser.js';
+import {
+  buildKeywordRuleIndex,
+  getUnitDisplayAbilities,
+  getUnitDisplayKeywords,
+  unitHasDeepStrike,
+} from './guide/rosterParser.js';
 import {
   renderKeywordList,
   renderWeaponTable,
@@ -137,7 +143,7 @@ function renderUnitDetailModal(state) {
   const woundsTaken = getUnitWoundsTaken(state, detail.player, unit.id);
   const remainingModels = getRemainingModels(unit, woundsTaken);
   const woundCap = getUnitWoundCapacity(unit);
-  const keywordRuleIndex = getUnitKeywordRules(unit);
+  const keywordRuleIndex = buildKeywordRuleIndex(unit, player?.army);
   const kwContext = { player: detail.player, unitId: unit.id };
   const displayKeywords = getUnitDisplayKeywords(unit);
 
@@ -189,7 +195,7 @@ function renderCombatCondensedUnit(unit, state, playerKey) {
   const woundsTaken = getUnitWoundsTaken(state, playerKey, unit.id);
   const remainingModels = getRemainingModels(unit, woundsTaken);
   const woundCap = getUnitWoundCapacity(unit);
-  const keywordRuleIndex = getUnitKeywordRules(unit);
+  const keywordRuleIndex = buildKeywordRuleIndex(unit, state[playerKey]?.army);
   const kwContext = { player: playerKey, unitId: unit.id };
   const displayKeywords = getUnitDisplayKeywords(unit);
   const woundControls = `
@@ -371,6 +377,23 @@ function renderLeaderAttach(u, key, armyUnits, state) {
   </label>`;
 }
 
+/** Bodyguard-side summary: who is leading / supporting this unit. */
+function renderAttachmentSummary(u, key, armyUnits, state) {
+  const attachments = state.leaderAttachments?.[key] || {};
+  const leaderIds = getLeadersOnBodyguard(attachments, u.id);
+  if (!leaderIds.length) return '';
+  const parts = leaderIds
+    .map((id) => {
+      const leader = armyUnits.find((x) => x.id === id);
+      if (!leader) return '';
+      const role = unitIsSupport(leader) ? 'Supported by' : 'Led by';
+      return `${role} ${leader.name}`;
+    })
+    .filter(Boolean);
+  if (!parts.length) return '';
+  return `<div class="unit-attach-summary">${esc(parts.join(' · '))}</div>`;
+}
+
 function renderBattleShockBtn(key, groupId, shocked, show) {
   if (!show) return '';
   return `<button type="button" class="unit-shock-btn ${shocked ? 'shocked' : ''}" data-action="toggle-battle-shock" data-player="${key}" data-group-id="${esc(groupId)}">BattleShocked</button>`;
@@ -412,7 +435,9 @@ function renderUnitCard(u, key, unitAbilities, state, unitIndex, unitCount, army
   const woundsTaken = getUnitWoundsTaken(state, key, u.id);
   const remainingModels = getRemainingModels(u, woundsTaken);
   const leaderAttach = renderLeaderAttach(u, key, armyUnits, state);
+  const attachSummary = renderAttachmentSummary(u, key, armyUnits, state);
   const displayKw = getUnitDisplayKeywords(u);
+  const baseLabel = u.baseLabel || u.stats?.Base || '';
 
   const abilityHtml =
     !dead && unitAbilities.length
@@ -430,12 +455,13 @@ function renderUnitCard(u, key, unitAbilities, state, unitIndex, unitCount, army
           <div class="unit-card-title-block">
             <span class="unit-card-name">${esc(u.name)}</span>
             ${leaderAttach}
+            ${attachSummary}
           </div>
           <span class="unit-card-pts">${u.points} pts</span>
         </div>
         <button type="button" class="unit-card-body" data-action="open-unit-detail" data-player="${key}" data-unit-id="${esc(u.id)}">
           ${u.statsLine ? `<div class="unit-card-stats">${esc(u.statsLine)}</div>` : ''}
-          <div class="unit-card-meta">${remainingModels} model${remainingModels !== 1 ? 's' : ''}${u.isWarlord ? ' · Warlord' : ''}</div>
+          <div class="unit-card-meta">${remainingModels} model${remainingModels !== 1 ? 's' : ''}${baseLabel ? ` · ${esc(baseLabel)}` : ''}${u.isWarlord ? ' · Warlord' : ''}</div>
           ${displayKw.length ? `<div class="unit-card-kw">${displayKw.slice(0, 6).map(esc).join(' · ')}</div>` : ''}
           ${abilityHtml}
         </button>

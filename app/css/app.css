@@ -636,6 +636,18 @@ body { min-height: 100vh; }
   color: var(--muted);
 }
 
+.unit-attach-summary {
+  font-size: 0.62rem;
+  color: var(--gold);
+  line-height: 1.25;
+}
+
+.combat-unit-attach {
+  margin: 0.15rem 0 0;
+  font-size: 0.72rem;
+  color: var(--gold);
+}
+
 .leader-label {
   font-style: italic;
   color: var(--muted);

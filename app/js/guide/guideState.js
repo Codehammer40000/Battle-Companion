@@ -1,6 +1,14 @@
 import { buildFullGuideFlow } from './phaseFlow.js';
 import { extractArmyAbilities, injectAbilitiesIntoFlow } from './abilityMapper.js';
-import { parseRosterJson, normalizeArmy, getUnitInitialModelCount, getUnitWoundCapacityFromUnit, getRemainingModelsFromUnit, findKeywordRule, getUnitKeywordRules } from './rosterParser.js';
+import {
+  parseRosterJson,
+  normalizeArmy,
+  getUnitInitialModelCount,
+  getUnitWoundCapacityFromUnit,
+  getRemainingModelsFromUnit,
+  findKeywordRule,
+  buildKeywordRuleIndex,
+} from './rosterParser.js';
 import { normalizeStratagemDeck } from './stratagemParser.js';
 import {
   createEmptyBattleMap,
@@ -571,13 +579,18 @@ export function guideReducer(state, action) {
       const army = normalizeArmy(parseRosterJson(action.json));
       const key = action.player;
       const extras = clearPlayerArmyExtras(state, key);
+      // Seed Leader/Support attachments from New Recruit associations when present.
+      const seededAttachments = { ...(army.defaultAttachments || {}) };
       const next = {
         ...state,
         battleReady: extras.battleReady,
         // Keep stratagem deck when replacing army roster — decks are uploaded separately.
         deadUnits: extras.deadUnits,
         unitWounds: extras.unitWounds,
-        leaderAttachments: extras.leaderAttachments,
+        leaderAttachments: {
+          ...extras.leaderAttachments,
+          [key]: seededAttachments,
+        },
         woundKilledUnits: extras.woundKilledUnits,
         battleShocked: extras.battleShocked,
         [key]: {
@@ -937,9 +950,10 @@ export function guideReducer(state, action) {
     case 'SHOW_KEYWORD_RULE': {
       const { player, unitId, ruleName } = action;
       if (!player || !unitId || !ruleName) return state;
-      const unit = findUnitInArmy(state[player]?.army, unitId);
+      const army = state[player]?.army;
+      const unit = findUnitInArmy(army, unitId);
       if (!unit) return state;
-      const rule = findKeywordRule(ruleName, getUnitKeywordRules(unit));
+      const rule = findKeywordRule(ruleName, buildKeywordRuleIndex(unit, army));
       if (!rule) return state;
       return { ...state, keywordRulePopup: { name: rule.name, description: rule.description } };
     }

@@ -14,12 +14,13 @@ import {
   getUnitGroupInfo,
   getCombatDisplayUnits,
   unitIsSupport,
+  getLeadersOnBodyguard,
   isGroupBattleShocked,
   getBattleShockActivePlayer,
   groupMustTakeBattleShockTest,
 } from '../guide/guideState.js';
 import { getAllAbilitiesForStep } from '../guide/abilityMapper.js';
-import { getUnitDisplayAbilities, getUnitKeywordRules } from '../guide/rosterParser.js';
+import { getUnitDisplayAbilities, buildKeywordRuleIndex } from '../guide/rosterParser.js';
 import { renderWeaponTable, renderKeywordRulePopover } from '../guide/weaponUi.js';
 import { renderStratagemsBtn, renderStratagemPanel, bindStratagemEvents } from '../guide/stratagemUi.js';
 import { renderHelpQuestionBtn, renderHelpGuidePanel, bindHelpGuideEvents } from '../guide/helpGuideUi.js';
@@ -140,6 +141,19 @@ function renderSimArmyList(state, playerKey) {
       const onMap = !!state.battleMap?.unitsOnMap?.[mapKey];
       const woundsTaken = getUnitWoundsTaken(state, playerKey, u.id);
       const remaining = getRemainingModels(u, woundsTaken);
+      const attachedToId = attachments[u.id];
+      const attachedTo = attachedToId ? army.units.find((x) => x.id === attachedToId) : null;
+      const ledBy = getLeadersOnBodyguard(attachments, u.id)
+        .map((id) => army.units.find((x) => x.id === id)?.name)
+        .filter(Boolean);
+      const attachHint = attachedTo
+        ? unitIsSupport(u)
+          ? `Supporting ${attachedTo.name}`
+          : `Leading ${attachedTo.name}`
+        : ledBy.length
+          ? `With ${ledBy.join(', ')}`
+          : '';
+      const baseHint = u.baseLabel ? ` · ${u.baseLabel}` : '';
       const sel =
         selected?.player === playerKey &&
         (selected?.unitId === u.id || selected?.unitId === group.groupId)
@@ -149,7 +163,7 @@ function renderSimArmyList(state, playerKey) {
         <div class="sim-unit-row ${dead ? 'is-dead' : ''} ${sel}" data-unit-key="${esc(mapUnitKey(playerKey, u.id))}">
           <button type="button" class="sim-unit-select" data-action="map-select-unit" data-player="${playerKey}" data-unit-id="${esc(u.id)}">
             <strong>${esc(u.name)}</strong>
-            <span class="sim-unit-meta">${remaining} · ${esc(u.statsLine || '')}</span>
+            <span class="sim-unit-meta">${remaining}${baseHint}${attachHint ? ` · ${esc(attachHint)}` : ''} · ${esc(u.statsLine || '')}</span>
           </button>
           <button type="button" class="btn-small ${onMap ? 'withdraw-btn' : 'deploy-btn'}" data-action="${onMap ? 'map-withdraw-unit' : 'map-deploy-unit'}" data-player="${playerKey}" data-unit-id="${esc(u.id)}" ${dead ? 'disabled' : ''}>
             ${onMap ? 'Withdraw' : 'Deploy'}
@@ -172,8 +186,8 @@ function renderSimArmyList(state, playerKey) {
     </div>`;
 }
 
-function renderSimWeaponBlocks(unit, playerKey, selectedWeapon, selectableRange) {
-  const keywordRuleIndex = getUnitKeywordRules(unit);
+function renderSimWeaponBlocks(unit, playerKey, selectedWeapon, selectableRange, army) {
+  const keywordRuleIndex = buildKeywordRuleIndex(unit, army);
   const kwContext = { player: playerKey, unitId: unit.id };
   const selectedIndex =
     selectedWeapon?.unitId === unit.id && Number.isInteger(selectedWeapon.weaponIndex)
@@ -258,13 +272,20 @@ function renderSimUnitCard(state, playerKey) {
       </div>`,
         )
         .join('');
-      const { ranged, melee } = renderSimWeaponBlocks(unit, playerKey, selectedWeapon, true);
+      const army = state[playerKey]?.army;
+      const { ranged, melee } = renderSimWeaponBlocks(unit, playerKey, selectedWeapon, true, army);
       const roleTag = unit.isLeader ? 'Leader' : unitIsSupport(unit) ? 'Support' : '';
+      const attachedToId = attachments[unit.id];
+      const attachedTo = attachedToId ? army?.units?.find((x) => x.id === attachedToId) : null;
+      const attachLine = attachedTo
+        ? `<p class="combat-unit-attach">${unitIsSupport(unit) ? 'Supporting' : 'Leading'} ${esc(attachedTo.name)}</p>`
+        : '';
       return `
       <div class="combat-unit-block">
         <div class="combat-unit-header">
           <h3>${esc(unit.name)}${roleTag ? ` <span class="combat-role-tag">${roleTag}</span>` : ''}</h3>
-          <p class="combat-unit-meta">${remaining} models · ${woundsTaken}/${woundCap} wounds</p>
+          <p class="combat-unit-meta">${remaining} models · ${woundsTaken}/${woundCap} wounds${unit.baseLabel ? ` · ${esc(unit.baseLabel)}` : ''}</p>
+          ${attachLine}
           ${unit.statsLine ? `<p class="combat-unit-stats">${esc(unit.statsLine)}</p>` : ''}
         </div>
         <div class="combat-wounds-row">
@@ -327,13 +348,19 @@ function renderSimCombatOverlay(state, playerKey) {
         <div class="combat-ability-item"><strong>${esc(a.name)}</strong><p>${esc(a.description)}</p></div>`,
         )
         .join('');
-      const { ranged, melee } = renderSimWeaponBlocks(unit, playerKey, selectedWeapon, showWeaponPick);
+      const { ranged, melee } = renderSimWeaponBlocks(
+        unit,
+        playerKey,
+        selectedWeapon,
+        showWeaponPick,
+        army,
+      );
       const roleTag = unit.isLeader ? 'Leader' : unitIsSupport(unit) ? 'Support' : '';
       return `
       <div class="combat-unit-block">
         <div class="combat-unit-header">
           <h3>${esc(unit.name)}${roleTag ? ` <span class="combat-role-tag">${roleTag}</span>` : ''}</h3>
-          <p class="combat-unit-meta">${remaining} models · ${woundsTaken}/${woundCap} wounds · ${unit.points} pts</p>
+          <p class="combat-unit-meta">${remaining} models · ${woundsTaken}/${woundCap} wounds · ${unit.points} pts${unit.baseLabel ? ` · ${esc(unit.baseLabel)}` : ''}</p>
           ${unit.statsLine ? `<p class="combat-unit-stats">${esc(unit.statsLine)}</p>` : ''}
         </div>
         <div class="combat-wounds-row">

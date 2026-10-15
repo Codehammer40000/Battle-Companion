@@ -8,6 +8,15 @@ export const MARKER_RADIUS = {
   vehicle: 2,
 };
 
+/** Convert datasheet base diameter (mm) to map marker radius in inches. */
+export function baseMmToRadiusInches(baseMm) {
+  const mm = Number(baseMm);
+  if (!(mm > 0)) return null;
+  // Base size is diameter; marker uses radius. Clamp for clickability on the 60×44" board.
+  const radius = mm / 25.4 / 2;
+  return Math.max(0.28, Math.min(radius, 3));
+}
+
 export function createEmptyBattleMap() {
   return {
     layoutId: 'blank',
@@ -60,6 +69,12 @@ function getUnitInitialCountHint(unit) {
 }
 
 export function getModelMarkerRadius(unit, role = 'standard') {
+  const fromBase = baseMmToRadiusInches(unit?.baseMm);
+  if (fromBase != null) return fromBase;
+
+  const baseLabel = unit?.baseLabel || unit?.stats?.Base || '';
+  if (/hull/i.test(baseLabel)) return MARKER_RADIUS.vehicle;
+
   if (hasKeyword(unit, /^(monster|vehicle)$/i) || role === 'vehicle' || role === 'monster') {
     return MARKER_RADIUS.vehicle;
   }
@@ -67,7 +82,7 @@ export function getModelMarkerRadius(unit, role = 'standard') {
     return MARKER_RADIUS.leader;
   }
   if (unitCanLeadLocal(unit) && role === 'standard') {
-    // single-model characters are leader-sized
+    // single-model characters are leader-sized when Base is missing
     return MARKER_RADIUS.leader;
   }
   return MARKER_RADIUS.standard;

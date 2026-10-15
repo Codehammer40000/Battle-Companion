@@ -643,6 +643,18 @@ body { min-height: 100vh; }
   color: var(--muted);
 }
 
+.unit-attach-summary {
+  font-size: 0.62rem;
+  color: var(--gold);
+  line-height: 1.25;
+}
+
+.combat-unit-attach {
+  margin: 0.15rem 0 0;
+  font-size: 0.72rem;
+  color: var(--gold);
+}
+
 .leader-label {
   font-style: italic;
   color: var(--muted);
@@ -3132,6 +3144,15 @@ const MARKER_RADIUS = {
   vehicle: 2,
 };
 
+/** Convert datasheet base diameter (mm) to map marker radius in inches. */
+function baseMmToRadiusInches(baseMm) {
+  const mm = Number(baseMm);
+  if (!(mm > 0)) return null;
+  // Base size is diameter; marker uses radius. Clamp for clickability on the 60×44" board.
+  const radius = mm / 25.4 / 2;
+  return Math.max(0.28, Math.min(radius, 3));
+}
+
 function createEmptyBattleMap() {
   return {
     layoutId: 'blank',
@@ -3184,6 +3205,12 @@ function getUnitInitialCountHint(unit) {
 }
 
 function getModelMarkerRadius(unit, role = 'standard') {
+  const fromBase = baseMmToRadiusInches(unit?.baseMm);
+  if (fromBase != null) return fromBase;
+
+  const baseLabel = unit?.baseLabel || unit?.stats?.Base || '';
+  if (/hull/i.test(baseLabel)) return MARKER_RADIUS.vehicle;
+
   if (hasKeyword(unit, /^(monster|vehicle)$/i) || role === 'vehicle' || role === 'monster') {
     return MARKER_RADIUS.vehicle;
   }
@@ -3191,7 +3218,7 @@ function getModelMarkerRadius(unit, role = 'standard') {
     return MARKER_RADIUS.leader;
   }
   if (unitCanLeadLocal(unit) && role === 'standard') {
-    // single-model characters are leader-sized
+    // single-model characters are leader-sized when Base is missing
     return MARKER_RADIUS.leader;
   }
   return MARKER_RADIUS.standard;
@@ -5475,6 +5502,7 @@ function buildUnitStats(charStats, rules, abilities) {
   }
 
   const fnp = extractFnp(rules, abilities);
+  const base = parseBaseSize(charStats.Base);
 
   return {
     M: charStats.M || '',
@@ -5485,6 +5513,7 @@ function buildUnitStats(charStats, rules, abilities) {
     OC: charStats.OC || '',
     InSv: invuln,
     FNP: fnp,
+    Base: base.label || '',
   };
 }
 
@@ -5499,7 +5528,51 @@ function formatUnitStatsLine(stats) {
   if (!isEmptyStat(stats.OC)) parts.push(`OC ${stats.OC}`);
   if (!isEmptyStat(stats.InSv)) parts.push(`InSv ${stats.InSv}`);
   if (!isEmptyStat(stats.FNP)) parts.push(`FNP ${stats.FNP}`);
+  if (!isEmptyStat(stats.Base)) parts.push(`Base ${stats.Base}`);
   return parts.join(' · ');
+}
+
+/** Parse New Recruit / datasheet Base characteristic (e.g. 40mm, ~40mm, Hull). */
+function parseBaseSize(raw) {
+  if (raw == null) return { label: '', mm: 0, kind: '' };
+  const label = String(raw).trim();
+  if (!label || label === '-' || label.toUpperCase() === 'N/A') {
+    return { label: '', mm: 0, kind: '' };
+  }
+  if (/hull/i.test(label)) return { label, mm: 0, kind: 'hull' };
+  const m = label.match(/~?\s*(\d+(?:\.\d+)?)\s*mm/i);
+  if (m) {
+    const mm = Number(m[1]);
+    return { label, mm: Number.isFinite(mm) && mm > 0 ? mm : 0, kind: 'round' };
+  }
+  const n = parseFloat(label);
+  if (Number.isFinite(n) && n > 0) return { label: `${n}mm`, mm: n, kind: 'round' };
+  return { label, mm: 0, kind: 'other' };
+}
+
+function majorityCompositionBase(comp) {
+  if (!Array.isArray(comp) || !comp.length) return { label: '', mm: 0, kind: '' };
+  const majority = [...comp].sort((a, b) => (Number(b.count) || 0) - (Number(a.count) || 0))[0];
+  if (majority?.baseMm > 0 || majority?.baseLabel || majority?.baseKind === 'hull') {
+    return {
+      label: majority.baseLabel || (majority.baseMm ? `${majority.baseMm}mm` : ''),
+      mm: Number(majority.baseMm) || 0,
+      kind: majority.baseKind || (majority.baseMm > 0 ? 'round' : ''),
+    };
+  }
+  return parseBaseSize(majority?.base);
+}
+
+function getUnitBaseInfo(unit) {
+  if (unit?.baseKind === 'hull' || (unit?.baseLabel && /hull/i.test(unit.baseLabel))) {
+    return { label: unit.baseLabel || 'Hull', mm: 0, kind: 'hull' };
+  }
+  if (unit?.baseMm > 0) {
+    return { label: unit.baseLabel || `${unit.baseMm}mm`, mm: unit.baseMm, kind: unit.baseKind || 'round' };
+  }
+  const fromComp = majorityCompositionBase(unit?.modelComposition);
+  if (fromComp.mm > 0 || fromComp.kind === 'hull') return fromComp;
+  return parseBaseSize(unit?.stats?.Base || unit?.baseLabel);
 }
 
 function parseWoundCharacteristic(w) {
@@ -5587,16 +5660,24 @@ function getRemainingModelsFromUnit(unit, woundsTaken) {
   return Math.max(0, initial - Math.floor(dmg / w));
 }
 
-function getOwnUnitProfileWounds(sel) {
+function getOwnUnitProfileChars(sel) {
   const profiles = [];
   for (const profile of sel.profiles || []) {
     if (profile.typeName === 'Unit') {
       profiles.push({ name: profile.name, chars: getProfileChars(profile) });
     }
   }
-  if (!profiles.length) return 0;
-  const chars = pickPrimaryStats(profiles, sel.name);
+  if (!profiles.length) return {};
+  return pickPrimaryStats(profiles, sel.name);
+}
+
+function getOwnUnitProfileWounds(sel) {
+  const chars = getOwnUnitProfileChars(sel);
   return parseWoundCharacteristic(chars.W || chars.Wounds);
+}
+
+function getOwnUnitProfileBase(sel) {
+  return parseBaseSize(getOwnUnitProfileChars(sel).Base);
 }
 
 function getModelWounds(sel, inheritedWounds) {
@@ -5610,6 +5691,19 @@ function getModelWounds(sel, inheritedWounds) {
   }
   if (inheritedWounds > 0) return inheritedWounds;
   return 1;
+}
+
+function getModelBase(sel, inheritedBase) {
+  const own = getOwnUnitProfileBase(sel);
+  if (own.mm > 0 || own.kind === 'hull') return own;
+  const nestedProfiles = collectUnitStatProfiles(sel);
+  if (nestedProfiles.length) {
+    const chars = pickPrimaryStats(nestedProfiles, sel.name);
+    const nested = parseBaseSize(chars.Base);
+    if (nested.mm > 0 || nested.kind === 'hull') return nested;
+  }
+  if (inheritedBase?.mm > 0 || inheritedBase?.kind === 'hull') return inheritedBase;
+  return { label: '', mm: 0, kind: '' };
 }
 
 /**
@@ -5627,32 +5721,55 @@ function repairModelCompositionWounds(unit, composition) {
 }
 
 /**
- * Per model-type composition under a unit selection (count + wounds each).
+ * Per model-type composition under a unit selection (count + wounds + base each).
  * Used for multi-profile leader units like Hyperadapted Raveners.
- * Child models without their own Unit profile inherit W from the parent unit.
+ * Child models without their own Unit profile inherit W/Base from the parent unit.
  */
-function collectModelComposition(sel, out = [], inheritedWounds = 0) {
+function collectModelComposition(sel, out = [], inheritedWounds = 0, inheritedBase = null) {
   const fallbackWounds = getOwnUnitProfileWounds(sel) || inheritedWounds;
+  const ownBase = getOwnUnitProfileBase(sel);
+  const fallbackBase =
+    ownBase.mm > 0 || ownBase.kind === 'hull' ? ownBase : inheritedBase || { label: '', mm: 0, kind: '' };
   let found = false;
   for (const child of sel.selections || []) {
     if (child.type === 'model') {
       found = true;
       const count = Math.max(1, child.number || 1);
       const wounds = getModelWounds(child, fallbackWounds);
-      const existing = out.find((c) => c.name === child.name && c.wounds === wounds);
+      const base = getModelBase(child, fallbackBase);
+      const existing = out.find(
+        (c) => c.name === child.name && c.wounds === wounds && (c.baseMm || 0) === (base.mm || 0),
+      );
       if (existing) existing.count += count;
-      else out.push({ name: child.name, count, wounds });
+      else {
+        out.push({
+          name: child.name,
+          count,
+          wounds,
+          baseLabel: base.label || '',
+          baseMm: base.mm || 0,
+          baseKind: base.kind || '',
+        });
+      }
     } else if (child.selections?.length) {
       const before = out.length;
-      collectModelComposition(child, out, fallbackWounds);
+      collectModelComposition(child, out, fallbackWounds, fallbackBase);
       if (out.length > before) found = true;
     }
   }
   if (!found && (sel.type === 'model' || sel.type === 'unit')) {
     const wounds = getModelWounds(sel, fallbackWounds);
+    const base = getModelBase(sel, fallbackBase);
     const count =
       sel.type === 'model' ? Math.max(1, sel.number || 1) : Math.max(1, countModels(sel));
-    out.push({ name: sel.name, count, wounds });
+    out.push({
+      name: sel.name,
+      count,
+      wounds,
+      baseLabel: base.label || '',
+      baseMm: base.mm || 0,
+      baseKind: base.kind || '',
+    });
   }
   return out;
 }
@@ -5666,6 +5783,16 @@ function indexKeywordRules(rules) {
   return index;
 }
 
+function normalizeKeywordLookupKey(text) {
+  return String(text || '')
+    .trim()
+    .toLowerCase()
+    .replace(/:.*$/, '')
+    .replace(/\s+\d+\+?\s*$/, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 function findKeywordRule(keyword, ruleIndex) {
   if (!keyword || !ruleIndex) return null;
   const text = String(keyword).trim();
@@ -5677,11 +5804,24 @@ function findKeywordRule(keyword, ruleIndex) {
     if (name.toLowerCase() === lower) return rule;
   }
 
+  const stripped = normalizeKeywordLookupKey(text);
+  if (stripped) {
+    for (const [name, rule] of Object.entries(ruleIndex)) {
+      if (normalizeKeywordLookupKey(name) === stripped) return rule;
+    }
+  }
+
   let best = null;
   let bestLen = 0;
   for (const [name, rule] of Object.entries(ruleIndex)) {
     const nameLower = name.toLowerCase();
-    if (lower.startsWith(nameLower) && name.length > bestLen) {
+    const nameNorm = normalizeKeywordLookupKey(name);
+    if (!nameLower) continue;
+    // "Blast 1" / "Anti-fly 2+" / "Lethal Hits: non-Vehicle" → Blast / Anti / Lethal Hits
+    if (
+      (lower.startsWith(nameLower) || (stripped && stripped.startsWith(nameNorm))) &&
+      name.length > bestLen
+    ) {
       best = rule;
       bestLen = name.length;
     }
@@ -5692,6 +5832,15 @@ function findKeywordRule(keyword, ruleIndex) {
 function getUnitKeywordRules(unit) {
   if (unit?.keywordRules && typeof unit.keywordRules === 'object') return unit.keywordRules;
   return indexKeywordRules(unit?.rules);
+}
+
+/** Merge army-wide + unit rule indexes so weapon/unit keyword chips resolve more often. */
+function buildKeywordRuleIndex(unit, army) {
+  return {
+    ...indexKeywordRules(army?.armyRules || army?.forceRules || []),
+    ...indexKeywordRules(army?.detachmentRules || []),
+    ...getUnitKeywordRules(unit),
+  };
 }
 
 const UNIT_ABILITY_RULE_PATTERNS = [/^feel no pain/i, /^deadly demise/i, /^deep strike/i];
@@ -5838,22 +5987,57 @@ function normalizeArmyUnits(army) {
   if (!army?.units) return army;
   return {
     ...army,
+    defaultAttachments:
+      army.defaultAttachments && typeof army.defaultAttachments === 'object'
+        ? army.defaultAttachments
+        : {},
+    attachmentRoles:
+      army.attachmentRoles && typeof army.attachmentRoles === 'object' ? army.attachmentRoles : {},
     units: army.units.map((u) => {
       const rawComp = Array.isArray(u.modelComposition) ? u.modelComposition : undefined;
       const modelComposition = rawComp ? repairModelCompositionWounds(u, rawComp) : undefined;
       const withComp = modelComposition ? { ...u, modelComposition } : { ...u };
       const initialModelCount = getUnitInitialModelCount(withComp);
+      const baseInfo = getUnitBaseInfo(withComp);
       return {
         ...withComp,
         woundsPerModel: getUnitWoundsPerModel(withComp),
         initialModelCount,
         modelCount: initialModelCount,
         modelComposition,
+        baseLabel: baseInfo.label || withComp.baseLabel || '',
+        baseMm: baseInfo.mm || withComp.baseMm || 0,
+        baseKind: baseInfo.kind || withComp.baseKind || '',
         totalWounds: getUnitWoundCapacityFromUnit({ ...withComp, initialModelCount }),
         keywordRules: u.keywordRules || indexKeywordRules(u.rules),
       };
     }),
   };
+}
+
+/**
+ * New Recruit encodes Leader/Support attachments as associations on selections.
+ * Leading / Supporting + action=group → leaderId attaches to bodyguardId.
+ */
+function extractDefaultAttachments(force, units) {
+  const unitIds = new Set((units || []).map((u) => u.id));
+  const attachments = {};
+  const roles = {};
+
+  for (const sel of force?.selections || []) {
+    if (!unitIds.has(sel.id)) continue;
+    for (const assoc of sel.associations || []) {
+      if ((assoc.action || '').toLowerCase() !== 'group') continue;
+      const role = String(assoc.name || '').toLowerCase();
+      if (role !== 'leading' && role !== 'supporting') continue;
+      const bodyguardId = assoc.to;
+      if (!bodyguardId || !unitIds.has(bodyguardId)) continue;
+      attachments[sel.id] = bodyguardId;
+      roles[sel.id] = role;
+    }
+  }
+
+  return { attachments, roles };
 }
 
 function unitHasLeaderAbility(abilities, unitRules) {
@@ -5896,6 +6080,11 @@ function parseUnit(sel) {
   // Prefer composition counts when present so single multi-wound models (Knights, etc.)
   // are not over-counted from nested roster selections.
   const modelCount = compositionModels > 0 ? compositionModels : countModels(sel);
+  const baseInfo = (() => {
+    const fromStats = parseBaseSize(stats.Base);
+    if (fromStats.mm > 0 || fromStats.kind === 'hull') return fromStats;
+    return majorityCompositionBase(modelComposition);
+  })();
 
   const rangedWeapons = dedupeByKey(collectWeapons(sel, 'Ranged Weapons'), (w) =>
     `${w.name}::${w.range}::${w.a}::${w.bs}::${w.s}::${w.ap}::${w.d}`,
@@ -5903,6 +6092,10 @@ function parseUnit(sel) {
   const meleeWeapons = dedupeByKey(collectWeapons(sel, 'Melee Weapons'), (w) =>
     `${w.name}::${w.a}::${w.ws}::${w.s}::${w.ap}::${w.d}`,
   );
+
+  const isLeader =
+    unitHasLeaderAbility(abilities, unitRules) || keywords.some((k) => /^leader$/i.test(k));
+  const isSupport = unitHasSupport(abilities, unitRules, keywords);
 
   return {
     id: sel.id,
@@ -5913,6 +6106,9 @@ function parseUnit(sel) {
     initialModelCount: modelCount,
     woundsPerModel: majorityWounds || parseWoundValue(stats.W),
     modelComposition,
+    baseLabel: baseInfo.label || '',
+    baseMm: baseInfo.mm || 0,
+    baseKind: baseInfo.kind || '',
     totalWounds: compositionWounds || majorityWounds * modelCount,
     keywords,
     stats,
@@ -5924,9 +6120,9 @@ function parseUnit(sel) {
     keywordRules: indexKeywordRules(unitRules),
     armyWideRules,
     isWarlord: (sel.selections || []).some((s) => s.name === 'Warlord'),
-    isLeader: unitHasLeaderAbility(abilities, unitRules),
-    isSupport: unitHasSupport(abilities, unitRules, keywords),
-    isAttached: allRules.some((r) => r.name === 'Leader') || keywords.includes('Captain'),
+    isLeader,
+    isSupport,
+    isAttached: isLeader || isSupport || keywords.includes('Captain'),
   };
 }
 
@@ -5973,6 +6169,17 @@ function parseRosterJson(json) {
     delete unit.armyWideRules;
   }
 
+  const { attachments: defaultAttachments, roles: attachmentRoles } = extractDefaultAttachments(
+    force,
+    units,
+  );
+  for (const unit of units) {
+    const bodyguardId = defaultAttachments[unit.id];
+    if (!bodyguardId) continue;
+    unit.rosterAttachedTo = bodyguardId;
+    unit.rosterAttachmentRole = attachmentRoles[unit.id] || null;
+  }
+
   return {
     name: roster.name || force.name || 'Unnamed Army',
     faction: force.catalogueName || '',
@@ -5983,6 +6190,8 @@ function parseRosterJson(json) {
     points: getPoints(roster.costs),
     pointsLimit: roster.costLimits?.[0]?.value ?? 0,
     units,
+    defaultAttachments,
+    attachmentRoles,
     armyRules,
     forceRules: armyRules,
     detachmentRules,
@@ -7367,13 +7576,18 @@ function guideReducer(state, action) {
       const army = normalizeArmy(parseRosterJson(action.json));
       const key = action.player;
       const extras = clearPlayerArmyExtras(state, key);
+      // Seed Leader/Support attachments from New Recruit associations when present.
+      const seededAttachments = { ...(army.defaultAttachments || {}) };
       const next = {
         ...state,
         battleReady: extras.battleReady,
         // Keep stratagem deck when replacing army roster — decks are uploaded separately.
         deadUnits: extras.deadUnits,
         unitWounds: extras.unitWounds,
-        leaderAttachments: extras.leaderAttachments,
+        leaderAttachments: {
+          ...extras.leaderAttachments,
+          [key]: seededAttachments,
+        },
         woundKilledUnits: extras.woundKilledUnits,
         battleShocked: extras.battleShocked,
         [key]: {
@@ -7733,9 +7947,10 @@ function guideReducer(state, action) {
     case 'SHOW_KEYWORD_RULE': {
       const { player, unitId, ruleName } = action;
       if (!player || !unitId || !ruleName) return state;
-      const unit = findUnitInArmy(state[player]?.army, unitId);
+      const army = state[player]?.army;
+      const unit = findUnitInArmy(army, unitId);
       if (!unit) return state;
-      const rule = findKeywordRule(ruleName, getUnitKeywordRules(unit));
+      const rule = findKeywordRule(ruleName, buildKeywordRuleIndex(unit, army));
       if (!rule) return state;
       return { ...state, keywordRulePopup: { name: rule.name, description: rule.description } };
     }
@@ -8419,6 +8634,19 @@ function renderSimArmyList(state, playerKey) {
       const onMap = !!state.battleMap?.unitsOnMap?.[mapKey];
       const woundsTaken = getUnitWoundsTaken(state, playerKey, u.id);
       const remaining = getRemainingModels(u, woundsTaken);
+      const attachedToId = attachments[u.id];
+      const attachedTo = attachedToId ? army.units.find((x) => x.id === attachedToId) : null;
+      const ledBy = getLeadersOnBodyguard(attachments, u.id)
+        .map((id) => army.units.find((x) => x.id === id)?.name)
+        .filter(Boolean);
+      const attachHint = attachedTo
+        ? unitIsSupport(u)
+          ? `Supporting ${attachedTo.name}`
+          : `Leading ${attachedTo.name}`
+        : ledBy.length
+          ? `With ${ledBy.join(', ')}`
+          : '';
+      const baseHint = u.baseLabel ? ` · ${u.baseLabel}` : '';
       const sel =
         selected?.player === playerKey &&
         (selected?.unitId === u.id || selected?.unitId === group.groupId)
@@ -8428,7 +8656,7 @@ function renderSimArmyList(state, playerKey) {
         <div class="sim-unit-row ${dead ? 'is-dead' : ''} ${sel}" data-unit-key="${esc(mapUnitKey(playerKey, u.id))}">
           <button type="button" class="sim-unit-select" data-action="map-select-unit" data-player="${playerKey}" data-unit-id="${esc(u.id)}">
             <strong>${esc(u.name)}</strong>
-            <span class="sim-unit-meta">${remaining} · ${esc(u.statsLine || '')}</span>
+            <span class="sim-unit-meta">${remaining}${baseHint}${attachHint ? ` · ${esc(attachHint)}` : ''} · ${esc(u.statsLine || '')}</span>
           </button>
           <button type="button" class="btn-small ${onMap ? 'withdraw-btn' : 'deploy-btn'}" data-action="${onMap ? 'map-withdraw-unit' : 'map-deploy-unit'}" data-player="${playerKey}" data-unit-id="${esc(u.id)}" ${dead ? 'disabled' : ''}>
             ${onMap ? 'Withdraw' : 'Deploy'}
@@ -8451,8 +8679,8 @@ function renderSimArmyList(state, playerKey) {
     </div>`;
 }
 
-function renderSimWeaponBlocks(unit, playerKey, selectedWeapon, selectableRange) {
-  const keywordRuleIndex = getUnitKeywordRules(unit);
+function renderSimWeaponBlocks(unit, playerKey, selectedWeapon, selectableRange, army) {
+  const keywordRuleIndex = buildKeywordRuleIndex(unit, army);
   const kwContext = { player: playerKey, unitId: unit.id };
   const selectedIndex =
     selectedWeapon?.unitId === unit.id && Number.isInteger(selectedWeapon.weaponIndex)
@@ -8537,13 +8765,20 @@ function renderSimUnitCard(state, playerKey) {
       </div>`,
         )
         .join('');
-      const { ranged, melee } = renderSimWeaponBlocks(unit, playerKey, selectedWeapon, true);
+      const army = state[playerKey]?.army;
+      const { ranged, melee } = renderSimWeaponBlocks(unit, playerKey, selectedWeapon, true, army);
       const roleTag = unit.isLeader ? 'Leader' : unitIsSupport(unit) ? 'Support' : '';
+      const attachedToId = attachments[unit.id];
+      const attachedTo = attachedToId ? army?.units?.find((x) => x.id === attachedToId) : null;
+      const attachLine = attachedTo
+        ? `<p class="combat-unit-attach">${unitIsSupport(unit) ? 'Supporting' : 'Leading'} ${esc(attachedTo.name)}</p>`
+        : '';
       return `
       <div class="combat-unit-block">
         <div class="combat-unit-header">
           <h3>${esc(unit.name)}${roleTag ? ` <span class="combat-role-tag">${roleTag}</span>` : ''}</h3>
-          <p class="combat-unit-meta">${remaining} models · ${woundsTaken}/${woundCap} wounds</p>
+          <p class="combat-unit-meta">${remaining} models · ${woundsTaken}/${woundCap} wounds${unit.baseLabel ? ` · ${esc(unit.baseLabel)}` : ''}</p>
+          ${attachLine}
           ${unit.statsLine ? `<p class="combat-unit-stats">${esc(unit.statsLine)}</p>` : ''}
         </div>
         <div class="combat-wounds-row">
@@ -8606,13 +8841,19 @@ function renderSimCombatOverlay(state, playerKey) {
         <div class="combat-ability-item"><strong>${esc(a.name)}</strong><p>${esc(a.description)}</p></div>`,
         )
         .join('');
-      const { ranged, melee } = renderSimWeaponBlocks(unit, playerKey, selectedWeapon, showWeaponPick);
+      const { ranged, melee } = renderSimWeaponBlocks(
+        unit,
+        playerKey,
+        selectedWeapon,
+        showWeaponPick,
+        army,
+      );
       const roleTag = unit.isLeader ? 'Leader' : unitIsSupport(unit) ? 'Support' : '';
       return `
       <div class="combat-unit-block">
         <div class="combat-unit-header">
           <h3>${esc(unit.name)}${roleTag ? ` <span class="combat-role-tag">${roleTag}</span>` : ''}</h3>
-          <p class="combat-unit-meta">${remaining} models · ${woundsTaken}/${woundCap} wounds · ${unit.points} pts</p>
+          <p class="combat-unit-meta">${remaining} models · ${woundsTaken}/${woundCap} wounds · ${unit.points} pts${unit.baseLabel ? ` · ${esc(unit.baseLabel)}` : ''}</p>
           ${unit.statsLine ? `<p class="combat-unit-stats">${esc(unit.statsLine)}</p>` : ''}
         </div>
         <div class="combat-wounds-row">
@@ -9476,7 +9717,7 @@ function renderUnitDetailModal(state) {
   const woundsTaken = getUnitWoundsTaken(state, detail.player, unit.id);
   const remainingModels = getRemainingModels(unit, woundsTaken);
   const woundCap = getUnitWoundCapacity(unit);
-  const keywordRuleIndex = getUnitKeywordRules(unit);
+  const keywordRuleIndex = buildKeywordRuleIndex(unit, player?.army);
   const kwContext = { player: detail.player, unitId: unit.id };
   const displayKeywords = getUnitDisplayKeywords(unit);
 
@@ -9528,7 +9769,7 @@ function renderCombatCondensedUnit(unit, state, playerKey) {
   const woundsTaken = getUnitWoundsTaken(state, playerKey, unit.id);
   const remainingModels = getRemainingModels(unit, woundsTaken);
   const woundCap = getUnitWoundCapacity(unit);
-  const keywordRuleIndex = getUnitKeywordRules(unit);
+  const keywordRuleIndex = buildKeywordRuleIndex(unit, state[playerKey]?.army);
   const kwContext = { player: playerKey, unitId: unit.id };
   const displayKeywords = getUnitDisplayKeywords(unit);
   const woundControls = `
@@ -9710,6 +9951,23 @@ function renderLeaderAttach(u, key, armyUnits, state) {
   </label>`;
 }
 
+/** Bodyguard-side summary: who is leading / supporting this unit. */
+function renderAttachmentSummary(u, key, armyUnits, state) {
+  const attachments = state.leaderAttachments?.[key] || {};
+  const leaderIds = getLeadersOnBodyguard(attachments, u.id);
+  if (!leaderIds.length) return '';
+  const parts = leaderIds
+    .map((id) => {
+      const leader = armyUnits.find((x) => x.id === id);
+      if (!leader) return '';
+      const role = unitIsSupport(leader) ? 'Supported by' : 'Led by';
+      return `${role} ${leader.name}`;
+    })
+    .filter(Boolean);
+  if (!parts.length) return '';
+  return `<div class="unit-attach-summary">${esc(parts.join(' · '))}</div>`;
+}
+
 function renderBattleShockBtn(key, groupId, shocked, show) {
   if (!show) return '';
   return `<button type="button" class="unit-shock-btn ${shocked ? 'shocked' : ''}" data-action="toggle-battle-shock" data-player="${key}" data-group-id="${esc(groupId)}">BattleShocked</button>`;
@@ -9751,7 +10009,9 @@ function renderUnitCard(u, key, unitAbilities, state, unitIndex, unitCount, army
   const woundsTaken = getUnitWoundsTaken(state, key, u.id);
   const remainingModels = getRemainingModels(u, woundsTaken);
   const leaderAttach = renderLeaderAttach(u, key, armyUnits, state);
+  const attachSummary = renderAttachmentSummary(u, key, armyUnits, state);
   const displayKw = getUnitDisplayKeywords(u);
+  const baseLabel = u.baseLabel || u.stats?.Base || '';
 
   const abilityHtml =
     !dead && unitAbilities.length
@@ -9769,12 +10029,13 @@ function renderUnitCard(u, key, unitAbilities, state, unitIndex, unitCount, army
           <div class="unit-card-title-block">
             <span class="unit-card-name">${esc(u.name)}</span>
             ${leaderAttach}
+            ${attachSummary}
           </div>
           <span class="unit-card-pts">${u.points} pts</span>
         </div>
         <button type="button" class="unit-card-body" data-action="open-unit-detail" data-player="${key}" data-unit-id="${esc(u.id)}">
           ${u.statsLine ? `<div class="unit-card-stats">${esc(u.statsLine)}</div>` : ''}
-          <div class="unit-card-meta">${remainingModels} model${remainingModels !== 1 ? 's' : ''}${u.isWarlord ? ' · Warlord' : ''}</div>
+          <div class="unit-card-meta">${remainingModels} model${remainingModels !== 1 ? 's' : ''}${baseLabel ? ` · ${esc(baseLabel)}` : ''}${u.isWarlord ? ' · Warlord' : ''}</div>
           ${displayKw.length ? `<div class="unit-card-kw">${displayKw.slice(0, 6).map(esc).join(' · ')}</div>` : ''}
           ${abilityHtml}
         </button>

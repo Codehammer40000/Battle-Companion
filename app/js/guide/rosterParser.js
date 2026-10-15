@@ -215,6 +215,7 @@ function buildUnitStats(charStats, rules, abilities) {
   }
 
   const fnp = extractFnp(rules, abilities);
+  const base = parseBaseSize(charStats.Base);
 
   return {
     M: charStats.M || '',
@@ -225,6 +226,7 @@ function buildUnitStats(charStats, rules, abilities) {
     OC: charStats.OC || '',
     InSv: invuln,
     FNP: fnp,
+    Base: base.label || '',
   };
 }
 
@@ -239,7 +241,51 @@ export function formatUnitStatsLine(stats) {
   if (!isEmptyStat(stats.OC)) parts.push(`OC ${stats.OC}`);
   if (!isEmptyStat(stats.InSv)) parts.push(`InSv ${stats.InSv}`);
   if (!isEmptyStat(stats.FNP)) parts.push(`FNP ${stats.FNP}`);
+  if (!isEmptyStat(stats.Base)) parts.push(`Base ${stats.Base}`);
   return parts.join(' · ');
+}
+
+/** Parse New Recruit / datasheet Base characteristic (e.g. 40mm, ~40mm, Hull). */
+export function parseBaseSize(raw) {
+  if (raw == null) return { label: '', mm: 0, kind: '' };
+  const label = String(raw).trim();
+  if (!label || label === '-' || label.toUpperCase() === 'N/A') {
+    return { label: '', mm: 0, kind: '' };
+  }
+  if (/hull/i.test(label)) return { label, mm: 0, kind: 'hull' };
+  const m = label.match(/~?\s*(\d+(?:\.\d+)?)\s*mm/i);
+  if (m) {
+    const mm = Number(m[1]);
+    return { label, mm: Number.isFinite(mm) && mm > 0 ? mm : 0, kind: 'round' };
+  }
+  const n = parseFloat(label);
+  if (Number.isFinite(n) && n > 0) return { label: `${n}mm`, mm: n, kind: 'round' };
+  return { label, mm: 0, kind: 'other' };
+}
+
+function majorityCompositionBase(comp) {
+  if (!Array.isArray(comp) || !comp.length) return { label: '', mm: 0, kind: '' };
+  const majority = [...comp].sort((a, b) => (Number(b.count) || 0) - (Number(a.count) || 0))[0];
+  if (majority?.baseMm > 0 || majority?.baseLabel || majority?.baseKind === 'hull') {
+    return {
+      label: majority.baseLabel || (majority.baseMm ? `${majority.baseMm}mm` : ''),
+      mm: Number(majority.baseMm) || 0,
+      kind: majority.baseKind || (majority.baseMm > 0 ? 'round' : ''),
+    };
+  }
+  return parseBaseSize(majority?.base);
+}
+
+export function getUnitBaseInfo(unit) {
+  if (unit?.baseKind === 'hull' || (unit?.baseLabel && /hull/i.test(unit.baseLabel))) {
+    return { label: unit.baseLabel || 'Hull', mm: 0, kind: 'hull' };
+  }
+  if (unit?.baseMm > 0) {
+    return { label: unit.baseLabel || `${unit.baseMm}mm`, mm: unit.baseMm, kind: unit.baseKind || 'round' };
+  }
+  const fromComp = majorityCompositionBase(unit?.modelComposition);
+  if (fromComp.mm > 0 || fromComp.kind === 'hull') return fromComp;
+  return parseBaseSize(unit?.stats?.Base || unit?.baseLabel);
 }
 
 function parseWoundCharacteristic(w) {
@@ -329,16 +375,24 @@ export function getRemainingModelsFromUnit(unit, woundsTaken) {
   return Math.max(0, initial - Math.floor(dmg / w));
 }
 
-function getOwnUnitProfileWounds(sel) {
+function getOwnUnitProfileChars(sel) {
   const profiles = [];
   for (const profile of sel.profiles || []) {
     if (profile.typeName === 'Unit') {
       profiles.push({ name: profile.name, chars: getProfileChars(profile) });
     }
   }
-  if (!profiles.length) return 0;
-  const chars = pickPrimaryStats(profiles, sel.name);
+  if (!profiles.length) return {};
+  return pickPrimaryStats(profiles, sel.name);
+}
+
+function getOwnUnitProfileWounds(sel) {
+  const chars = getOwnUnitProfileChars(sel);
   return parseWoundCharacteristic(chars.W || chars.Wounds);
+}
+
+function getOwnUnitProfileBase(sel) {
+  return parseBaseSize(getOwnUnitProfileChars(sel).Base);
 }
 
 function getModelWounds(sel, inheritedWounds) {
@@ -352,6 +406,19 @@ function getModelWounds(sel, inheritedWounds) {
   }
   if (inheritedWounds > 0) return inheritedWounds;
   return 1;
+}
+
+function getModelBase(sel, inheritedBase) {
+  const own = getOwnUnitProfileBase(sel);
+  if (own.mm > 0 || own.kind === 'hull') return own;
+  const nestedProfiles = collectUnitStatProfiles(sel);
+  if (nestedProfiles.length) {
+    const chars = pickPrimaryStats(nestedProfiles, sel.name);
+    const nested = parseBaseSize(chars.Base);
+    if (nested.mm > 0 || nested.kind === 'hull') return nested;
+  }
+  if (inheritedBase?.mm > 0 || inheritedBase?.kind === 'hull') return inheritedBase;
+  return { label: '', mm: 0, kind: '' };
 }
 
 /**
@@ -369,32 +436,55 @@ export function repairModelCompositionWounds(unit, composition) {
 }
 
 /**
- * Per model-type composition under a unit selection (count + wounds each).
+ * Per model-type composition under a unit selection (count + wounds + base each).
  * Used for multi-profile leader units like Hyperadapted Raveners.
- * Child models without their own Unit profile inherit W from the parent unit.
+ * Child models without their own Unit profile inherit W/Base from the parent unit.
  */
-function collectModelComposition(sel, out = [], inheritedWounds = 0) {
+function collectModelComposition(sel, out = [], inheritedWounds = 0, inheritedBase = null) {
   const fallbackWounds = getOwnUnitProfileWounds(sel) || inheritedWounds;
+  const ownBase = getOwnUnitProfileBase(sel);
+  const fallbackBase =
+    ownBase.mm > 0 || ownBase.kind === 'hull' ? ownBase : inheritedBase || { label: '', mm: 0, kind: '' };
   let found = false;
   for (const child of sel.selections || []) {
     if (child.type === 'model') {
       found = true;
       const count = Math.max(1, child.number || 1);
       const wounds = getModelWounds(child, fallbackWounds);
-      const existing = out.find((c) => c.name === child.name && c.wounds === wounds);
+      const base = getModelBase(child, fallbackBase);
+      const existing = out.find(
+        (c) => c.name === child.name && c.wounds === wounds && (c.baseMm || 0) === (base.mm || 0),
+      );
       if (existing) existing.count += count;
-      else out.push({ name: child.name, count, wounds });
+      else {
+        out.push({
+          name: child.name,
+          count,
+          wounds,
+          baseLabel: base.label || '',
+          baseMm: base.mm || 0,
+          baseKind: base.kind || '',
+        });
+      }
     } else if (child.selections?.length) {
       const before = out.length;
-      collectModelComposition(child, out, fallbackWounds);
+      collectModelComposition(child, out, fallbackWounds, fallbackBase);
       if (out.length > before) found = true;
     }
   }
   if (!found && (sel.type === 'model' || sel.type === 'unit')) {
     const wounds = getModelWounds(sel, fallbackWounds);
+    const base = getModelBase(sel, fallbackBase);
     const count =
       sel.type === 'model' ? Math.max(1, sel.number || 1) : Math.max(1, countModels(sel));
-    out.push({ name: sel.name, count, wounds });
+    out.push({
+      name: sel.name,
+      count,
+      wounds,
+      baseLabel: base.label || '',
+      baseMm: base.mm || 0,
+      baseKind: base.kind || '',
+    });
   }
   return out;
 }
@@ -408,6 +498,16 @@ export function indexKeywordRules(rules) {
   return index;
 }
 
+function normalizeKeywordLookupKey(text) {
+  return String(text || '')
+    .trim()
+    .toLowerCase()
+    .replace(/:.*$/, '')
+    .replace(/\s+\d+\+?\s*$/, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 export function findKeywordRule(keyword, ruleIndex) {
   if (!keyword || !ruleIndex) return null;
   const text = String(keyword).trim();
@@ -419,11 +519,24 @@ export function findKeywordRule(keyword, ruleIndex) {
     if (name.toLowerCase() === lower) return rule;
   }
 
+  const stripped = normalizeKeywordLookupKey(text);
+  if (stripped) {
+    for (const [name, rule] of Object.entries(ruleIndex)) {
+      if (normalizeKeywordLookupKey(name) === stripped) return rule;
+    }
+  }
+
   let best = null;
   let bestLen = 0;
   for (const [name, rule] of Object.entries(ruleIndex)) {
     const nameLower = name.toLowerCase();
-    if (lower.startsWith(nameLower) && name.length > bestLen) {
+    const nameNorm = normalizeKeywordLookupKey(name);
+    if (!nameLower) continue;
+    // "Blast 1" / "Anti-fly 2+" / "Lethal Hits: non-Vehicle" → Blast / Anti / Lethal Hits
+    if (
+      (lower.startsWith(nameLower) || (stripped && stripped.startsWith(nameNorm))) &&
+      name.length > bestLen
+    ) {
       best = rule;
       bestLen = name.length;
     }
@@ -434,6 +547,15 @@ export function findKeywordRule(keyword, ruleIndex) {
 export function getUnitKeywordRules(unit) {
   if (unit?.keywordRules && typeof unit.keywordRules === 'object') return unit.keywordRules;
   return indexKeywordRules(unit?.rules);
+}
+
+/** Merge army-wide + unit rule indexes so weapon/unit keyword chips resolve more often. */
+export function buildKeywordRuleIndex(unit, army) {
+  return {
+    ...indexKeywordRules(army?.armyRules || army?.forceRules || []),
+    ...indexKeywordRules(army?.detachmentRules || []),
+    ...getUnitKeywordRules(unit),
+  };
 }
 
 const UNIT_ABILITY_RULE_PATTERNS = [/^feel no pain/i, /^deadly demise/i, /^deep strike/i];
@@ -580,22 +702,57 @@ export function normalizeArmyUnits(army) {
   if (!army?.units) return army;
   return {
     ...army,
+    defaultAttachments:
+      army.defaultAttachments && typeof army.defaultAttachments === 'object'
+        ? army.defaultAttachments
+        : {},
+    attachmentRoles:
+      army.attachmentRoles && typeof army.attachmentRoles === 'object' ? army.attachmentRoles : {},
     units: army.units.map((u) => {
       const rawComp = Array.isArray(u.modelComposition) ? u.modelComposition : undefined;
       const modelComposition = rawComp ? repairModelCompositionWounds(u, rawComp) : undefined;
       const withComp = modelComposition ? { ...u, modelComposition } : { ...u };
       const initialModelCount = getUnitInitialModelCount(withComp);
+      const baseInfo = getUnitBaseInfo(withComp);
       return {
         ...withComp,
         woundsPerModel: getUnitWoundsPerModel(withComp),
         initialModelCount,
         modelCount: initialModelCount,
         modelComposition,
+        baseLabel: baseInfo.label || withComp.baseLabel || '',
+        baseMm: baseInfo.mm || withComp.baseMm || 0,
+        baseKind: baseInfo.kind || withComp.baseKind || '',
         totalWounds: getUnitWoundCapacityFromUnit({ ...withComp, initialModelCount }),
         keywordRules: u.keywordRules || indexKeywordRules(u.rules),
       };
     }),
   };
+}
+
+/**
+ * New Recruit encodes Leader/Support attachments as associations on selections.
+ * Leading / Supporting + action=group → leaderId attaches to bodyguardId.
+ */
+export function extractDefaultAttachments(force, units) {
+  const unitIds = new Set((units || []).map((u) => u.id));
+  const attachments = {};
+  const roles = {};
+
+  for (const sel of force?.selections || []) {
+    if (!unitIds.has(sel.id)) continue;
+    for (const assoc of sel.associations || []) {
+      if ((assoc.action || '').toLowerCase() !== 'group') continue;
+      const role = String(assoc.name || '').toLowerCase();
+      if (role !== 'leading' && role !== 'supporting') continue;
+      const bodyguardId = assoc.to;
+      if (!bodyguardId || !unitIds.has(bodyguardId)) continue;
+      attachments[sel.id] = bodyguardId;
+      roles[sel.id] = role;
+    }
+  }
+
+  return { attachments, roles };
 }
 
 function unitHasLeaderAbility(abilities, unitRules) {
@@ -638,6 +795,11 @@ function parseUnit(sel) {
   // Prefer composition counts when present so single multi-wound models (Knights, etc.)
   // are not over-counted from nested roster selections.
   const modelCount = compositionModels > 0 ? compositionModels : countModels(sel);
+  const baseInfo = (() => {
+    const fromStats = parseBaseSize(stats.Base);
+    if (fromStats.mm > 0 || fromStats.kind === 'hull') return fromStats;
+    return majorityCompositionBase(modelComposition);
+  })();
 
   const rangedWeapons = dedupeByKey(collectWeapons(sel, 'Ranged Weapons'), (w) =>
     `${w.name}::${w.range}::${w.a}::${w.bs}::${w.s}::${w.ap}::${w.d}`,
@@ -645,6 +807,10 @@ function parseUnit(sel) {
   const meleeWeapons = dedupeByKey(collectWeapons(sel, 'Melee Weapons'), (w) =>
     `${w.name}::${w.a}::${w.ws}::${w.s}::${w.ap}::${w.d}`,
   );
+
+  const isLeader =
+    unitHasLeaderAbility(abilities, unitRules) || keywords.some((k) => /^leader$/i.test(k));
+  const isSupport = unitHasSupport(abilities, unitRules, keywords);
 
   return {
     id: sel.id,
@@ -655,6 +821,9 @@ function parseUnit(sel) {
     initialModelCount: modelCount,
     woundsPerModel: majorityWounds || parseWoundValue(stats.W),
     modelComposition,
+    baseLabel: baseInfo.label || '',
+    baseMm: baseInfo.mm || 0,
+    baseKind: baseInfo.kind || '',
     totalWounds: compositionWounds || majorityWounds * modelCount,
     keywords,
     stats,
@@ -666,9 +835,9 @@ function parseUnit(sel) {
     keywordRules: indexKeywordRules(unitRules),
     armyWideRules,
     isWarlord: (sel.selections || []).some((s) => s.name === 'Warlord'),
-    isLeader: unitHasLeaderAbility(abilities, unitRules),
-    isSupport: unitHasSupport(abilities, unitRules, keywords),
-    isAttached: allRules.some((r) => r.name === 'Leader') || keywords.includes('Captain'),
+    isLeader,
+    isSupport,
+    isAttached: isLeader || isSupport || keywords.includes('Captain'),
   };
 }
 
@@ -715,6 +884,17 @@ export function parseRosterJson(json) {
     delete unit.armyWideRules;
   }
 
+  const { attachments: defaultAttachments, roles: attachmentRoles } = extractDefaultAttachments(
+    force,
+    units,
+  );
+  for (const unit of units) {
+    const bodyguardId = defaultAttachments[unit.id];
+    if (!bodyguardId) continue;
+    unit.rosterAttachedTo = bodyguardId;
+    unit.rosterAttachmentRole = attachmentRoles[unit.id] || null;
+  }
+
   return {
     name: roster.name || force.name || 'Unnamed Army',
     faction: force.catalogueName || '',
@@ -725,6 +905,8 @@ export function parseRosterJson(json) {
     points: getPoints(roster.costs),
     pointsLimit: roster.costLimits?.[0]?.value ?? 0,
     units,
+    defaultAttachments,
+    attachmentRoles,
     armyRules,
     forceRules: armyRules,
     detachmentRules,
