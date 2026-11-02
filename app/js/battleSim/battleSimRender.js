@@ -473,8 +473,9 @@ function renderDatasheetPanel(state, playerKey, unitId, role) {
     closeAttrs = `data-action="combat-select-target" data-unit-id="${esc(unitId)}"`;
   }
 
+  const side = playerKey === 'player1' ? 'left' : 'right';
   return `
-    <section class="map-datasheet-panel combat-overlay ${variantClass}" data-datasheet-role="${role}" data-player="${playerKey}">
+    <section class="map-datasheet-panel combat-overlay ${variantClass} ${side}" data-datasheet-role="${role}" data-player="${playerKey}">
       <header class="map-datasheet-panel-head">
         <span class="map-datasheet-role">${roleLabel}</span>
         <button type="button" class="combat-overlay-close ui-icon-btn" ${closeAttrs} aria-label="Close">×</button>
@@ -483,7 +484,7 @@ function renderDatasheetPanel(state, playerKey, unitId, role) {
     </section>`;
 }
 
-/** Always-visible datasheet dock on the map (does not depend on army drawers). */
+/** Side datasheet drawers — same edge as the unit's army (P1 left / P2 right). */
 function renderMapDatasheetDock(state) {
   const step = getCurrentStep(state);
   const panels = [];
@@ -509,7 +510,7 @@ function renderMapDatasheetDock(state) {
   }
 
   if (!panels.length) return '';
-  return `<div class="map-datasheet-dock" data-map-datasheet-dock="1">${panels.join('')}</div>`;
+  return `<div class="map-datasheet-layer" data-map-datasheet-dock="1">${panels.join('')}</div>`;
 }
 
 function parseMoveInches(statsLine, stats) {

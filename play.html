@@ -1361,46 +1361,78 @@ body {
 
 .step-counter { font-size: 0.8rem; color: var(--muted); }
 
-.map-datasheet-dock {
+.map-datasheet-layer {
   position: absolute;
-  left: 0.65rem;
-  right: 0.65rem;
-  bottom: 0.65rem;
+  inset: 0;
   z-index: 22;
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-  gap: 0.55rem;
-  max-height: min(42vh, 420px);
   pointer-events: none;
 }
 
 .map-datasheet-panel,
-.combat-overlay {
+.combat-overlay.map-datasheet-panel {
   pointer-events: auto;
-  position: relative;
-  inset: auto;
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: min(280px, 86vw);
+  max-width: 280px;
   z-index: 1;
-  background: rgba(18, 15, 13, 0.96);
-  overflow-y: auto;
-  padding: 0.65rem 0.75rem 0.75rem;
-  border: 2px solid var(--green);
-  border-radius: 10px;
-  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(8px);
-  max-height: min(42vh, 420px);
+  display: flex;
+  flex-direction: column;
+  background: rgba(18, 15, 13, 0.97);
+  overflow: hidden;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 0;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(10px);
   scrollbar-width: thin;
+}
+
+.map-datasheet-panel.left {
+  left: 0;
+  border-right: 2px solid var(--border-strong);
+}
+
+.map-datasheet-panel.right {
+  right: 0;
+  border-left: 2px solid var(--border-strong);
 }
 
 .combat-overlay-active {
   border-color: var(--green);
 }
 
+.combat-overlay-active.left {
+  border-right-color: var(--green);
+}
+
+.combat-overlay-active.right {
+  border-left-color: var(--green);
+}
+
 .combat-overlay-target {
   border-color: #c44;
 }
 
+.combat-overlay-target.left {
+  border-right-color: #c44;
+}
+
+.combat-overlay-target.right {
+  border-left-color: #c44;
+}
+
 .combat-overlay-selected {
   border-color: #5a8fd0;
+}
+
+.combat-overlay-selected.left {
+  border-right-color: #5a8fd0;
+}
+
+.combat-overlay-selected.right {
+  border-left-color: #5a8fd0;
 }
 
 .map-datasheet-panel-head {
@@ -1408,12 +1440,10 @@ body {
   align-items: center;
   justify-content: space-between;
   gap: 0.5rem;
-  margin-bottom: 0.35rem;
-  position: sticky;
-  top: 0;
-  z-index: 2;
-  background: rgba(18, 15, 13, 0.96);
-  padding-bottom: 0.25rem;
+  flex-shrink: 0;
+  padding: 0.55rem 0.65rem;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
 }
 
 .map-datasheet-role {
@@ -1440,6 +1470,30 @@ body {
 
 .combat-overlay-body {
   clear: both;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 0.55rem 0.65rem 0.85rem;
+  scrollbar-width: thin;
+}
+
+.map-datasheet-panel .combat-unit-header h3 {
+  font-size: 0.82rem;
+}
+
+.map-datasheet-panel .combat-unit-meta,
+.map-datasheet-panel .combat-unit-stats {
+  font-size: 0.68rem;
+}
+
+.map-datasheet-panel .weapon-table {
+  font-size: 0.62rem;
+}
+
+.map-datasheet-panel .combat-wounds-row {
+  margin: 0.35rem 0 0.45rem;
+  padding: 0.35rem 0.45rem;
 }
 
 .combat-unit-block {
@@ -9341,8 +9395,9 @@ function renderDatasheetPanel(state, playerKey, unitId, role) {
     closeAttrs = `data-action="combat-select-target" data-unit-id="${esc(unitId)}"`;
   }
 
+  const side = playerKey === 'player1' ? 'left' : 'right';
   return `
-    <section class="map-datasheet-panel combat-overlay ${variantClass}" data-datasheet-role="${role}" data-player="${playerKey}">
+    <section class="map-datasheet-panel combat-overlay ${variantClass} ${side}" data-datasheet-role="${role}" data-player="${playerKey}">
       <header class="map-datasheet-panel-head">
         <span class="map-datasheet-role">${roleLabel}</span>
         <button type="button" class="combat-overlay-close ui-icon-btn" ${closeAttrs} aria-label="Close">×</button>
@@ -9351,7 +9406,7 @@ function renderDatasheetPanel(state, playerKey, unitId, role) {
     </section>`;
 }
 
-/** Always-visible datasheet dock on the map (does not depend on army drawers). */
+/** Side datasheet drawers — same edge as the unit's army (P1 left / P2 right). */
 function renderMapDatasheetDock(state) {
   const step = getCurrentStep(state);
   const panels = [];
@@ -9377,7 +9432,7 @@ function renderMapDatasheetDock(state) {
   }
 
   if (!panels.length) return '';
-  return `<div class="map-datasheet-dock" data-map-datasheet-dock="1">${panels.join('')}</div>`;
+  return `<div class="map-datasheet-layer" data-map-datasheet-dock="1">${panels.join('')}</div>`;
 }
 
 function parseMoveInches(statsLine, stats) {
