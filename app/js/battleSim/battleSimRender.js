@@ -22,7 +22,7 @@ import {
 } from '../guide/guideState.js';
 import { getAllAbilitiesForStep } from '../guide/abilityMapper.js';
 import { getUnitDisplayAbilities, buildKeywordRuleIndex } from '../guide/rosterParser.js';
-import { renderWeaponTable, renderKeywordRulePopover } from '../guide/weaponUi.js';
+import { renderWeaponTable, renderKeywordList, renderKeywordRulePopover } from '../guide/weaponUi.js';
 import { renderStratagemsBtn, renderStratagemPanel, bindStratagemEvents } from '../guide/stratagemUi.js';
 import { renderHelpQuestionBtn, renderHelpGuidePanel, bindHelpGuideEvents } from '../guide/helpGuideUi.js';
 import { BATTLE_LAYOUTS, getAllLayouts, getLayoutById } from './layouts.js';
@@ -446,22 +446,26 @@ function renderSimWeaponBlocks(unit, playerKey, selectedWeapon, selectableRange,
     selectedWeapon?.unitId === unit.id && Number.isInteger(selectedWeapon.weaponIndex)
       ? selectedWeapon.weaponIndex
       : null;
+  const tableOpts = {
+    selectableRange: !!selectableRange,
+    selectedWeaponIndex: selectedIndex,
+    keywordsBelow: true,
+  };
   const ranged = unit.rangedWeapons?.length
     ? `<div class="combat-weapons-block">
         <h5>Ranged${selectableRange ? ' <span class="hint-inline">(click weapon name for range)</span>' : ''}</h5>
-        ${renderWeaponTable(unit.rangedWeapons, 'ranged', keywordRuleIndex, kwContext, {
-          selectableRange: !!selectableRange,
-          selectedWeaponIndex: selectedIndex,
-        })}
+        ${renderWeaponTable(unit.rangedWeapons, 'ranged', keywordRuleIndex, kwContext, tableOpts)}
       </div>`
     : '';
   const melee = unit.meleeWeapons?.length
     ? `<div class="combat-weapons-block">
         <h5>Melee</h5>
-        ${renderWeaponTable(unit.meleeWeapons, 'melee', keywordRuleIndex, kwContext)}
+        ${renderWeaponTable(unit.meleeWeapons, 'melee', keywordRuleIndex, kwContext, {
+          keywordsBelow: true,
+        })}
       </div>`
     : '';
-  return { ranged, melee };
+  return { ranged, melee, keywordRuleIndex, kwContext };
 }
 
 function renderSimShockBtn(state, playerKey, unitId) {
@@ -527,7 +531,7 @@ function renderDatasheetPanel(state, playerKey, unitId, role) {
         <div class="combat-ability-item"><strong>${esc(a.name)}</strong><p>${esc(a.description)}</p></div>`,
         )
         .join('');
-      const { ranged, melee } = renderSimWeaponBlocks(
+      const { ranged, melee, keywordRuleIndex, kwContext } = renderSimWeaponBlocks(
         unit,
         playerKey,
         selectedWeapon,
@@ -542,6 +546,9 @@ function renderDatasheetPanel(state, playerKey, unitId, role) {
         : '';
       const leaderAttach =
         role === 'selected' ? renderSimLeaderAttach(unit, playerKey, army.units || [], state) : '';
+      const unitKw = (unit.keywords || []).filter(Boolean);
+      const unitKwHtml = renderKeywordList(unitKw, keywordRuleIndex, kwContext);
+      const unitKwLine = unitKwHtml ? `<p class="combat-unit-keywords">${unitKwHtml}</p>` : '';
       return `
       <div class="combat-unit-block">
         <div class="combat-unit-header">
@@ -550,6 +557,7 @@ function renderDatasheetPanel(state, playerKey, unitId, role) {
           ${leaderAttach}
           ${attachLine}
           ${unit.statsLine ? `<p class="combat-unit-stats">${esc(unit.statsLine)}</p>` : ''}
+          ${unitKwLine}
         </div>
         <div class="combat-wounds-row">
           <span class="combat-wounds-label">Wounds</span>

@@ -1442,8 +1442,8 @@ body {
   position: absolute;
   top: 0;
   bottom: 0;
-  width: min(280px, 86vw);
-  max-width: 280px;
+  width: min(360px, 92vw);
+  max-width: 360px;
   z-index: 1;
   display: flex;
   flex-direction: column;
@@ -1541,8 +1541,8 @@ body {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
-  overflow-x: hidden;
-  padding: 0.55rem 0.65rem 0.85rem;
+  overflow-x: auto;
+  padding: 0.55rem 0.75rem 0.85rem;
   scrollbar-width: thin;
 }
 
@@ -1555,8 +1555,54 @@ body {
   font-size: 0.68rem;
 }
 
+.map-datasheet-panel .combat-unit-keywords {
+  margin: 0.3rem 0 0;
+  font-size: 0.66rem;
+  line-height: 1.45;
+  color: var(--text-dim);
+  word-break: break-word;
+}
+
 .map-datasheet-panel .weapon-table {
-  font-size: 0.62rem;
+  font-size: 0.66rem;
+  table-layout: auto;
+}
+
+.map-datasheet-panel .weapon-table th,
+.map-datasheet-panel .weapon-table td {
+  padding: 0.28rem 0.3rem;
+}
+
+.map-datasheet-panel .weapon-table td.weapon-name {
+  min-width: 0;
+  max-width: 9rem;
+}
+
+.map-datasheet-panel .weapon-kw,
+.map-datasheet-panel .weapon-table td.weapon-kw {
+  max-width: none;
+  white-space: normal;
+  word-break: break-word;
+  color: var(--text-dim);
+  font-size: 0.64rem;
+  line-height: 1.4;
+}
+
+.map-datasheet-panel .weapon-kw-row td {
+  text-align: left;
+  padding-top: 0.1rem;
+  padding-bottom: 0.45rem;
+  border-top: none;
+}
+
+.map-datasheet-panel .weapon-kw-empty {
+  color: var(--muted);
+  font-style: italic;
+}
+
+.map-datasheet-panel .weapon-table-stacked-kw .weapon-kw .kw-inline-link,
+.map-datasheet-panel .weapon-table-stacked-kw .weapon-kw .kw-plain {
+  display: inline;
 }
 
 .map-datasheet-panel .combat-wounds-row {

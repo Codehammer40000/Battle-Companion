@@ -59,14 +59,19 @@ export function renderWeaponTable(weapons, type, keywordRuleIndex = {}, context 
   const skillCol = isRanged ? 'BS' : 'WS';
   const selectable = !!options.selectableRange && isRanged && context;
   const selectedIndex = options.selectedWeaponIndex;
+  // Datasheet side panels: put keywords on a full-width row so Blast / [CLOSE-QUARTERS] etc. stay readable
+  const keywordsBelow = !!options.keywordsBelow;
+  const colCount = keywordsBelow ? 7 : 8;
 
   const rows = weapons
     .map((w, i) => {
       const skill = isRanged ? w.bs : w.ws;
       const range = isRanged ? w.range : 'Melee';
+      const kwParts = splitKeywordString(w.keywords);
       const kwCell = context
         ? renderWeaponKeywords(w.keywords, keywordRuleIndex, context)
         : esc(w.keywords || '—');
+      const hasKeywords = kwParts.length > 0;
       let nameCell = `<td class="weapon-name">${esc(w.name)}</td>`;
       if (selectable) {
         const active = selectedIndex === i ? 'is-weapon-selected' : '';
@@ -74,8 +79,9 @@ export function renderWeaponTable(weapons, type, keywordRuleIndex = {}, context 
           <button type="button" class="weapon-range-btn ${active}" data-action="map-select-weapon" data-player="${context.player}" data-unit-id="${esc(context.unitId)}" data-weapon-index="${i}" title="Show this weapon's range on the map">${esc(w.name)}</button>
         </td>`;
       }
-      return `
-      <tr class="${selectable && selectedIndex === i ? 'weapon-row-selected' : ''}">
+      const selectedClass = selectable && selectedIndex === i ? 'weapon-row-selected' : '';
+      const statsRow = `
+      <tr class="${selectedClass}">
         ${nameCell}
         <td>${esc(range)}</td>
         <td>${esc(w.a)}</td>
@@ -83,13 +89,16 @@ export function renderWeaponTable(weapons, type, keywordRuleIndex = {}, context 
         <td>${esc(w.s)}</td>
         <td>${esc(w.ap)}</td>
         <td>${esc(w.d)}</td>
-        <td class="weapon-kw">${kwCell}</td>
+        ${keywordsBelow ? '' : `<td class="weapon-kw">${kwCell}</td>`}
       </tr>`;
+      if (!keywordsBelow || !hasKeywords) return statsRow;
+      return `${statsRow}
+      <tr class="weapon-kw-row ${selectedClass}"><td colspan="${colCount}" class="weapon-kw">${kwCell}</td></tr>`;
     })
     .join('');
 
   return `
-    <table class="weapon-table">
+    <table class="weapon-table ${keywordsBelow ? 'weapon-table-stacked-kw' : ''}">
       <thead>
         <tr>
           <th>Weapon</th>
@@ -99,7 +108,7 @@ export function renderWeaponTable(weapons, type, keywordRuleIndex = {}, context 
           <th>S</th>
           <th>AP</th>
           <th>D</th>
-          <th>Keywords</th>
+          ${keywordsBelow ? '' : '<th>Keywords</th>'}
         </tr>
       </thead>
       <tbody>${rows}</tbody>
