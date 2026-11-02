@@ -190,12 +190,13 @@ function renderModels(unitsOnMap, selectedUnitKey, selectedModelId, highlights =
           ].join('');
           // Drag handle: line from center to a point ahead of the nose (selected Frame only)
           if (isModelSel) {
-            const handleY = -(hl + toPx(0.7));
-            const hitR = Math.max(9, toPx(0.35));
+            const handleY = -(hl + toPx(1.05));
+            const hitR = Math.max(18, toPx(0.6));
+            const knobR = Math.max(8, toPx(0.34));
             body += `<g class="map-rotate-handle" data-rotate-handle="1">
-              <line x1="0" y1="0" x2="0" y2="${handleY}" stroke="#fbbf24" stroke-width="2" pointer-events="none" />
+              <line x1="0" y1="0" x2="0" y2="${handleY}" stroke="#fbbf24" stroke-width="2.5" pointer-events="none" />
               <circle class="map-rotate-handle-hit" cx="0" cy="${handleY}" r="${hitR}" fill="transparent" stroke="none" />
-              <circle cx="0" cy="${handleY}" r="${Math.max(5, toPx(0.22))}" fill="#fbbf24" stroke="#0a0a0a" stroke-width="1.5" />
+              <circle cx="0" cy="${handleY}" r="${knobR}" fill="#fbbf24" stroke="#0a0a0a" stroke-width="1.5" />
             </g>`;
           }
         } else {
@@ -269,26 +270,30 @@ export function renderMapSvg(state, options = {}) {
   return `
     <div class="battle-map-viewport" data-map-viewport="1">
       <div class="battle-map-toolbar">
-        <label class="battle-map-layout-label">Layout
-          <select data-action="set-map-layout">
-            ${(options.layouts || []).map((l) => `<option value="${esc(l.id)}" ${l.id === (state.battleMap?.layoutId || layout.id) ? 'selected' : ''}>${esc(l.name)}</option>`).join('')}
-            <option value="__add_new__">Add new…</option>
-          </select>
-        </label>
-        <button type="button" data-action="map-flip-horizontal" title="Mirror layout left/right (keeps models with terrain)">Flip</button>
-        <button type="button" data-action="map-rotate-90" title="Rotate layout 90° clockwise">Rotate 90°</button>
-        <button type="button" data-action="map-reset-orientation" title="Reset flip/rotate to original" ${state.battleMap?.layoutTransform?.ops?.length ? '' : 'disabled'}>Reset orient</button>
-        ${orient}
-        <button type="button" data-action="map-zoom" data-delta="0.15">Zoom +</button>
-        <button type="button" data-action="map-zoom" data-delta="-0.15">Zoom −</button>
-        <button type="button" data-action="map-reset-camera">Reset view</button>
-        <button type="button" data-action="add-special-marker">Add special marker</button>
-        <button type="button" class="help-q-btn help-q-btn-toolbar" data-action="open-help-guide" title="Instructions / Guides" aria-label="Open instructions and guides">?</button>
-        ${
-          selectedSpecial
-            ? `<button type="button" class="remove-special-btn" data-action="remove-special-marker" data-special-id="${esc(selectedSpecial.id)}">Remove marker</button>`
-            : ''
-        }
+        <div class="battle-map-toolbar-primary">
+          <label class="battle-map-layout-label">Layout
+            <select data-action="set-map-layout">
+              ${(options.layouts || []).map((l) => `<option value="${esc(l.id)}" ${l.id === (state.battleMap?.layoutId || layout.id) ? 'selected' : ''}>${esc(l.name)}</option>`).join('')}
+              <option value="__add_new__">Add new…</option>
+            </select>
+          </label>
+          <button type="button" data-action="map-zoom" data-delta="0.15">Zoom +</button>
+          <button type="button" data-action="map-zoom" data-delta="-0.15">Zoom −</button>
+          <button type="button" data-action="map-reset-camera">Reset view</button>
+          <button type="button" class="help-q-btn help-q-btn-toolbar" data-action="open-help-guide" title="Instructions / Guides" aria-label="Open instructions and guides">?</button>
+        </div>
+        <div class="battle-map-toolbar-more">
+          <button type="button" data-action="map-flip-horizontal" title="Mirror layout left/right (keeps models with terrain)">Flip</button>
+          <button type="button" data-action="map-rotate-90" title="Rotate layout 90° clockwise">Rotate 90°</button>
+          <button type="button" data-action="map-reset-orientation" title="Reset flip/rotate to original" ${state.battleMap?.layoutTransform?.ops?.length ? '' : 'disabled'}>Reset orient</button>
+          ${orient}
+          <button type="button" data-action="add-special-marker">Add special marker</button>
+          ${
+            selectedSpecial
+              ? `<button type="button" class="remove-special-btn" data-action="remove-special-marker" data-special-id="${esc(selectedSpecial.id)}">Remove marker</button>`
+              : ''
+          }
+        </div>
       </div>
       ${options.reminderHtml || ''}
       <div class="battle-map-canvas-wrap">

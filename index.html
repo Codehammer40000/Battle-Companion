@@ -1754,12 +1754,24 @@ tr.weapon-row-selected td {
 
 .battle-map-toolbar {
   display: flex;
-  flex-wrap: wrap;
-  gap: 0.4rem;
+  flex-wrap: nowrap;
+  gap: 0.5rem;
   align-items: center;
   padding: 0.5rem 0.75rem;
   border-bottom: 1px solid var(--border);
   background: var(--surface);
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+}
+
+.battle-map-toolbar-primary,
+.battle-map-toolbar-more {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 0.4rem;
+  align-items: center;
+  flex-shrink: 0;
 }
 
 .battle-map-toolbar button,
@@ -1771,6 +1783,7 @@ tr.weapon-row-selected td {
   border-radius: 4px;
   color: var(--text);
   cursor: pointer;
+  white-space: nowrap;
 }
 
 .battle-map-layout-label {
@@ -1806,6 +1819,50 @@ tr.weapon-row-selected td {
 
 .map-rotate-handle:active {
   cursor: grabbing;
+}
+
+.map-rotate-handle-hit {
+  /* Larger invisible hit target for Frame orientation on touch */
+  pointer-events: all;
+}
+
+.army-panel-header-actions {
+  display: flex;
+  gap: 0.35rem;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.sim-army-panel-body {
+  display: block;
+}
+
+.sim-army-panel.collapsed .sim-army-panel-body {
+  display: none;
+}
+
+.sim-army-panel.collapsed {
+  max-height: none;
+}
+
+.strat-card-actions {
+  margin-top: 0.65rem;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.strat-spend-btn.used {
+  opacity: 0.85;
+}
+
+.strat-card.is-spent {
+  opacity: 0.72;
+  border-color: var(--muted);
+}
+
+.strat-spend-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
 }
 
 .sim-step-nav {
@@ -2325,6 +2382,16 @@ tr.weapon-row-selected td {
     max-height: 240px;
     border-left: none !important;
     border-right: none !important;
+  }
+  .sim-army-panel.collapsed {
+    max-height: none;
+  }
+  .battle-map-toolbar {
+    padding: 0.4rem 0.5rem;
+  }
+  .battle-map-toolbar-more {
+    padding-left: 0.35rem;
+    border-left: 1px solid var(--border);
   }
 }
 
@@ -3719,23 +3786,47 @@ function pointInLinkedAreas(point, area, areasById, areaGroups) {
   return false;
 }
 
+/** Cached terrain indexes for a layout (rebuilt when layout identity changes). */
+let losLayoutCache = { key: '', ctx: null };
+
+function layoutLosCacheKey(layout, battleMap) {
+  const ops = battleMap?.layoutTransform?.ops;
+  const opKey = Array.isArray(ops) ? ops.join(',') : '';
+  return `${battleMap?.layoutId || layout?.id || 'blank'}|${opKey}|${layout?.terrainAreas?.length || 0}|${layout?.terrainFeatures?.length || 0}`;
+}
+
+function getLosLayoutContext(layout, battleMap) {
+  const key = layoutLosCacheKey(layout, battleMap);
+  if (losLayoutCache.key === key && losLayoutCache.ctx) return losLayoutCache.ctx;
+  const features = layout?.terrainFeatures || [];
+  const areas = layout?.terrainAreas || [];
+  const ctx = {
+    features,
+    areas,
+    areasById: new Map(areas.map((a) => [a.id, a])),
+    areaGroups: buildMergedCentreAreaGroups(areas),
+    solidAreas: areas.filter((a) => areaIsSolidBuilding(a, features)),
+  };
+  losLayoutCache = { key, ctx };
+  return ctx;
+}
+
 /**
  * Walk the segment and find the earliest obstruction for this attacking model.
  * Returns { t, point, kind } or null if clear.
  * Terrain inside/see-through uses only `attackerModel` (not the whole unit).
+ * @param {object} [losCtx] precomputed layout indexes from getLosLayoutContext
+ * @param {{ steps?: number }} [opts]
  */
-function firstObstructionAlongRay(from, to, layout, attackerModel) {
-  const features = layout?.terrainFeatures || [];
-  const areas = layout?.terrainAreas || [];
-  const areasById = new Map(areas.map((a) => [a.id, a]));
-  const areaGroups = buildMergedCentreAreaGroups(areas);
-  const solidAreas = areas.filter((a) => areaIsSolidBuilding(a, features));
+function firstObstructionAlongRay(from, to, layout, attackerModel, losCtx = null, opts = {}) {
+  const ctx = losCtx || getLosLayoutContext(layout, null);
+  const { features, areas, areasById, areaGroups, solidAreas } = ctx;
 
   const touched = areas.filter((a) => modelTouchesArea(attackerModel, a)).map((a) => a.id);
   // Inside one centre half ⇒ inside the whole merged centre block (for this model only)
   const attackerInside = expandInsideIds(touched, areaGroups);
 
-  const STEPS = 96;
+  const STEPS = Math.max(24, opts.steps || 64);
   for (let i = 1; i <= STEPS; i++) {
     const t = i / STEPS;
     const p = lerp(from, to, t);
@@ -3763,9 +3854,11 @@ function firstObstructionAlongRay(from, to, layout, attackerModel) {
 
 /**
  * Best edge-to-edge attempt from one attacker model to one target model.
+ * @param {{ perimeterSamples?: number, steps?: number }} [opts]
  */
-function rayBetweenModels(attacker, targetModel, layout) {
-  const tSamples = sampleModelPerimeter(targetModel, 28);
+function rayBetweenModels(attacker, targetModel, layout, losCtx, opts = {}) {
+  const samples = opts.perimeterSamples || 16;
+  const tSamples = sampleModelPerimeter(targetModel, samples);
   // Also try toward center for peeking edges
   tSamples.push({ x: targetModel.x, y: targetModel.y });
 
@@ -3774,7 +3867,7 @@ function rayBetweenModels(attacker, targetModel, layout) {
 
   for (const to of tSamples) {
     const from = edgePointOnModel(attacker, to);
-    const hit = firstObstructionAlongRay(from, to, layout, attacker);
+    const hit = firstObstructionAlongRay(from, to, layout, attacker, losCtx, opts);
     const dist = distance(from, to);
     if (!hit) {
       if (!bestClear || dist < bestClear.dist) {
@@ -3799,6 +3892,7 @@ function rayBetweenModels(attacker, targetModel, layout) {
 
 /**
  * Compute shoot-phase LoS preview: one ray + which attacker models can see.
+ * Uses a layout terrain cache and cheaper sampling for live map preview.
  * @returns {{
  *   lines: Array<{from,to,blocked,distanceIn?:number,attackerModelId?}>,
  *   anyClear: boolean,
@@ -3811,6 +3905,8 @@ function computeBattleLos(state, shooterKey, targetKey) {
   if (!shooter?.models?.length || !target?.models?.length) return null;
 
   const layout = getActiveBattleLayout(state.battleMap);
+  const losCtx = getLosLayoutContext(layout, state.battleMap);
+  const previewOpts = { perimeterSamples: 12, steps: 48 };
   const attackerModels = shooter.models;
   const targetModels = target.models;
 
@@ -3822,7 +3918,7 @@ function computeBattleLos(state, shooterKey, targetKey) {
     let modelClear = null;
     let modelBlocked = null;
     for (const tgt of targetModels) {
-      const ray = rayBetweenModels(atk, tgt, layout);
+      const ray = rayBetweenModels(atk, tgt, layout, losCtx, previewOpts);
       if (!ray) continue;
       if (!ray.blocked) {
         if (!modelClear || ray.dist < modelClear.dist) {
@@ -4070,12 +4166,13 @@ function renderModels(unitsOnMap, selectedUnitKey, selectedModelId, highlights =
           ].join('');
           // Drag handle: line from center to a point ahead of the nose (selected Frame only)
           if (isModelSel) {
-            const handleY = -(hl + toPx(0.7));
-            const hitR = Math.max(9, toPx(0.35));
+            const handleY = -(hl + toPx(1.05));
+            const hitR = Math.max(18, toPx(0.6));
+            const knobR = Math.max(8, toPx(0.34));
             body += `<g class="map-rotate-handle" data-rotate-handle="1">
-              <line x1="0" y1="0" x2="0" y2="${handleY}" stroke="#fbbf24" stroke-width="2" pointer-events="none" />
+              <line x1="0" y1="0" x2="0" y2="${handleY}" stroke="#fbbf24" stroke-width="2.5" pointer-events="none" />
               <circle class="map-rotate-handle-hit" cx="0" cy="${handleY}" r="${hitR}" fill="transparent" stroke="none" />
-              <circle cx="0" cy="${handleY}" r="${Math.max(5, toPx(0.22))}" fill="#fbbf24" stroke="#0a0a0a" stroke-width="1.5" />
+              <circle cx="0" cy="${handleY}" r="${knobR}" fill="#fbbf24" stroke="#0a0a0a" stroke-width="1.5" />
             </g>`;
           }
         } else {
@@ -4149,26 +4246,30 @@ function renderMapSvg(state, options = {}) {
   return `
     <div class="battle-map-viewport" data-map-viewport="1">
       <div class="battle-map-toolbar">
-        <label class="battle-map-layout-label">Layout
-          <select data-action="set-map-layout">
-            ${(options.layouts || []).map((l) => `<option value="${esc(l.id)}" ${l.id === (state.battleMap?.layoutId || layout.id) ? 'selected' : ''}>${esc(l.name)}</option>`).join('')}
-            <option value="__add_new__">Add new…</option>
-          </select>
-        </label>
-        <button type="button" data-action="map-flip-horizontal" title="Mirror layout left/right (keeps models with terrain)">Flip</button>
-        <button type="button" data-action="map-rotate-90" title="Rotate layout 90° clockwise">Rotate 90°</button>
-        <button type="button" data-action="map-reset-orientation" title="Reset flip/rotate to original" ${state.battleMap?.layoutTransform?.ops?.length ? '' : 'disabled'}>Reset orient</button>
-        ${orient}
-        <button type="button" data-action="map-zoom" data-delta="0.15">Zoom +</button>
-        <button type="button" data-action="map-zoom" data-delta="-0.15">Zoom −</button>
-        <button type="button" data-action="map-reset-camera">Reset view</button>
-        <button type="button" data-action="add-special-marker">Add special marker</button>
-        <button type="button" class="help-q-btn help-q-btn-toolbar" data-action="open-help-guide" title="Instructions / Guides" aria-label="Open instructions and guides">?</button>
-        ${
-          selectedSpecial
-            ? `<button type="button" class="remove-special-btn" data-action="remove-special-marker" data-special-id="${esc(selectedSpecial.id)}">Remove marker</button>`
-            : ''
-        }
+        <div class="battle-map-toolbar-primary">
+          <label class="battle-map-layout-label">Layout
+            <select data-action="set-map-layout">
+              ${(options.layouts || []).map((l) => `<option value="${esc(l.id)}" ${l.id === (state.battleMap?.layoutId || layout.id) ? 'selected' : ''}>${esc(l.name)}</option>`).join('')}
+              <option value="__add_new__">Add new…</option>
+            </select>
+          </label>
+          <button type="button" data-action="map-zoom" data-delta="0.15">Zoom +</button>
+          <button type="button" data-action="map-zoom" data-delta="-0.15">Zoom −</button>
+          <button type="button" data-action="map-reset-camera">Reset view</button>
+          <button type="button" class="help-q-btn help-q-btn-toolbar" data-action="open-help-guide" title="Instructions / Guides" aria-label="Open instructions and guides">?</button>
+        </div>
+        <div class="battle-map-toolbar-more">
+          <button type="button" data-action="map-flip-horizontal" title="Mirror layout left/right (keeps models with terrain)">Flip</button>
+          <button type="button" data-action="map-rotate-90" title="Rotate layout 90° clockwise">Rotate 90°</button>
+          <button type="button" data-action="map-reset-orientation" title="Reset flip/rotate to original" ${state.battleMap?.layoutTransform?.ops?.length ? '' : 'disabled'}>Reset orient</button>
+          ${orient}
+          <button type="button" data-action="add-special-marker">Add special marker</button>
+          ${
+            selectedSpecial
+              ? `<button type="button" class="remove-special-btn" data-action="remove-special-marker" data-special-id="${esc(selectedSpecial.id)}">Remove marker</button>`
+              : ''
+          }
+        </div>
       </div>
       ${options.reminderHtml || ''}
       <div class="battle-map-canvas-wrap">
@@ -6145,7 +6246,11 @@ function renderPhasePips(phases) {
   return phases.map((p) => `<span class="strat-phase-pip" title="${esc(p)}">${esc(p[0] || '?')}</span>`).join('');
 }
 
-function renderStratagemCard(s) {
+function renderStratagemCard(s, playerKey, state) {
+  const spent = !!state.stratagemSpent?.[playerKey]?.[s.id];
+  const cp = state[playerKey]?.score?.cp ?? 0;
+  const cost = Math.max(0, Number(s.cp) || 0);
+  const canAfford = cp >= cost;
   const phases = s.phases?.length
     ? `<div class="strat-card-phases">${s.phases.map((p) => `<span class="strat-phase-tag">${esc(p)}</span>`).join('')}</div>`
     : '';
@@ -6153,8 +6258,12 @@ function renderStratagemCard(s) {
     ? `<div class="strat-card-body">${s.descriptionHtml}</div>`
     : `<div class="strat-card-body">${esc(s.descriptionText)}</div>`;
 
+  const spendBtn = spent
+    ? `<button type="button" class="btn-small strat-spend-btn used" data-action="unspend-stratagem" data-player="${playerKey}" data-stratagem-id="${esc(s.id)}">Used · Undo (+${cost} CP)</button>`
+    : `<button type="button" class="btn-small strat-spend-btn" data-action="spend-stratagem" data-player="${playerKey}" data-stratagem-id="${esc(s.id)}" ${canAfford ? '' : 'disabled'} title="${canAfford ? `Spend ${cost} CP` : 'Not enough CP'}">Spend ${cost} CP</button>`;
+
   return `
-    <article class="strat-card turn-${esc(s.turn)}">
+    <article class="strat-card turn-${esc(s.turn)} ${spent ? 'is-spent' : ''}">
       <div class="strat-card-head">
         <div class="strat-card-icon" aria-hidden="true">
           <div class="strat-card-pips">${renderPhasePips(s.phases)}</div>
@@ -6167,6 +6276,7 @@ function renderStratagemCard(s) {
       </div>
       ${phases}
       ${body}
+      <div class="strat-card-actions">${spendBtn}</div>
     </article>`;
 }
 
@@ -6179,9 +6289,10 @@ function renderStratagemPanel(state) {
   const deck = state.stratagems?.[playerKey] || [];
   const armyName = player?.army?.name || player?.name || (playerKey === 'player1' ? 'Player 1' : 'Player 2');
   const sideLabel = playerKey === 'player1' ? 'Player 1' : 'Player 2';
+  const cp = player?.score?.cp ?? 0;
 
   const cards = deck.length
-    ? `<div class="strat-card-list">${deck.map(renderStratagemCard).join('')}</div>`
+    ? `<div class="strat-card-list">${deck.map((s) => renderStratagemCard(s, playerKey, state)).join('')}</div>`
     : `<div class="strat-empty">
         <p>No stratagem deck loaded for ${esc(sideLabel)}.</p>
         <p class="hint">Export your stratagems as HTML from your army builder, then upload the file here.</p>
@@ -6193,7 +6304,7 @@ function renderStratagemPanel(state) {
         <div class="strat-panel-header">
           <div>
             <h2 id="strat-panel-title">Stratagems</h2>
-            <p class="strat-panel-meta">${esc(armyName)} · ${deck.length} stratagem${deck.length === 1 ? '' : 's'}</p>
+            <p class="strat-panel-meta">${esc(armyName)} · ${deck.length} stratagem${deck.length === 1 ? '' : 's'} · ${cp} CP</p>
           </div>
           <button type="button" class="unit-modal-close" data-action="close-stratagems" aria-label="Close">×</button>
         </div>
@@ -6227,6 +6338,18 @@ function bindStratagemEvents(root, dispatch) {
 
   root.querySelectorAll('[data-action="clear-stratagems"]').forEach((btn) => {
     btn.addEventListener('click', () => dispatch({ type: 'CLEAR_STRATAGEMS', player: btn.dataset.player }));
+  });
+
+  root.querySelectorAll('[data-action="spend-stratagem"]').forEach((btn) => {
+    btn.addEventListener('click', () =>
+      dispatch({ type: 'SPEND_STRATAGEM', player: btn.dataset.player, stratagemId: btn.dataset.stratagemId }),
+    );
+  });
+
+  root.querySelectorAll('[data-action="unspend-stratagem"]').forEach((btn) => {
+    btn.addEventListener('click', () =>
+      dispatch({ type: 'UNSPEND_STRATAGEM', player: btn.dataset.player, stratagemId: btn.dataset.stratagemId }),
+    );
   });
 
   root.querySelectorAll('input[data-action="load-stratagems"]').forEach((input) => {
@@ -6769,6 +6892,7 @@ function createInitialGuideState() {
     firstPlayer: 'player1',
     battleReady: { player1: false, player2: false },
     stratagems: { player1: [], player2: [] },
+    stratagemSpent: { player1: {}, player2: {} },
     stratagemPanel: null,
     helpGuide: { open: false, query: '', sectionId: null },
     deadUnits: { player1: [], player2: [] },
@@ -7489,6 +7613,11 @@ function guideReducer(state, action) {
           ...(state.stratagems || { player1: [], player2: [] }),
           [player]: normalized,
         },
+        stratagemSpent: {
+          player1: { ...(state.stratagemSpent?.player1 || {}) },
+          player2: { ...(state.stratagemSpent?.player2 || {}) },
+          [player]: {},
+        },
         stratagemPanel: { player },
       };
     }
@@ -7502,6 +7631,11 @@ function guideReducer(state, action) {
           ...(state.stratagems || { player1: [], player2: [] }),
           [player]: [],
         },
+        stratagemSpent: {
+          player1: { ...(state.stratagemSpent?.player1 || {}) },
+          player2: { ...(state.stratagemSpent?.player2 || {}) },
+          [player]: {},
+        },
       };
     }
 
@@ -7513,6 +7647,55 @@ function guideReducer(state, action) {
 
     case 'CLOSE_STRATAGEMS':
       return { ...state, stratagemPanel: null };
+
+    case 'SPEND_STRATAGEM': {
+      const { player, stratagemId } = action;
+      if (player !== 'player1' && player !== 'player2') return state;
+      const id = String(stratagemId || '');
+      const strat = (state.stratagems?.[player] || []).find((s) => s.id === id);
+      if (!strat) return state;
+      const spentMap = state.stratagemSpent?.[player] || {};
+      if (spentMap[id]) return state;
+      const cost = Math.max(0, Number(strat.cp) || 0);
+      const cp = state[player].score.cp;
+      if (cp < cost) return state;
+      return {
+        ...state,
+        [player]: {
+          ...state[player],
+          score: { ...state[player].score, cp: cp - cost },
+        },
+        stratagemSpent: {
+          player1: { ...(state.stratagemSpent?.player1 || {}) },
+          player2: { ...(state.stratagemSpent?.player2 || {}) },
+          [player]: { ...spentMap, [id]: true },
+        },
+      };
+    }
+
+    case 'UNSPEND_STRATAGEM': {
+      const { player, stratagemId } = action;
+      if (player !== 'player1' && player !== 'player2') return state;
+      const id = String(stratagemId || '');
+      const strat = (state.stratagems?.[player] || []).find((s) => s.id === id);
+      if (!strat) return state;
+      const spentMap = { ...(state.stratagemSpent?.[player] || {}) };
+      if (!spentMap[id]) return state;
+      delete spentMap[id];
+      const cost = Math.max(0, Number(strat.cp) || 0);
+      return {
+        ...state,
+        [player]: {
+          ...state[player],
+          score: { ...state[player].score, cp: state[player].score.cp + cost },
+        },
+        stratagemSpent: {
+          player1: { ...(state.stratagemSpent?.player1 || {}) },
+          player2: { ...(state.stratagemSpent?.player2 || {}) },
+          [player]: spentMap,
+        },
+      };
+    }
 
     case 'OPEN_HELP_GUIDE':
       return {
@@ -8278,6 +8461,16 @@ function guideReducer(state, action) {
             player1: normalizeStratagemDeck(saved.stratagems?.player1),
             player2: normalizeStratagemDeck(saved.stratagems?.player2),
           },
+          stratagemSpent: {
+            player1:
+              saved.stratagemSpent?.player1 && typeof saved.stratagemSpent.player1 === 'object'
+                ? saved.stratagemSpent.player1
+                : {},
+            player2:
+              saved.stratagemSpent?.player2 && typeof saved.stratagemSpent.player2 === 'object'
+                ? saved.stratagemSpent.player2
+                : {},
+          },
           stratagemPanel: null,
           helpGuide: {
             open: false,
@@ -8366,6 +8559,9 @@ function getProgress(state) {
  * Battle Sim alternate view — map-focused UI sharing guide state.
  */
 
+/** Survives remounts so mobile army collapse stays put. */
+const collapsedArmyPanels = new Set();
+
 function esc(s) {
   return String(s ?? '')
     .replace(/&/g, '&amp;')
@@ -8379,7 +8575,7 @@ function renderScoreCell(player, field, label, value, playerKey) {
       <span class="score-label">${label}</span>
       <div class="score-controls">
         <button type="button" data-action="score" data-player="${playerKey}" data-field="${field}" data-delta="-1">−</button>
-        <span class="score-value">${value}</span>
+        <span class="score-value" data-score-player="${playerKey}" data-score-field="${field}">${value}</span>
         <button type="button" data-action="score" data-player="${playerKey}" data-field="${field}" data-delta="1">+</button>
       </div>
     </div>`;
@@ -8418,7 +8614,7 @@ function renderSimScoreboard(state) {
           ${renderScoreCell(p1, 'primary', 'Prim', p1.score.primary, 'player1')}
           <div class="score-cell score-total-cell">
             <span class="score-label">Total</span>
-            <span class="score-total">${totalScore(p1.score)}</span>
+            <span class="score-total" data-score-total="player1">${totalScore(p1.score)}</span>
           </div>
           ${renderBattleReadyBtn(state, 'player1')}
           ${renderStratagemsBtn(state, 'player1')}
@@ -8442,7 +8638,7 @@ function renderSimScoreboard(state) {
           ${renderBattleReadyBtn(state, 'player2')}
           <div class="score-cell score-total-cell">
             <span class="score-label">Total</span>
-            <span class="score-total">${totalScore(p2.score)}</span>
+            <span class="score-total" data-score-total="player2">${totalScore(p2.score)}</span>
           </div>
           ${renderScoreCell(p2, 'primary', 'Prim', p2.score.primary, 'player2')}
           ${renderScoreCell(p2, 'secondary', 'Sec', p2.score.secondary, 'player2')}
@@ -8509,14 +8705,20 @@ function renderSimArmyList(state, playerKey) {
   const army = player?.army;
   const sideLabel = playerKey === 'player1' ? 'Player 1' : 'Player 2';
   if (!army) {
+    const collapsed = collapsedArmyPanels.has(playerKey) ? 'collapsed' : '';
     return `
-      <div class="sim-army-panel army-empty" data-player="${playerKey}">
-        <h3>${sideLabel}</h3>
-        <label class="file-btn">
-          Load Army (.json)
-          <input type="file" accept=".json,application/json" data-action="load-army" data-player="${playerKey}" hidden />
-        </label>
-        ${renderNewRecruitHint()}
+      <div class="sim-army-panel army-empty ${collapsed}" data-player="${playerKey}">
+        <div class="army-panel-header">
+          <h3>${sideLabel}</h3>
+          <button type="button" class="btn-small army-collapse-btn" data-action="toggle-army-collapse" data-player="${playerKey}" aria-expanded="${collapsed ? 'false' : 'true'}">${collapsed ? 'Show' : 'Hide'}</button>
+        </div>
+        <div class="sim-army-panel-body">
+          <label class="file-btn">
+            Load Army (.json)
+            <input type="file" accept=".json,application/json" data-action="load-army" data-player="${playerKey}" hidden />
+          </label>
+          ${renderNewRecruitHint()}
+        </div>
       </div>`;
   }
 
@@ -8561,22 +8763,28 @@ function renderSimArmyList(state, playerKey) {
     })
     .join('');
 
+  const collapsed = collapsedArmyPanels.has(playerKey) ? 'collapsed' : '';
   return `
-    <div class="sim-army-panel" data-player="${playerKey}">
+    <div class="sim-army-panel ${collapsed}" data-player="${playerKey}">
       <div class="army-panel-header">
         <div>
           <h3>${esc(army.name)}</h3>
           <p class="army-meta">${esc(army.faction)} · ${army.points}${army.pointsLimit ? `/${army.pointsLimit}` : ''} pts</p>
         </div>
-        <button type="button" class="btn-small" data-action="clear-army" data-player="${playerKey}">Clear</button>
+        <div class="army-panel-header-actions">
+          <button type="button" class="btn-small army-collapse-btn" data-action="toggle-army-collapse" data-player="${playerKey}" aria-expanded="${collapsed ? 'false' : 'true'}">${collapsed ? 'Show' : 'Hide'}</button>
+          <button type="button" class="btn-small" data-action="clear-army" data-player="${playerKey}">Clear</button>
+        </div>
       </div>
-      <label class="file-btn btn-small">
-        Replace
-        <input type="file" accept=".json,application/json" data-action="load-army" data-player="${playerKey}" hidden />
-      </label>
-      <div class="sim-unit-list">${units}</div>
-      ${renderSimUnitCard(state, playerKey)}
-      ${renderSimCombatOverlay(state, playerKey)}
+      <div class="sim-army-panel-body">
+        <label class="file-btn btn-small">
+          Replace
+          <input type="file" accept=".json,application/json" data-action="load-army" data-player="${playerKey}" hidden />
+        </label>
+        <div class="sim-unit-list">${units}</div>
+        ${renderSimUnitCard(state, playerKey)}
+        ${renderSimCombatOverlay(state, playerKey)}
+      </div>
     </div>`;
 }
 
@@ -8992,11 +9200,100 @@ function renderReminderPopup(state) {
     </div>`;
 }
 
-function renderBattleSim(root, state, dispatch) {
-  const radii = getSelectedRadii(state);
-  // Keep a live state pointer so pointer handlers don't use a stale closure after re-renders
+function syncMapInteractionRuntime(state, dispatch) {
   mapInteractionRuntime.state = state;
   mapInteractionRuntime.dispatch = dispatch;
+}
+
+/** Apply camera transform to the live SVG without remounting the board. */
+function applyMapCamera(root, state) {
+  const svg = root?.querySelector?.('.battle-map-svg');
+  const world = svg?.querySelector('.battle-map-world');
+  if (!svg || !world) return false;
+  const cam = state.battleMap?.camera || { x: 0, y: 0, zoom: 1 };
+  const pad = Number(svg.dataset.pad || 8);
+  const ppi = Number(svg.dataset.ppi || getPixelsPerInch());
+  world.setAttribute(
+    'transform',
+    `translate(${(pad + (cam.x || 0)) * ppi} ${(pad + (cam.y || 0)) * ppi}) scale(${cam.zoom || 1})`,
+  );
+  return true;
+}
+
+function patchScoreboardValues(root, state) {
+  for (const key of ['player1', 'player2']) {
+    const score = state[key]?.score;
+    if (!score) continue;
+    for (const field of ['cp', 'secondary', 'primary']) {
+      const el = root.querySelector(`[data-score-player="${key}"][data-score-field="${field}"]`);
+      if (el) el.textContent = String(score[field] ?? 0);
+    }
+    const total = root.querySelector(`[data-score-total="${key}"]`);
+    if (total) total.textContent = String(totalScore(score));
+  }
+}
+
+function patchReminderPopup(root, state, dispatch) {
+  const existing = root.querySelector('.keyword-rule-popover-backdrop[data-action="close-reminder"]');
+  const html = renderReminderPopup(state);
+  if (!html) {
+    existing?.remove();
+    return;
+  }
+  if (existing) {
+    existing.outerHTML = html;
+  } else {
+    root.querySelector('.guide-app')?.insertAdjacentHTML('beforeend', html);
+  }
+  root.querySelectorAll('[data-action="close-reminder"]').forEach((el) => {
+    el.addEventListener('click', (e) => {
+      if (e.target.dataset.action === 'close-reminder') dispatch({ type: 'CLOSE_REMINDER' });
+    });
+  });
+  root.querySelector('.keyword-rule-popover')?.addEventListener('click', (e) => e.stopPropagation());
+}
+
+function patchStratagemPanel(root, state, dispatch) {
+  const existing = root.querySelector('.strat-panel-backdrop');
+  const html = renderStratagemPanel(state);
+  if (!html) {
+    existing?.remove();
+    return;
+  }
+  if (existing) {
+    existing.outerHTML = html;
+  } else {
+    root.querySelector('.guide-app')?.insertAdjacentHTML('beforeend', html);
+  }
+  bindStratagemEvents(root, dispatch);
+}
+
+/**
+ * Patch chrome without remounting the SVG board.
+ * @returns {boolean} true if handled
+ */
+function patchSimChrome(root, state, dispatch, action) {
+  if (!root?.querySelector?.('.battle-sim-app')) return false;
+  const type = action?.type;
+  if (type === 'ADJUST_SCORE') {
+    patchScoreboardValues(root, state);
+    return true;
+  }
+  if (type === 'SHOW_REMINDER' || type === 'CLOSE_REMINDER') {
+    patchReminderPopup(root, state, dispatch);
+    return true;
+  }
+  if (type === 'SPEND_STRATAGEM' || type === 'UNSPEND_STRATAGEM') {
+    patchScoreboardValues(root, state);
+    patchStratagemPanel(root, state, dispatch);
+    return true;
+  }
+  return false;
+}
+
+function renderBattleSim(root, state, dispatch) {
+  const radii = getSelectedRadii(state);
+  syncMapInteractionRuntime(state, dispatch);
 
   // One-shot migrate for games already open on Battle Map with legacy colliding model ids
   if (state.battleMap) {
@@ -9038,6 +9335,7 @@ function renderBattleSim(root, state, dispatch) {
     </div>`;
 
   bindBattleSimEvents(root, state, dispatch);
+  rebuildModelElementIndex(root.querySelector('.battle-map-svg'));
 }
 
 function bindBattleSimEvents(root, state, dispatch) {
@@ -9047,6 +9345,21 @@ function bindBattleSimEvents(root, state, dispatch) {
   root.querySelector('[data-action="save-game"]')?.addEventListener('click', () => dispatch({ type: 'SAVE' }));
   root.querySelector('[data-action="reset-game"]')?.addEventListener('click', () => {
     if (confirm('Reset the battle? Armies and scores will be cleared.')) dispatch({ type: 'RESET_GAME' });
+  });
+
+  root.querySelectorAll('[data-action="toggle-army-collapse"]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const player = btn.dataset.player;
+      if (!player) return;
+      if (collapsedArmyPanels.has(player)) collapsedArmyPanels.delete(player);
+      else collapsedArmyPanels.add(player);
+      const panel = root.querySelector(`.sim-army-panel[data-player="${player}"]`);
+      if (!panel) return;
+      const collapsed = collapsedArmyPanels.has(player);
+      panel.classList.toggle('collapsed', collapsed);
+      btn.textContent = collapsed ? 'Show' : 'Hide';
+      btn.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+    });
   });
 
   root.querySelectorAll('[data-action="set-first-player"]').forEach((btn) => {
@@ -9342,15 +9655,40 @@ const mapInteractionRuntime = {
   dispatch: null,
   drag: null,
   bound: false,
+  modelEls: new Map(),
 };
+
+function modelElKey(unitKey, modelId) {
+  return `${unitKey}\0${modelId}`;
+}
+
+function rebuildModelElementIndex(svg) {
+  const map = new Map();
+  if (svg) {
+    svg.querySelectorAll('.map-model').forEach((el) => {
+      const unitKey = el.getAttribute('data-unit-key');
+      const modelId = el.getAttribute('data-model-id');
+      if (unitKey != null && modelId != null) map.set(modelElKey(unitKey, modelId), el);
+    });
+  }
+  mapInteractionRuntime.modelEls = map;
+}
 
 function findByDataAttr(root, attr, value) {
   if (!root || value == null) return null;
+  try {
+    if (typeof CSS !== 'undefined' && typeof CSS.escape === 'function') {
+      return root.querySelector(`[${attr}="${CSS.escape(String(value))}"]`);
+    }
+  } catch (_) {}
   return [...root.querySelectorAll(`[${attr}]`)].find((el) => el.getAttribute(attr) === value) || null;
 }
 
 function findModelGroup(root, unitKey, modelId) {
-  if (!root || !unitKey || modelId == null) return null;
+  if (!unitKey || modelId == null) return null;
+  const cached = mapInteractionRuntime.modelEls.get(modelElKey(unitKey, modelId));
+  if (cached && (!root || root.contains(cached))) return cached;
+  if (!root) return null;
   return (
     [...root.querySelectorAll('.map-model')].find(
       (el) => el.getAttribute('data-unit-key') === unitKey && el.getAttribute('data-model-id') === modelId,
@@ -9639,16 +9977,71 @@ function showBootError(err) {
   }
 }
 
+/** Camera-only actions: update SVG transform without remounting the app. */
+const CAMERA_ACTIONS = new Set(['MAP_ZOOM', 'MAP_SET_CAMERA', 'MAP_RESET_CAMERA']);
+
+/** Frequent chrome updates that can patch the DOM instead of full remount. */
+const PATCH_ACTIONS = new Set([
+  'ADJUST_SCORE',
+  'SHOW_REMINDER',
+  'CLOSE_REMINDER',
+  'SPEND_STRATAGEM',
+  'UNSPEND_STRATAGEM',
+]);
+
 try {
   let state = createInitialGuideState();
   state = guideReducer(state, { type: 'RESTORE' });
 
-  function dispatch(action) {
-    state = guideReducer(state, action);
-    if (action.type !== 'RESTORE') {
-      state = guideReducer(state, { type: 'SAVE' });
+  let saveTimer = null;
+
+  function flushSave() {
+    if (saveTimer) {
+      clearTimeout(saveTimer);
+      saveTimer = null;
     }
-    renderGuide(document.getElementById('root'), state, dispatch);
+    state = guideReducer(state, { type: 'SAVE' });
+  }
+
+  function scheduleSave() {
+    if (saveTimer) clearTimeout(saveTimer);
+    saveTimer = setTimeout(() => {
+      saveTimer = null;
+      state = guideReducer(state, { type: 'SAVE' });
+    }, 400);
+  }
+
+  window.addEventListener('beforeunload', () => {
+    if (saveTimer) flushSave();
+  });
+
+  function dispatch(action) {
+    if (action.type === 'SAVE') {
+      flushSave();
+      return;
+    }
+
+    state = guideReducer(state, action);
+
+    if (action.type !== 'RESTORE') {
+      scheduleSave();
+    }
+
+    const root = document.getElementById('root');
+    if (!root) return;
+
+    if (CAMERA_ACTIONS.has(action.type)) {
+      applyMapCamera(root, state);
+      syncMapInteractionRuntime(state, dispatch);
+      return;
+    }
+
+    if (PATCH_ACTIONS.has(action.type) && patchSimChrome(root, state, dispatch, action)) {
+      syncMapInteractionRuntime(state, dispatch);
+      return;
+    }
+
+    renderGuide(root, state, dispatch);
   }
 
   if (document.readyState === 'loading') {

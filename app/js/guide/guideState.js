@@ -48,6 +48,7 @@ export function createInitialGuideState() {
     firstPlayer: 'player1',
     battleReady: { player1: false, player2: false },
     stratagems: { player1: [], player2: [] },
+    stratagemSpent: { player1: {}, player2: {} },
     stratagemPanel: null,
     helpGuide: { open: false, query: '', sectionId: null },
     deadUnits: { player1: [], player2: [] },
@@ -768,6 +769,11 @@ export function guideReducer(state, action) {
           ...(state.stratagems || { player1: [], player2: [] }),
           [player]: normalized,
         },
+        stratagemSpent: {
+          player1: { ...(state.stratagemSpent?.player1 || {}) },
+          player2: { ...(state.stratagemSpent?.player2 || {}) },
+          [player]: {},
+        },
         stratagemPanel: { player },
       };
     }
@@ -781,6 +787,11 @@ export function guideReducer(state, action) {
           ...(state.stratagems || { player1: [], player2: [] }),
           [player]: [],
         },
+        stratagemSpent: {
+          player1: { ...(state.stratagemSpent?.player1 || {}) },
+          player2: { ...(state.stratagemSpent?.player2 || {}) },
+          [player]: {},
+        },
       };
     }
 
@@ -792,6 +803,55 @@ export function guideReducer(state, action) {
 
     case 'CLOSE_STRATAGEMS':
       return { ...state, stratagemPanel: null };
+
+    case 'SPEND_STRATAGEM': {
+      const { player, stratagemId } = action;
+      if (player !== 'player1' && player !== 'player2') return state;
+      const id = String(stratagemId || '');
+      const strat = (state.stratagems?.[player] || []).find((s) => s.id === id);
+      if (!strat) return state;
+      const spentMap = state.stratagemSpent?.[player] || {};
+      if (spentMap[id]) return state;
+      const cost = Math.max(0, Number(strat.cp) || 0);
+      const cp = state[player].score.cp;
+      if (cp < cost) return state;
+      return {
+        ...state,
+        [player]: {
+          ...state[player],
+          score: { ...state[player].score, cp: cp - cost },
+        },
+        stratagemSpent: {
+          player1: { ...(state.stratagemSpent?.player1 || {}) },
+          player2: { ...(state.stratagemSpent?.player2 || {}) },
+          [player]: { ...spentMap, [id]: true },
+        },
+      };
+    }
+
+    case 'UNSPEND_STRATAGEM': {
+      const { player, stratagemId } = action;
+      if (player !== 'player1' && player !== 'player2') return state;
+      const id = String(stratagemId || '');
+      const strat = (state.stratagems?.[player] || []).find((s) => s.id === id);
+      if (!strat) return state;
+      const spentMap = { ...(state.stratagemSpent?.[player] || {}) };
+      if (!spentMap[id]) return state;
+      delete spentMap[id];
+      const cost = Math.max(0, Number(strat.cp) || 0);
+      return {
+        ...state,
+        [player]: {
+          ...state[player],
+          score: { ...state[player].score, cp: state[player].score.cp + cost },
+        },
+        stratagemSpent: {
+          player1: { ...(state.stratagemSpent?.player1 || {}) },
+          player2: { ...(state.stratagemSpent?.player2 || {}) },
+          [player]: spentMap,
+        },
+      };
+    }
 
     case 'OPEN_HELP_GUIDE':
       return {
@@ -1556,6 +1616,16 @@ export function guideReducer(state, action) {
           stratagems: {
             player1: normalizeStratagemDeck(saved.stratagems?.player1),
             player2: normalizeStratagemDeck(saved.stratagems?.player2),
+          },
+          stratagemSpent: {
+            player1:
+              saved.stratagemSpent?.player1 && typeof saved.stratagemSpent.player1 === 'object'
+                ? saved.stratagemSpent.player1
+                : {},
+            player2:
+              saved.stratagemSpent?.player2 && typeof saved.stratagemSpent.player2 === 'object'
+                ? saved.stratagemSpent.player2
+                : {},
           },
           stratagemPanel: null,
           helpGuide: {

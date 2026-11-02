@@ -1747,12 +1747,24 @@ tr.weapon-row-selected td {
 
 .battle-map-toolbar {
   display: flex;
-  flex-wrap: wrap;
-  gap: 0.4rem;
+  flex-wrap: nowrap;
+  gap: 0.5rem;
   align-items: center;
   padding: 0.5rem 0.75rem;
   border-bottom: 1px solid var(--border);
   background: var(--surface);
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+}
+
+.battle-map-toolbar-primary,
+.battle-map-toolbar-more {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 0.4rem;
+  align-items: center;
+  flex-shrink: 0;
 }
 
 .battle-map-toolbar button,
@@ -1764,6 +1776,7 @@ tr.weapon-row-selected td {
   border-radius: 4px;
   color: var(--text);
   cursor: pointer;
+  white-space: nowrap;
 }
 
 .battle-map-layout-label {
@@ -1799,6 +1812,50 @@ tr.weapon-row-selected td {
 
 .map-rotate-handle:active {
   cursor: grabbing;
+}
+
+.map-rotate-handle-hit {
+  /* Larger invisible hit target for Frame orientation on touch */
+  pointer-events: all;
+}
+
+.army-panel-header-actions {
+  display: flex;
+  gap: 0.35rem;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.sim-army-panel-body {
+  display: block;
+}
+
+.sim-army-panel.collapsed .sim-army-panel-body {
+  display: none;
+}
+
+.sim-army-panel.collapsed {
+  max-height: none;
+}
+
+.strat-card-actions {
+  margin-top: 0.65rem;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.strat-spend-btn.used {
+  opacity: 0.85;
+}
+
+.strat-card.is-spent {
+  opacity: 0.72;
+  border-color: var(--muted);
+}
+
+.strat-spend-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
 }
 
 .sim-step-nav {
@@ -2318,5 +2375,15 @@ tr.weapon-row-selected td {
     max-height: 240px;
     border-left: none !important;
     border-right: none !important;
+  }
+  .sim-army-panel.collapsed {
+    max-height: none;
+  }
+  .battle-map-toolbar {
+    padding: 0.4rem 0.5rem;
+  }
+  .battle-map-toolbar-more {
+    padding-left: 0.35rem;
+    border-left: 1px solid var(--border);
   }
 }

@@ -1,5 +1,10 @@
 import { createInitialGuideState, guideReducer } from './guide/guideState.js';
 import { renderGuide } from './guideRender.js';
+import {
+  applyMapCamera,
+  patchSimChrome,
+  syncMapInteractionRuntime,
+} from './battleSim/battleSimRender.js';
 
 function showBootError(err) {
   const root = document.getElementById('root');
@@ -14,16 +19,71 @@ function showBootError(err) {
   }
 }
 
+/** Camera-only actions: update SVG transform without remounting the app. */
+const CAMERA_ACTIONS = new Set(['MAP_ZOOM', 'MAP_SET_CAMERA', 'MAP_RESET_CAMERA']);
+
+/** Frequent chrome updates that can patch the DOM instead of full remount. */
+const PATCH_ACTIONS = new Set([
+  'ADJUST_SCORE',
+  'SHOW_REMINDER',
+  'CLOSE_REMINDER',
+  'SPEND_STRATAGEM',
+  'UNSPEND_STRATAGEM',
+]);
+
 try {
   let state = createInitialGuideState();
   state = guideReducer(state, { type: 'RESTORE' });
 
-  function dispatch(action) {
-    state = guideReducer(state, action);
-    if (action.type !== 'RESTORE') {
-      state = guideReducer(state, { type: 'SAVE' });
+  let saveTimer = null;
+
+  function flushSave() {
+    if (saveTimer) {
+      clearTimeout(saveTimer);
+      saveTimer = null;
     }
-    renderGuide(document.getElementById('root'), state, dispatch);
+    state = guideReducer(state, { type: 'SAVE' });
+  }
+
+  function scheduleSave() {
+    if (saveTimer) clearTimeout(saveTimer);
+    saveTimer = setTimeout(() => {
+      saveTimer = null;
+      state = guideReducer(state, { type: 'SAVE' });
+    }, 400);
+  }
+
+  window.addEventListener('beforeunload', () => {
+    if (saveTimer) flushSave();
+  });
+
+  function dispatch(action) {
+    if (action.type === 'SAVE') {
+      flushSave();
+      return;
+    }
+
+    state = guideReducer(state, action);
+
+    if (action.type !== 'RESTORE') {
+      scheduleSave();
+    }
+
+    const root = document.getElementById('root');
+    if (!root) return;
+
+    if (CAMERA_ACTIONS.has(action.type)) {
+      applyMapCamera(root, state);
+      syncMapInteractionRuntime(state, dispatch);
+      return;
+    }
+
+    if (PATCH_ACTIONS.has(action.type) && patchSimChrome(root, state, dispatch, action)) {
+      syncMapInteractionRuntime(state, dispatch);
+      return;
+    }
+
+    renderGuide(root, state, dispatch);
   }
 
   if (document.readyState === 'loading') {

@@ -241,23 +241,47 @@ function pointInLinkedAreas(point, area, areasById, areaGroups) {
   return false;
 }
 
+/** Cached terrain indexes for a layout (rebuilt when layout identity changes). */
+let losLayoutCache = { key: '', ctx: null };
+
+function layoutLosCacheKey(layout, battleMap) {
+  const ops = battleMap?.layoutTransform?.ops;
+  const opKey = Array.isArray(ops) ? ops.join(',') : '';
+  return `${battleMap?.layoutId || layout?.id || 'blank'}|${opKey}|${layout?.terrainAreas?.length || 0}|${layout?.terrainFeatures?.length || 0}`;
+}
+
+function getLosLayoutContext(layout, battleMap) {
+  const key = layoutLosCacheKey(layout, battleMap);
+  if (losLayoutCache.key === key && losLayoutCache.ctx) return losLayoutCache.ctx;
+  const features = layout?.terrainFeatures || [];
+  const areas = layout?.terrainAreas || [];
+  const ctx = {
+    features,
+    areas,
+    areasById: new Map(areas.map((a) => [a.id, a])),
+    areaGroups: buildMergedCentreAreaGroups(areas),
+    solidAreas: areas.filter((a) => areaIsSolidBuilding(a, features)),
+  };
+  losLayoutCache = { key, ctx };
+  return ctx;
+}
+
 /**
  * Walk the segment and find the earliest obstruction for this attacking model.
  * Returns { t, point, kind } or null if clear.
  * Terrain inside/see-through uses only `attackerModel` (not the whole unit).
+ * @param {object} [losCtx] precomputed layout indexes from getLosLayoutContext
+ * @param {{ steps?: number }} [opts]
  */
-export function firstObstructionAlongRay(from, to, layout, attackerModel) {
-  const features = layout?.terrainFeatures || [];
-  const areas = layout?.terrainAreas || [];
-  const areasById = new Map(areas.map((a) => [a.id, a]));
-  const areaGroups = buildMergedCentreAreaGroups(areas);
-  const solidAreas = areas.filter((a) => areaIsSolidBuilding(a, features));
+export function firstObstructionAlongRay(from, to, layout, attackerModel, losCtx = null, opts = {}) {
+  const ctx = losCtx || getLosLayoutContext(layout, null);
+  const { features, areas, areasById, areaGroups, solidAreas } = ctx;
 
   const touched = areas.filter((a) => modelTouchesArea(attackerModel, a)).map((a) => a.id);
   // Inside one centre half ⇒ inside the whole merged centre block (for this model only)
   const attackerInside = expandInsideIds(touched, areaGroups);
 
-  const STEPS = 96;
+  const STEPS = Math.max(24, opts.steps || 64);
   for (let i = 1; i <= STEPS; i++) {
     const t = i / STEPS;
     const p = lerp(from, to, t);
@@ -285,9 +309,11 @@ export function firstObstructionAlongRay(from, to, layout, attackerModel) {
 
 /**
  * Best edge-to-edge attempt from one attacker model to one target model.
+ * @param {{ perimeterSamples?: number, steps?: number }} [opts]
  */
-function rayBetweenModels(attacker, targetModel, layout) {
-  const tSamples = sampleModelPerimeter(targetModel, 28);
+function rayBetweenModels(attacker, targetModel, layout, losCtx, opts = {}) {
+  const samples = opts.perimeterSamples || 16;
+  const tSamples = sampleModelPerimeter(targetModel, samples);
   // Also try toward center for peeking edges
   tSamples.push({ x: targetModel.x, y: targetModel.y });
 
@@ -296,7 +322,7 @@ function rayBetweenModels(attacker, targetModel, layout) {
 
   for (const to of tSamples) {
     const from = edgePointOnModel(attacker, to);
-    const hit = firstObstructionAlongRay(from, to, layout, attacker);
+    const hit = firstObstructionAlongRay(from, to, layout, attacker, losCtx, opts);
     const dist = distance(from, to);
     if (!hit) {
       if (!bestClear || dist < bestClear.dist) {
@@ -321,6 +347,7 @@ function rayBetweenModels(attacker, targetModel, layout) {
 
 /**
  * Compute shoot-phase LoS preview: one ray + which attacker models can see.
+ * Uses a layout terrain cache and cheaper sampling for live map preview.
  * @returns {{
  *   lines: Array<{from,to,blocked,distanceIn?:number,attackerModelId?}>,
  *   anyClear: boolean,
@@ -333,6 +360,8 @@ export function computeBattleLos(state, shooterKey, targetKey) {
   if (!shooter?.models?.length || !target?.models?.length) return null;
 
   const layout = getActiveBattleLayout(state.battleMap);
+  const losCtx = getLosLayoutContext(layout, state.battleMap);
+  const previewOpts = { perimeterSamples: 12, steps: 48 };
   const attackerModels = shooter.models;
   const targetModels = target.models;
 
@@ -344,7 +373,7 @@ export function computeBattleLos(state, shooterKey, targetKey) {
     let modelClear = null;
     let modelBlocked = null;
     for (const tgt of targetModels) {
-      const ray = rayBetweenModels(atk, tgt, layout);
+      const ray = rayBetweenModels(atk, tgt, layout, losCtx, previewOpts);
       if (!ray) continue;
       if (!ray.blocked) {
         if (!modelClear || ray.dist < modelClear.dist) {

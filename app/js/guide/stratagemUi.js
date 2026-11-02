@@ -23,7 +23,11 @@ function renderPhasePips(phases) {
   return phases.map((p) => `<span class="strat-phase-pip" title="${esc(p)}">${esc(p[0] || '?')}</span>`).join('');
 }
 
-function renderStratagemCard(s) {
+function renderStratagemCard(s, playerKey, state) {
+  const spent = !!state.stratagemSpent?.[playerKey]?.[s.id];
+  const cp = state[playerKey]?.score?.cp ?? 0;
+  const cost = Math.max(0, Number(s.cp) || 0);
+  const canAfford = cp >= cost;
   const phases = s.phases?.length
     ? `<div class="strat-card-phases">${s.phases.map((p) => `<span class="strat-phase-tag">${esc(p)}</span>`).join('')}</div>`
     : '';
@@ -31,8 +35,12 @@ function renderStratagemCard(s) {
     ? `<div class="strat-card-body">${s.descriptionHtml}</div>`
     : `<div class="strat-card-body">${esc(s.descriptionText)}</div>`;
 
+  const spendBtn = spent
+    ? `<button type="button" class="btn-small strat-spend-btn used" data-action="unspend-stratagem" data-player="${playerKey}" data-stratagem-id="${esc(s.id)}">Used · Undo (+${cost} CP)</button>`
+    : `<button type="button" class="btn-small strat-spend-btn" data-action="spend-stratagem" data-player="${playerKey}" data-stratagem-id="${esc(s.id)}" ${canAfford ? '' : 'disabled'} title="${canAfford ? `Spend ${cost} CP` : 'Not enough CP'}">Spend ${cost} CP</button>`;
+
   return `
-    <article class="strat-card turn-${esc(s.turn)}">
+    <article class="strat-card turn-${esc(s.turn)} ${spent ? 'is-spent' : ''}">
       <div class="strat-card-head">
         <div class="strat-card-icon" aria-hidden="true">
           <div class="strat-card-pips">${renderPhasePips(s.phases)}</div>
@@ -45,6 +53,7 @@ function renderStratagemCard(s) {
       </div>
       ${phases}
       ${body}
+      <div class="strat-card-actions">${spendBtn}</div>
     </article>`;
 }
 
@@ -57,9 +66,10 @@ export function renderStratagemPanel(state) {
   const deck = state.stratagems?.[playerKey] || [];
   const armyName = player?.army?.name || player?.name || (playerKey === 'player1' ? 'Player 1' : 'Player 2');
   const sideLabel = playerKey === 'player1' ? 'Player 1' : 'Player 2';
+  const cp = player?.score?.cp ?? 0;
 
   const cards = deck.length
-    ? `<div class="strat-card-list">${deck.map(renderStratagemCard).join('')}</div>`
+    ? `<div class="strat-card-list">${deck.map((s) => renderStratagemCard(s, playerKey, state)).join('')}</div>`
     : `<div class="strat-empty">
         <p>No stratagem deck loaded for ${esc(sideLabel)}.</p>
         <p class="hint">Export your stratagems as HTML from your army builder, then upload the file here.</p>
@@ -71,7 +81,7 @@ export function renderStratagemPanel(state) {
         <div class="strat-panel-header">
           <div>
             <h2 id="strat-panel-title">Stratagems</h2>
-            <p class="strat-panel-meta">${esc(armyName)} · ${deck.length} stratagem${deck.length === 1 ? '' : 's'}</p>
+            <p class="strat-panel-meta">${esc(armyName)} · ${deck.length} stratagem${deck.length === 1 ? '' : 's'} · ${cp} CP</p>
           </div>
           <button type="button" class="unit-modal-close" data-action="close-stratagems" aria-label="Close">×</button>
         </div>
@@ -105,6 +115,18 @@ export function bindStratagemEvents(root, dispatch) {
 
   root.querySelectorAll('[data-action="clear-stratagems"]').forEach((btn) => {
     btn.addEventListener('click', () => dispatch({ type: 'CLEAR_STRATAGEMS', player: btn.dataset.player }));
+  });
+
+  root.querySelectorAll('[data-action="spend-stratagem"]').forEach((btn) => {
+    btn.addEventListener('click', () =>
+      dispatch({ type: 'SPEND_STRATAGEM', player: btn.dataset.player, stratagemId: btn.dataset.stratagemId }),
+    );
+  });
+
+  root.querySelectorAll('[data-action="unspend-stratagem"]').forEach((btn) => {
+    btn.addEventListener('click', () =>
+      dispatch({ type: 'UNSPEND_STRATAGEM', player: btn.dataset.player, stratagemId: btn.dataset.stratagemId }),
+    );
   });
 
   root.querySelectorAll('input[data-action="load-stratagems"]').forEach((input) => {

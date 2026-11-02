@@ -43,6 +43,9 @@ import {
 } from './battleMapState.js';
 import { renderMapSvg, clientToBoardInches, getPixelsPerInch } from './mapView.js';
 
+/** Survives remounts so mobile army collapse stays put. */
+const collapsedArmyPanels = new Set();
+
 function esc(s) {
   return String(s ?? '')
     .replace(/&/g, '&amp;')
@@ -56,7 +59,7 @@ function renderScoreCell(player, field, label, value, playerKey) {
       <span class="score-label">${label}</span>
       <div class="score-controls">
         <button type="button" data-action="score" data-player="${playerKey}" data-field="${field}" data-delta="-1">−</button>
-        <span class="score-value">${value}</span>
+        <span class="score-value" data-score-player="${playerKey}" data-score-field="${field}">${value}</span>
         <button type="button" data-action="score" data-player="${playerKey}" data-field="${field}" data-delta="1">+</button>
       </div>
     </div>`;
@@ -95,7 +98,7 @@ function renderSimScoreboard(state) {
           ${renderScoreCell(p1, 'primary', 'Prim', p1.score.primary, 'player1')}
           <div class="score-cell score-total-cell">
             <span class="score-label">Total</span>
-            <span class="score-total">${totalScore(p1.score)}</span>
+            <span class="score-total" data-score-total="player1">${totalScore(p1.score)}</span>
           </div>
           ${renderBattleReadyBtn(state, 'player1')}
           ${renderStratagemsBtn(state, 'player1')}
@@ -119,7 +122,7 @@ function renderSimScoreboard(state) {
           ${renderBattleReadyBtn(state, 'player2')}
           <div class="score-cell score-total-cell">
             <span class="score-label">Total</span>
-            <span class="score-total">${totalScore(p2.score)}</span>
+            <span class="score-total" data-score-total="player2">${totalScore(p2.score)}</span>
           </div>
           ${renderScoreCell(p2, 'primary', 'Prim', p2.score.primary, 'player2')}
           ${renderScoreCell(p2, 'secondary', 'Sec', p2.score.secondary, 'player2')}
@@ -186,14 +189,20 @@ function renderSimArmyList(state, playerKey) {
   const army = player?.army;
   const sideLabel = playerKey === 'player1' ? 'Player 1' : 'Player 2';
   if (!army) {
+    const collapsed = collapsedArmyPanels.has(playerKey) ? 'collapsed' : '';
     return `
-      <div class="sim-army-panel army-empty" data-player="${playerKey}">
-        <h3>${sideLabel}</h3>
-        <label class="file-btn">
-          Load Army (.json)
-          <input type="file" accept=".json,application/json" data-action="load-army" data-player="${playerKey}" hidden />
-        </label>
-        ${renderNewRecruitHint()}
+      <div class="sim-army-panel army-empty ${collapsed}" data-player="${playerKey}">
+        <div class="army-panel-header">
+          <h3>${sideLabel}</h3>
+          <button type="button" class="btn-small army-collapse-btn" data-action="toggle-army-collapse" data-player="${playerKey}" aria-expanded="${collapsed ? 'false' : 'true'}">${collapsed ? 'Show' : 'Hide'}</button>
+        </div>
+        <div class="sim-army-panel-body">
+          <label class="file-btn">
+            Load Army (.json)
+            <input type="file" accept=".json,application/json" data-action="load-army" data-player="${playerKey}" hidden />
+          </label>
+          ${renderNewRecruitHint()}
+        </div>
       </div>`;
   }
 
@@ -238,22 +247,28 @@ function renderSimArmyList(state, playerKey) {
     })
     .join('');
 
+  const collapsed = collapsedArmyPanels.has(playerKey) ? 'collapsed' : '';
   return `
-    <div class="sim-army-panel" data-player="${playerKey}">
+    <div class="sim-army-panel ${collapsed}" data-player="${playerKey}">
       <div class="army-panel-header">
         <div>
           <h3>${esc(army.name)}</h3>
           <p class="army-meta">${esc(army.faction)} · ${army.points}${army.pointsLimit ? `/${army.pointsLimit}` : ''} pts</p>
         </div>
-        <button type="button" class="btn-small" data-action="clear-army" data-player="${playerKey}">Clear</button>
+        <div class="army-panel-header-actions">
+          <button type="button" class="btn-small army-collapse-btn" data-action="toggle-army-collapse" data-player="${playerKey}" aria-expanded="${collapsed ? 'false' : 'true'}">${collapsed ? 'Show' : 'Hide'}</button>
+          <button type="button" class="btn-small" data-action="clear-army" data-player="${playerKey}">Clear</button>
+        </div>
       </div>
-      <label class="file-btn btn-small">
-        Replace
-        <input type="file" accept=".json,application/json" data-action="load-army" data-player="${playerKey}" hidden />
-      </label>
-      <div class="sim-unit-list">${units}</div>
-      ${renderSimUnitCard(state, playerKey)}
-      ${renderSimCombatOverlay(state, playerKey)}
+      <div class="sim-army-panel-body">
+        <label class="file-btn btn-small">
+          Replace
+          <input type="file" accept=".json,application/json" data-action="load-army" data-player="${playerKey}" hidden />
+        </label>
+        <div class="sim-unit-list">${units}</div>
+        ${renderSimUnitCard(state, playerKey)}
+        ${renderSimCombatOverlay(state, playerKey)}
+      </div>
     </div>`;
 }
 
@@ -669,11 +684,100 @@ function renderReminderPopup(state) {
     </div>`;
 }
 
-export function renderBattleSim(root, state, dispatch) {
-  const radii = getSelectedRadii(state);
-  // Keep a live state pointer so pointer handlers don't use a stale closure after re-renders
+export function syncMapInteractionRuntime(state, dispatch) {
   mapInteractionRuntime.state = state;
   mapInteractionRuntime.dispatch = dispatch;
+}
+
+/** Apply camera transform to the live SVG without remounting the board. */
+export function applyMapCamera(root, state) {
+  const svg = root?.querySelector?.('.battle-map-svg');
+  const world = svg?.querySelector('.battle-map-world');
+  if (!svg || !world) return false;
+  const cam = state.battleMap?.camera || { x: 0, y: 0, zoom: 1 };
+  const pad = Number(svg.dataset.pad || 8);
+  const ppi = Number(svg.dataset.ppi || getPixelsPerInch());
+  world.setAttribute(
+    'transform',
+    `translate(${(pad + (cam.x || 0)) * ppi} ${(pad + (cam.y || 0)) * ppi}) scale(${cam.zoom || 1})`,
+  );
+  return true;
+}
+
+function patchScoreboardValues(root, state) {
+  for (const key of ['player1', 'player2']) {
+    const score = state[key]?.score;
+    if (!score) continue;
+    for (const field of ['cp', 'secondary', 'primary']) {
+      const el = root.querySelector(`[data-score-player="${key}"][data-score-field="${field}"]`);
+      if (el) el.textContent = String(score[field] ?? 0);
+    }
+    const total = root.querySelector(`[data-score-total="${key}"]`);
+    if (total) total.textContent = String(totalScore(score));
+  }
+}
+
+function patchReminderPopup(root, state, dispatch) {
+  const existing = root.querySelector('.keyword-rule-popover-backdrop[data-action="close-reminder"]');
+  const html = renderReminderPopup(state);
+  if (!html) {
+    existing?.remove();
+    return;
+  }
+  if (existing) {
+    existing.outerHTML = html;
+  } else {
+    root.querySelector('.guide-app')?.insertAdjacentHTML('beforeend', html);
+  }
+  root.querySelectorAll('[data-action="close-reminder"]').forEach((el) => {
+    el.addEventListener('click', (e) => {
+      if (e.target.dataset.action === 'close-reminder') dispatch({ type: 'CLOSE_REMINDER' });
+    });
+  });
+  root.querySelector('.keyword-rule-popover')?.addEventListener('click', (e) => e.stopPropagation());
+}
+
+function patchStratagemPanel(root, state, dispatch) {
+  const existing = root.querySelector('.strat-panel-backdrop');
+  const html = renderStratagemPanel(state);
+  if (!html) {
+    existing?.remove();
+    return;
+  }
+  if (existing) {
+    existing.outerHTML = html;
+  } else {
+    root.querySelector('.guide-app')?.insertAdjacentHTML('beforeend', html);
+  }
+  bindStratagemEvents(root, dispatch);
+}
+
+/**
+ * Patch chrome without remounting the SVG board.
+ * @returns {boolean} true if handled
+ */
+export function patchSimChrome(root, state, dispatch, action) {
+  if (!root?.querySelector?.('.battle-sim-app')) return false;
+  const type = action?.type;
+  if (type === 'ADJUST_SCORE') {
+    patchScoreboardValues(root, state);
+    return true;
+  }
+  if (type === 'SHOW_REMINDER' || type === 'CLOSE_REMINDER') {
+    patchReminderPopup(root, state, dispatch);
+    return true;
+  }
+  if (type === 'SPEND_STRATAGEM' || type === 'UNSPEND_STRATAGEM') {
+    patchScoreboardValues(root, state);
+    patchStratagemPanel(root, state, dispatch);
+    return true;
+  }
+  return false;
+}
+
+export function renderBattleSim(root, state, dispatch) {
+  const radii = getSelectedRadii(state);
+  syncMapInteractionRuntime(state, dispatch);
 
   // One-shot migrate for games already open on Battle Map with legacy colliding model ids
   if (state.battleMap) {
@@ -715,6 +819,7 @@ export function renderBattleSim(root, state, dispatch) {
     </div>`;
 
   bindBattleSimEvents(root, state, dispatch);
+  rebuildModelElementIndex(root.querySelector('.battle-map-svg'));
 }
 
 function bindBattleSimEvents(root, state, dispatch) {
@@ -724,6 +829,21 @@ function bindBattleSimEvents(root, state, dispatch) {
   root.querySelector('[data-action="save-game"]')?.addEventListener('click', () => dispatch({ type: 'SAVE' }));
   root.querySelector('[data-action="reset-game"]')?.addEventListener('click', () => {
     if (confirm('Reset the battle? Armies and scores will be cleared.')) dispatch({ type: 'RESET_GAME' });
+  });
+
+  root.querySelectorAll('[data-action="toggle-army-collapse"]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const player = btn.dataset.player;
+      if (!player) return;
+      if (collapsedArmyPanels.has(player)) collapsedArmyPanels.delete(player);
+      else collapsedArmyPanels.add(player);
+      const panel = root.querySelector(`.sim-army-panel[data-player="${player}"]`);
+      if (!panel) return;
+      const collapsed = collapsedArmyPanels.has(player);
+      panel.classList.toggle('collapsed', collapsed);
+      btn.textContent = collapsed ? 'Show' : 'Hide';
+      btn.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+    });
   });
 
   root.querySelectorAll('[data-action="set-first-player"]').forEach((btn) => {
@@ -1019,15 +1139,40 @@ const mapInteractionRuntime = {
   dispatch: null,
   drag: null,
   bound: false,
+  modelEls: new Map(),
 };
+
+function modelElKey(unitKey, modelId) {
+  return `${unitKey}\0${modelId}`;
+}
+
+function rebuildModelElementIndex(svg) {
+  const map = new Map();
+  if (svg) {
+    svg.querySelectorAll('.map-model').forEach((el) => {
+      const unitKey = el.getAttribute('data-unit-key');
+      const modelId = el.getAttribute('data-model-id');
+      if (unitKey != null && modelId != null) map.set(modelElKey(unitKey, modelId), el);
+    });
+  }
+  mapInteractionRuntime.modelEls = map;
+}
 
 function findByDataAttr(root, attr, value) {
   if (!root || value == null) return null;
+  try {
+    if (typeof CSS !== 'undefined' && typeof CSS.escape === 'function') {
+      return root.querySelector(`[${attr}="${CSS.escape(String(value))}"]`);
+    }
+  } catch (_) {}
   return [...root.querySelectorAll(`[${attr}]`)].find((el) => el.getAttribute(attr) === value) || null;
 }
 
 function findModelGroup(root, unitKey, modelId) {
-  if (!root || !unitKey || modelId == null) return null;
+  if (!unitKey || modelId == null) return null;
+  const cached = mapInteractionRuntime.modelEls.get(modelElKey(unitKey, modelId));
+  if (cached && (!root || root.contains(cached))) return cached;
+  if (!root) return null;
   return (
     [...root.querySelectorAll('.map-model')].find(
       (el) => el.getAttribute('data-unit-key') === unitKey && el.getAttribute('data-model-id') === modelId,
