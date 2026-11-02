@@ -325,16 +325,32 @@ export function renderMapSvg(state, options = {}) {
     </div>`;
 }
 
+/** Client pixels → SVG user units (respects viewBox letterboxing / non-uniform fit). */
+export function clientToSvgUser(svgEl, clientX, clientY) {
+  if (!svgEl) return { x: 0, y: 0 };
+  const ctm = svgEl.getScreenCTM?.();
+  if (!ctm) {
+    const rect = svgEl.getBoundingClientRect();
+    const vb = svgEl.viewBox?.baseVal;
+    if (!rect.width || !rect.height || !vb) return { x: 0, y: 0 };
+    return {
+      x: ((clientX - rect.left) / rect.width) * vb.width,
+      y: ((clientY - rect.top) / rect.height) * vb.height,
+    };
+  }
+  const pt = svgEl.createSVGPoint();
+  pt.x = clientX;
+  pt.y = clientY;
+  const sp = pt.matrixTransform(ctm.inverse());
+  return { x: sp.x, y: sp.y };
+}
+
 export function clientToBoardInches(svgEl, clientX, clientY, camera) {
-  const rect = svgEl.getBoundingClientRect();
-  if (!rect.width || !rect.height) return { x: 0, y: 0 };
-  const vb = svgEl.viewBox.baseVal;
-  const pad = Number(svgEl.dataset.pad || 8);
-  const ppi = Number(svgEl.dataset.ppi || PPI);
+  const pad = Number(svgEl?.dataset?.pad || 8);
+  const ppi = Number(svgEl?.dataset?.ppi || PPI);
   const zoom = camera?.zoom || 1;
-  const sx = ((clientX - rect.left) / rect.width) * vb.width;
-  const sy = ((clientY - rect.top) / rect.height) * vb.height;
-  const x = (sx / ppi - pad - (camera?.x || 0)) / zoom;
-  const y = (sy / ppi - pad - (camera?.y || 0)) / zoom;
+  const svgPt = clientToSvgUser(svgEl, clientX, clientY);
+  const x = (svgPt.x / ppi - pad - (camera?.x || 0)) / zoom;
+  const y = (svgPt.y / ppi - pad - (camera?.y || 0)) / zoom;
   return { x, y };
 }

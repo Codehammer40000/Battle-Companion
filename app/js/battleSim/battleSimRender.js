@@ -41,24 +41,50 @@ import {
   modelBelongsToUnit,
   migrateBattleMapModelIds,
 } from './battleMapState.js';
-import { renderMapSvg, clientToBoardInches, getPixelsPerInch } from './mapView.js';
+import { renderMapSvg, clientToBoardInches, clientToSvgUser, getPixelsPerInch } from './mapView.js';
 
 /** Which army drawers are open — survives remounts. */
 const openArmyDrawers = new Set();
 let armyDrawersBootstrapped = false;
 
+/**
+ * Pre-game + setup steps where armies must stay visible (formations → pre-battle).
+ * Closes at / after "Begin the Battle".
+ */
+function shouldForceArmyDrawers(state) {
+  if (!state?.started) return true;
+  const step = state.flow?.[state.stepIndex];
+  if (step?.section !== 'setup') return false;
+  return step.id !== 'setup-begin';
+}
+
+function openBothArmyDrawers() {
+  openArmyDrawers.add('player1');
+  openArmyDrawers.add('player2');
+}
+
 function bootstrapArmyDrawers(state) {
   if (armyDrawersBootstrapped) return;
   armyDrawersBootstrapped = true;
-  for (const key of ['player1', 'player2']) {
-    // Pre-game or missing army: open so load/deploy is obvious. In battle: closed for map space.
-    if (!state.started || !state[key]?.army) openArmyDrawers.add(key);
-  }
+  if (shouldForceArmyDrawers(state)) openBothArmyDrawers();
 }
 
 function isArmyDrawerOpen(playerKey, state) {
   bootstrapArmyDrawers(state);
   return openArmyDrawers.has(playerKey);
+}
+
+/** Keep lists visible while mustering / deploying; close at Begin the Battle. */
+function syncArmyDrawersToPhase(state) {
+  bootstrapArmyDrawers(state);
+  if (shouldForceArmyDrawers(state)) openBothArmyDrawers();
+  else if (state.started) {
+    const step = state.flow?.[state.stepIndex];
+    if (step?.id === 'setup-begin' || step?.section !== 'setup') {
+      // Arrived at Begin the Battle or battle rounds — free the map
+      openArmyDrawers.clear();
+    }
+  }
 }
 
 function esc(s) {
@@ -819,6 +845,7 @@ export function patchSimChrome(root, state, dispatch, action) {
 export function renderBattleSim(root, state, dispatch) {
   const radii = getSelectedRadii(state);
   syncMapInteractionRuntime(state, dispatch);
+  syncArmyDrawersToPhase(state);
 
   // One-shot migrate for games already open on Battle Map with legacy colliding model ids
   if (state.battleMap) {
@@ -860,11 +887,21 @@ export function renderBattleSim(root, state, dispatch) {
 
 function bindBattleSimEvents(root, state, dispatch) {
   root.querySelector('[data-action="start-game"]')?.addEventListener('click', () => {
-    openArmyDrawers.clear();
+    openBothArmyDrawers();
     dispatch({ type: 'START_GAME' });
   });
-  root.querySelector('[data-action="next-step"]')?.addEventListener('click', () => dispatch({ type: 'NEXT_STEP' }));
-  root.querySelector('[data-action="prev-step"]')?.addEventListener('click', () => dispatch({ type: 'PREV_STEP' }));
+  root.querySelector('[data-action="next-step"]')?.addEventListener('click', () => {
+    const next = state.flow?.[state.stepIndex + 1];
+    if (next?.id === 'setup-begin' || (next && next.section !== 'setup')) {
+      openArmyDrawers.clear();
+    }
+    dispatch({ type: 'NEXT_STEP' });
+  });
+  root.querySelector('[data-action="prev-step"]')?.addEventListener('click', () => {
+    const prev = state.flow?.[state.stepIndex - 1];
+    if (prev?.section === 'setup' && prev.id !== 'setup-begin') openBothArmyDrawers();
+    dispatch({ type: 'PREV_STEP' });
+  });
   root.querySelector('[data-action="save-game"]')?.addEventListener('click', () => dispatch({ type: 'SAVE' }));
   root.querySelector('[data-action="reset-game"]')?.addEventListener('click', () => {
     if (confirm('Reset the battle? Armies and scores will be cleared.')) dispatch({ type: 'RESET_GAME' });
@@ -1363,11 +1400,11 @@ function ensureMapPointerHandlers() {
     const ppi = getPixelsPerInch();
 
     if (drag.type === 'pan') {
-      const rect = svg.getBoundingClientRect();
-      if (!rect.width) return;
-      const scale = svg.viewBox.baseVal.width / rect.width / ppi / (cam.zoom || 1);
-      const dx = (e.clientX - drag.startClient.x) * scale;
-      const dy = (e.clientY - drag.startClient.y) * scale;
+      // Camera translate is applied outside zoom — Δsvg / ppi == Δcam inches.
+      const startSvg = clientToSvgUser(svg, drag.startClient.x, drag.startClient.y);
+      const curSvg = clientToSvgUser(svg, e.clientX, e.clientY);
+      const dx = (curSvg.x - startSvg.x) / ppi;
+      const dy = (curSvg.y - startSvg.y) / ppi;
       if (Math.abs(dx) + Math.abs(dy) > 0.05) drag.moved = true;
       const world = svg.querySelector('.battle-map-world');
       const pad = Number(svg.dataset.pad || 8);
