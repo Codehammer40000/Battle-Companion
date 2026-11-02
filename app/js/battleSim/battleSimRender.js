@@ -333,8 +333,6 @@ function renderSimArmyList(state, playerKey) {
       </div>
       <div class="sim-army-panel-body">
         <div class="sim-unit-list">${units}</div>
-        ${renderSimUnitCard(state, playerKey)}
-        ${renderSimCombatOverlay(state, playerKey)}
       </div>
     </aside>`;
 }
@@ -398,100 +396,24 @@ function collectModelHighlights(state) {
   return { mustTestKeys, shockedKeys };
 }
 
-function renderSimUnitCard(state, playerKey) {
-  const step = getCurrentStep(state);
-  if (isCombatActionStep(step) && state.combat?.active && state.combat.active.player === playerKey) return '';
-  if (isCombatActionStep(step) && state.combat?.target && state.combat.target.player === playerKey) return '';
-
-  const selected = parseMapUnitKey(state.battleMap?.selectedUnitKey);
-  if (!selected || selected.player !== playerKey) return '';
-  const attachments = state.leaderAttachments?.[playerKey] || {};
-  const units = getCombatDisplayUnits(state[playerKey]?.army, attachments, selected.unitId);
-  if (!units.length) return '';
-
-  const selectedWeapon = state.battleMap?.selectedWeapon || null;
-  const blocks = units
-    .map((unit) => {
-      const woundsTaken = getUnitWoundsTaken(state, playerKey, unit.id);
-      const remaining = getRemainingModels(unit, woundsTaken);
-      const woundCap = getUnitWoundCapacity(unit);
-      const abilities = getUnitDisplayAbilities(unit)
-        .slice(0, 6)
-        .map(
-          (a) => `
-      <div class="combat-ability-item">
-        <strong>${esc(a.name)}</strong>
-        <p>${esc(a.description)}</p>
-      </div>`,
-        )
-        .join('');
-      const army = state[playerKey]?.army;
-      const { ranged, melee } = renderSimWeaponBlocks(unit, playerKey, selectedWeapon, true, army);
-      const roleTag = unit.isLeader ? 'Leader' : unitIsSupport(unit) ? 'Support' : '';
-      const attachedToId = attachments[unit.id];
-      const attachedTo = attachedToId ? army?.units?.find((x) => x.id === attachedToId) : null;
-      const attachLine = attachedTo
-        ? `<p class="combat-unit-attach">${unitIsSupport(unit) ? 'Supporting' : 'Leading'} ${esc(attachedTo.name)}</p>`
-        : '';
-      const leaderAttach = renderSimLeaderAttach(unit, playerKey, army?.units || [], state);
-      return `
-      <div class="combat-unit-block">
-        <div class="combat-unit-header">
-          <h3>${esc(unit.name)}${roleTag ? ` <span class="combat-role-tag">${roleTag}</span>` : ''}</h3>
-          <p class="combat-unit-meta">${remaining} models · ${woundsTaken}/${woundCap} wounds${unit.baseLabel ? ` · ${esc(unit.baseLabel)}` : ''}</p>
-          ${leaderAttach}
-          ${attachLine}
-          ${unit.statsLine ? `<p class="combat-unit-stats">${esc(unit.statsLine)}</p>` : ''}
-        </div>
-        <div class="combat-wounds-row">
-          <span class="combat-wounds-label">Wounds</span>
-          <div class="combat-wounds-controls">
-            <button type="button" data-action="adjust-unit-wounds" data-player="${playerKey}" data-unit-id="${esc(unit.id)}" data-delta="-1">−</button>
-            <span class="combat-wounds-value">${woundsTaken}</span>
-            <button type="button" data-action="adjust-unit-wounds" data-player="${playerKey}" data-unit-id="${esc(unit.id)}" data-delta="1">+</button>
-          </div>
-          <span class="combat-wounds-cap">/ ${woundCap}</span>
-          ${renderSimShockBtn(state, playerKey, unit.id)}
-        </div>
-        ${ranged || ''}
-        ${melee || ''}
-        ${abilities ? `<details class="combat-collapsed"><summary>Abilities</summary>${abilities}</details>` : ''}
-      </div>`;
-    })
-    .join('');
-
-  return `
-    <div class="combat-overlay combat-overlay-selected">
-      <button type="button" class="combat-overlay-close" data-action="map-clear-selection" aria-label="Close">×</button>
-      <div class="combat-overlay-body">${blocks}</div>
-    </div>`;
-}
-
-function renderSimCombatOverlay(state, playerKey) {
-  const step = getCurrentStep(state);
-  if (!isCombatActionStep(step) || !state.combat) return '';
-
+/**
+ * One unit datasheet panel (weapons, stats, wounds).
+ * @param {'selected'|'active'|'target'} role
+ */
+function renderDatasheetPanel(state, playerKey, unitId, role) {
   const army = state[playerKey]?.army;
-  if (!army) return '';
+  if (!army || !unitId) return '';
   const attachments = state.leaderAttachments?.[playerKey] || {};
-
-  let unitId = null;
-  let variant = '';
-  if (state.combat.active?.player === playerKey && state.combat.active.unitId) {
-    unitId = state.combat.active.unitId;
-    variant = 'combat-overlay-active';
-  } else if (state.combat.target?.player === playerKey && state.combat.target.unitId) {
-    unitId = state.combat.target.unitId;
-    variant = 'combat-overlay-target';
-  }
-  if (!unitId) return '';
-
   const units = getCombatDisplayUnits(army, attachments, unitId);
   if (!units.length) return '';
 
   const selectedWeapon = state.battleMap?.selectedWeapon || null;
-  // Only the controlling unit can pick a weapon for range rings — never the target (map clutter)
-  const showWeaponPick = variant === 'combat-overlay-active';
+  // Active shooter / general selection can pick weapons for range rings; targets show profiles read-only.
+  const showWeaponPick = role === 'active' || role === 'selected';
+  const roleLabel = role === 'active' ? 'Attacker' : role === 'target' ? 'Target' : 'Datasheet';
+  const variantClass =
+    role === 'active' ? 'combat-overlay-active' : role === 'target' ? 'combat-overlay-target' : 'combat-overlay-selected';
+
   const blocks = units
     .map((unit) => {
       const woundsTaken = getUnitWoundsTaken(state, playerKey, unit.id);
@@ -511,19 +433,28 @@ function renderSimCombatOverlay(state, playerKey) {
         army,
       );
       const roleTag = unit.isLeader ? 'Leader' : unitIsSupport(unit) ? 'Support' : '';
+      const attachedToId = attachments[unit.id];
+      const attachedTo = attachedToId ? army.units?.find((x) => x.id === attachedToId) : null;
+      const attachLine = attachedTo
+        ? `<p class="combat-unit-attach">${unitIsSupport(unit) ? 'Supporting' : 'Leading'} ${esc(attachedTo.name)}</p>`
+        : '';
+      const leaderAttach =
+        role === 'selected' ? renderSimLeaderAttach(unit, playerKey, army.units || [], state) : '';
       return `
       <div class="combat-unit-block">
         <div class="combat-unit-header">
           <h3>${esc(unit.name)}${roleTag ? ` <span class="combat-role-tag">${roleTag}</span>` : ''}</h3>
           <p class="combat-unit-meta">${remaining} models · ${woundsTaken}/${woundCap} wounds · ${unit.points} pts${unit.baseLabel ? ` · ${esc(unit.baseLabel)}` : ''}</p>
+          ${leaderAttach}
+          ${attachLine}
           ${unit.statsLine ? `<p class="combat-unit-stats">${esc(unit.statsLine)}</p>` : ''}
         </div>
         <div class="combat-wounds-row">
           <span class="combat-wounds-label">Wounds</span>
           <div class="combat-wounds-controls">
-            <button type="button" data-action="adjust-unit-wounds" data-player="${playerKey}" data-unit-id="${esc(unit.id)}" data-delta="-1">−</button>
+            <button type="button" class="ui-icon-btn" data-action="adjust-unit-wounds" data-player="${playerKey}" data-unit-id="${esc(unit.id)}" data-delta="-1" aria-label="Heal wound">−</button>
             <span class="combat-wounds-value">${woundsTaken}</span>
-            <button type="button" data-action="adjust-unit-wounds" data-player="${playerKey}" data-unit-id="${esc(unit.id)}" data-delta="1">+</button>
+            <button type="button" class="ui-icon-btn" data-action="adjust-unit-wounds" data-player="${playerKey}" data-unit-id="${esc(unit.id)}" data-delta="1" aria-label="Add wound">+</button>
           </div>
           <span class="combat-wounds-cap">/ ${woundCap}</span>
           ${renderSimShockBtn(state, playerKey, unit.id)}
@@ -535,12 +466,50 @@ function renderSimCombatOverlay(state, playerKey) {
     })
     .join('');
 
-  const closeAction = variant === 'combat-overlay-active' ? 'combat-select-active' : 'combat-select-target';
+  let closeAttrs = 'data-action="map-clear-selection"';
+  if (role === 'active') {
+    closeAttrs = `data-action="combat-select-active" data-unit-id="${esc(unitId)}"`;
+  } else if (role === 'target') {
+    closeAttrs = `data-action="combat-select-target" data-unit-id="${esc(unitId)}"`;
+  }
+
   return `
-    <div class="combat-overlay ${variant}">
-      <button type="button" class="combat-overlay-close" data-action="${closeAction}" data-unit-id="${esc(unitId)}" aria-label="Close">×</button>
+    <section class="map-datasheet-panel combat-overlay ${variantClass}" data-datasheet-role="${role}" data-player="${playerKey}">
+      <header class="map-datasheet-panel-head">
+        <span class="map-datasheet-role">${roleLabel}</span>
+        <button type="button" class="combat-overlay-close ui-icon-btn" ${closeAttrs} aria-label="Close">×</button>
+      </header>
       <div class="combat-overlay-body">${blocks}</div>
-    </div>`;
+    </section>`;
+}
+
+/** Always-visible datasheet dock on the map (does not depend on army drawers). */
+function renderMapDatasheetDock(state) {
+  const step = getCurrentStep(state);
+  const panels = [];
+
+  if (isCombatActionStep(step) && state.combat) {
+    if (state.combat.active?.player && state.combat.active.unitId) {
+      panels.push(
+        renderDatasheetPanel(state, state.combat.active.player, state.combat.active.unitId, 'active'),
+      );
+    }
+    if (state.combat.target?.player && state.combat.target.unitId) {
+      panels.push(
+        renderDatasheetPanel(state, state.combat.target.player, state.combat.target.unitId, 'target'),
+      );
+    }
+  }
+
+  if (!panels.length) {
+    const selected = parseMapUnitKey(state.battleMap?.selectedUnitKey);
+    if (selected?.player && selected.unitId) {
+      panels.push(renderDatasheetPanel(state, selected.player, selected.unitId, 'selected'));
+    }
+  }
+
+  if (!panels.length) return '';
+  return `<div class="map-datasheet-dock" data-map-datasheet-dock="1">${panels.join('')}</div>`;
 }
 
 function parseMoveInches(statsLine, stats) {
@@ -864,7 +833,8 @@ export function renderBattleSim(root, state, dispatch) {
   const mapBodyExtras = `
     ${renderSimArmyList(state, 'player1')}
     ${renderSimArmyList(state, 'player2')}
-    <button type="button" class="sim-drawer-scrim ${drawerOpen ? 'is-visible' : ''}" data-action="close-army-drawers" aria-label="Close army panels" tabindex="-1"></button>`;
+    <button type="button" class="sim-drawer-scrim ${drawerOpen ? 'is-visible' : ''}" data-action="close-army-drawers" aria-label="Close army panels" tabindex="-1"></button>
+    ${renderMapDatasheetDock(state)}`;
 
   root.innerHTML = `
     <div class="guide-app battle-sim-app">
