@@ -7800,6 +7800,7 @@ function syncBattleMapModels(state) {
     }
   };
 
+  /** Only when the bodyguard datasheet is gone from the army — not wound-killed. */
   const promoteSurvivingLeaders = (entry, bodyguardId) => {
     const army = state[entry.player]?.army;
     const byLeader = new Map();
@@ -7821,6 +7822,7 @@ function syncBattleMapModels(state) {
         models: existing?.models?.length
           ? [...existing.models, ...leaderModels.filter((m) => !(existing.models || []).some((e) => e.id === m.id))]
           : leaderModels,
+        anchor: existing?.anchor || entry.anchor || null,
       };
       changed = true;
     }
@@ -7830,8 +7832,9 @@ function syncBattleMapModels(state) {
   for (const [key, entry] of Object.entries(unitsOnMap)) {
     const army = state[entry.player]?.army;
     const bodyguard = army?.units?.find((u) => u.id === entry.unitId);
-    if (!bodyguard || isUnitDead(state, entry.player, entry.unitId)) {
-      // Bodyguard is gone — keep living attached leaders as their own map entries
+    // Datasheet removed from roster — split leaders off. Wound-killed bodyguards stay
+    // on the map group with attachments intact so healing can restore models in place.
+    if (!bodyguard) {
       promoteSurvivingLeaders(entry, entry.unitId);
       delete unitsOnMap[key];
       changed = true;
@@ -7840,6 +7843,15 @@ function syncBattleMapModels(state) {
 
     let models = [...(entry.models || [])];
     let entryChanged = false;
+    let anchor = entry.anchor || null;
+    const rememberAnchorFrom = (list) => {
+      const m = list?.[list.length - 1] || list?.[0];
+      if (m && Number.isFinite(m.x) && Number.isFinite(m.y)) {
+        anchor = { x: m.x, y: m.y };
+      }
+    };
+    if (!anchor && models.length) rememberAnchorFrom(models);
+
     const group = getUnitGroupInfo(army, attachmentsByPlayer[entry.player], entry.unitId);
     const unitIds = [
       ...new Set([
@@ -7855,12 +7867,13 @@ function syncBattleMapModels(state) {
       const own = () => models.filter(isOwn);
       const others = () => models.filter((m) => !isOwn(m));
 
-      // Leader models left on this blob after detach → promote to own map entry
+      // Leader models left on this blob after manual detach → promote to own map entry
       if (uid !== entry.unitId) {
         const attachedTo = attachmentsByPlayer[entry.player]?.[uid];
         if (attachedTo !== entry.unitId) {
           const leaderModels = own();
           if (leaderModels.length) {
+            rememberAnchorFrom(leaderModels);
             models = others();
             entryChanged = true;
             const leaderKey = mapUnitKey(entry.player, uid);
@@ -7876,6 +7889,7 @@ function syncBattleMapModels(state) {
                     ),
                   ]
                 : leaderModels,
+              anchor: existing?.anchor || anchor,
             };
             changed = true;
           }
@@ -7883,9 +7897,10 @@ function syncBattleMapModels(state) {
         }
       }
 
-      // Remove attached leader/support models if that unit is dead or missing
-      if (!unit || (uid !== entry.unitId && isUnitDead(state, entry.player, uid))) {
+      // Unit missing from army: strip models; clear attachment only if leader datasheet gone
+      if (!unit) {
         if (own().length) {
+          rememberAnchorFrom(own());
           models = others();
           entryChanged = true;
         }
@@ -7900,22 +7915,34 @@ function syncBattleMapModels(state) {
         continue;
       }
 
+      // Wound-killed (0 wounds): hide models but KEEP leader↔bodyguard attachment
+      if (isUnitDead(state, entry.player, uid)) {
+        if (own().length) {
+          rememberAnchorFrom(own());
+          models = others();
+          entryChanged = true;
+        }
+        continue;
+      }
+
       const remaining = getRemainingModels(unit, getUnitWoundsTaken(state, entry.player, uid));
       const mine = own();
 
       if (mine.length > remaining) {
+        if (remaining === 0) rememberAnchorFrom(mine);
+        else rememberAnchorFrom(mine.slice(0, remaining));
         models = [...mine.slice(0, remaining), ...others()];
         entryChanged = true;
         continue;
       }
 
       if (mine.length < remaining) {
-        const anchor = mine[mine.length - 1] || others()[0];
         const layout = getActiveBattleLayout(battleMap);
         const board = boardSizeForLayout(layout);
         const staging = getStagingOrigin(entry.player, board);
-        const ax = anchor?.x ?? staging.x;
-        const ay = anchor?.y ?? staging.y;
+        const ref = mine[mine.length - 1] || others()[0];
+        const ax = ref?.x ?? anchor?.x ?? staging.x;
+        const ay = ref?.y ?? anchor?.y ?? staging.y;
         const added = [];
         for (let i = mine.length; i < remaining; i++) {
           // Attached multi-model leaders: index 0 is leader/support-sized
@@ -7935,7 +7962,7 @@ function syncBattleMapModels(state) {
             Math.max(
               footprint.widthIn || 0,
               footprint.lengthIn || 0,
-              (anchor?.radiusIn || footprint.radiusIn) * 2,
+              (ref?.radiusIn || footprint.radiusIn) * 2,
             ) + 0.4;
           const n = i - mine.length + 1;
           const angle = n * 1.2;
@@ -7950,12 +7977,14 @@ function syncBattleMapModels(state) {
           });
         }
         models = [...mine, ...added, ...others()];
+        rememberAnchorFrom(models);
         entryChanged = true;
       }
     }
 
-    if (entryChanged) {
-      unitsOnMap[key] = { ...entry, models };
+    if (!anchor && models.length) rememberAnchorFrom(models);
+    if (entryChanged || anchor !== entry.anchor) {
+      unitsOnMap[key] = { ...entry, models, anchor: anchor || entry.anchor || null };
       changed = true;
     }
   }
