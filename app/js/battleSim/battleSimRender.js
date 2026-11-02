@@ -43,8 +43,23 @@ import {
 } from './battleMapState.js';
 import { renderMapSvg, clientToBoardInches, getPixelsPerInch } from './mapView.js';
 
-/** Survives remounts so mobile army collapse stays put. */
-const collapsedArmyPanels = new Set();
+/** Which army drawers are open — survives remounts. */
+const openArmyDrawers = new Set();
+let armyDrawersBootstrapped = false;
+
+function bootstrapArmyDrawers(state) {
+  if (armyDrawersBootstrapped) return;
+  armyDrawersBootstrapped = true;
+  for (const key of ['player1', 'player2']) {
+    // Pre-game or missing army: open so load/deploy is obvious. In battle: closed for map space.
+    if (!state.started || !state[key]?.army) openArmyDrawers.add(key);
+  }
+}
+
+function isArmyDrawerOpen(playerKey, state) {
+  bootstrapArmyDrawers(state);
+  return openArmyDrawers.has(playerKey);
+}
 
 function esc(s) {
   return String(s ?? '')
@@ -58,76 +73,96 @@ function renderScoreCell(player, field, label, value, playerKey) {
     <div class="score-cell">
       <span class="score-label">${label}</span>
       <div class="score-controls">
-        <button type="button" data-action="score" data-player="${playerKey}" data-field="${field}" data-delta="-1">−</button>
+        <button type="button" class="ui-icon-btn" data-action="score" data-player="${playerKey}" data-field="${field}" data-delta="-1" aria-label="Decrease ${label}">−</button>
         <span class="score-value" data-score-player="${playerKey}" data-score-field="${field}">${value}</span>
-        <button type="button" data-action="score" data-player="${playerKey}" data-field="${field}" data-delta="1">+</button>
+        <button type="button" class="ui-icon-btn" data-action="score" data-player="${playerKey}" data-field="${field}" data-delta="1" aria-label="Increase ${label}">+</button>
       </div>
     </div>`;
 }
 
 function renderBattleReadyBtn(state, playerKey) {
   const active = !!state.battleReady?.[playerKey];
-  return `<button type="button" class="battle-ready-btn ${active ? 'active' : ''}" data-action="toggle-battle-ready" data-player="${playerKey}">Battle Ready Army</button>`;
+  return `<button type="button" class="ui-btn ui-btn-ghost battle-ready-btn ${active ? 'active' : ''}" data-action="toggle-battle-ready" data-player="${playerKey}" title="Battle Ready Army (+10 Primary)">${active ? 'Ready ✓' : 'Ready'}</button>`;
 }
 
 function renderFirstTurnBadge(state, key) {
-  return state.firstPlayer === key ? '<span class="first-turn-badge">Goes first</span>' : '';
+  return state.firstPlayer === key ? '<span class="first-turn-badge">1st</span>' : '';
 }
 
-function renderViewModeBar() {
-  return `<div class="view-mode-bar">${renderHelpQuestionBtn()}</div>`;
+function renderArmyDrawerToggle(state, playerKey) {
+  const open = isArmyDrawerOpen(playerKey, state);
+  const short = playerKey === 'player1' ? 'P1' : 'P2';
+  const needsLoad = !state[playerKey]?.army;
+  const label = needsLoad ? `${short} Load` : `${short} Army`;
+  return `<button type="button" class="ui-btn ui-btn-ghost army-drawer-toggle ${open ? 'is-active' : ''} ${needsLoad ? 'needs-attention' : ''}" data-action="toggle-army-drawer" data-player="${playerKey}" aria-pressed="${open ? 'true' : 'false'}">${esc(label)}</button>`;
 }
 
-function renderSimScoreboard(state) {
+function renderSimChrome(state) {
   const p1 = state.player1;
   const p2 = state.player2;
   const step = getCurrentStep(state);
   const turnLabel = state.started
     ? step?.turnLabel || ''
     : p1.army && p2.army
-      ? 'Choose who goes first, then begin'
-      : 'Load both armies to begin';
+      ? 'Choose who goes first'
+      : 'Load armies to begin';
+  const phaseLabel = state.started ? step?.label || '' : '';
 
   return `
-    <header class="scoreboard sim-scoreboard">
-      <div class="score-player score-left">
-        <div class="score-player-name">${esc(p1.army?.name || p1.name)}${renderFirstTurnBadge(state, 'player1')}</div>
-        <div class="score-row">
-          ${renderScoreCell(p1, 'cp', 'CP', p1.score.cp, 'player1')}
-          ${renderScoreCell(p1, 'secondary', 'Sec', p1.score.secondary, 'player1')}
-          ${renderScoreCell(p1, 'primary', 'Prim', p1.score.primary, 'player1')}
-          <div class="score-cell score-total-cell">
-            <span class="score-label">Total</span>
-            <span class="score-total" data-score-total="player1">${totalScore(p1.score)}</span>
+    <header class="sim-chrome">
+      <div class="sim-chrome-scores">
+        <div class="score-player score-left">
+          <div class="score-player-name">${esc(p1.army?.name || p1.name)}${renderFirstTurnBadge(state, 'player1')}</div>
+          <div class="score-row">
+            ${renderScoreCell(p1, 'cp', 'CP', p1.score.cp, 'player1')}
+            ${renderScoreCell(p1, 'secondary', 'Sec', p1.score.secondary, 'player1')}
+            ${renderScoreCell(p1, 'primary', 'Prim', p1.score.primary, 'player1')}
+            <div class="score-cell score-total-cell">
+              <span class="score-label">Total</span>
+              <span class="score-total" data-score-total="player1">${totalScore(p1.score)}</span>
+            </div>
           </div>
-          ${renderBattleReadyBtn(state, 'player1')}
-          ${renderStratagemsBtn(state, 'player1')}
+          <div class="score-player-actions">
+            ${renderArmyDrawerToggle(state, 'player1')}
+            ${renderStratagemsBtn(state, 'player1')}
+            ${renderBattleReadyBtn(state, 'player1')}
+          </div>
+        </div>
+        <div class="score-center">
+          <div class="sim-brand">Battle Map</div>
+          <div class="turn-display">${esc(turnLabel)}</div>
+          ${
+            state.started
+              ? `<div class="sim-step-nav">
+            <button type="button" class="ui-icon-btn" data-action="prev-step" ${state.stepIndex === 0 ? 'disabled' : ''} aria-label="Previous step">←</button>
+            <span class="step-counter" title="${esc(phaseLabel)}">${esc(phaseLabel)}</span>
+            <button type="button" class="ui-icon-btn" data-action="next-step" ${state.stepIndex >= state.flow.length - 1 ? 'disabled' : ''} aria-label="Next step">→</button>
+          </div>`
+              : ''
+          }
+        </div>
+        <div class="score-player score-right">
+          <div class="score-player-name">${renderFirstTurnBadge(state, 'player2')}${esc(p2.army?.name || p2.name)}</div>
+          <div class="score-row score-row-mirror">
+            <div class="score-cell score-total-cell">
+              <span class="score-label">Total</span>
+              <span class="score-total" data-score-total="player2">${totalScore(p2.score)}</span>
+            </div>
+            ${renderScoreCell(p2, 'primary', 'Prim', p2.score.primary, 'player2')}
+            ${renderScoreCell(p2, 'secondary', 'Sec', p2.score.secondary, 'player2')}
+            ${renderScoreCell(p2, 'cp', 'CP', p2.score.cp, 'player2')}
+          </div>
+          <div class="score-player-actions score-player-actions-mirror">
+            ${renderBattleReadyBtn(state, 'player2')}
+            ${renderStratagemsBtn(state, 'player2')}
+            ${renderArmyDrawerToggle(state, 'player2')}
+          </div>
         </div>
       </div>
-      <div class="score-center">
-        <div class="score-vs">VS</div>
-        <div class="turn-display">${esc(turnLabel)}</div>
-        ${renderViewModeBar()}
-        ${state.started ? `
-          <div class="sim-step-nav">
-            <button type="button" data-action="prev-step" ${state.stepIndex === 0 ? 'disabled' : ''} aria-label="Previous step">←</button>
-            <span class="step-counter" title="${esc(step?.label || '')}">${esc(step?.label || '')}</span>
-            <button type="button" data-action="next-step" ${state.stepIndex >= state.flow.length - 1 ? 'disabled' : ''} aria-label="Next step">→</button>
-          </div>` : ''}
-      </div>
-      <div class="score-player score-right">
-        <div class="score-player-name">${renderFirstTurnBadge(state, 'player2')}${esc(p2.army?.name || p2.name)}</div>
-        <div class="score-row score-row-mirror">
-          ${renderStratagemsBtn(state, 'player2')}
-          ${renderBattleReadyBtn(state, 'player2')}
-          <div class="score-cell score-total-cell">
-            <span class="score-label">Total</span>
-            <span class="score-total" data-score-total="player2">${totalScore(p2.score)}</span>
-          </div>
-          ${renderScoreCell(p2, 'primary', 'Prim', p2.score.primary, 'player2')}
-          ${renderScoreCell(p2, 'secondary', 'Sec', p2.score.secondary, 'player2')}
-          ${renderScoreCell(p2, 'cp', 'CP', p2.score.cp, 'player2')}
-        </div>
+      <div class="sim-chrome-tools">
+        ${renderHelpQuestionBtn('help-q-btn-chrome')}
+        <button type="button" class="ui-btn ui-btn-ghost" data-action="save-game">Save</button>
+        <button type="button" class="ui-btn ui-btn-danger" data-action="reset-game">Reset</button>
       </div>
     </header>`;
 }
@@ -143,7 +178,7 @@ function renderSimPregame(state) {
     <div class="sim-pregame">
       <div class="sim-pregame-inner">
         <h3>Start battle</h3>
-        <p class="sim-pregame-hint">Load both armies in the side panels, pick who takes the first turn, then begin.</p>
+        <p class="sim-pregame-hint">Open <strong>P1 Load</strong> / <strong>P2 Load</strong> above, pick who goes first, then begin. The map stays full-screen underneath.</p>
         <div class="first-turn-picker sim-first-turn">
           <h4>Who goes first?</h4>
           <div class="first-turn-options">
@@ -157,7 +192,7 @@ function renderSimPregame(state) {
             </button>
           </div>
         </div>
-        <button type="button" class="btn-primary" data-action="start-game" ${canStart ? '' : 'disabled'}>
+        <button type="button" class="ui-btn ui-btn-primary btn-primary" data-action="start-game" ${canStart ? '' : 'disabled'}>
           ${canStart ? 'Begin Battle' : 'Load both armies first'}
         </button>
       </div>
@@ -188,22 +223,29 @@ function renderSimArmyList(state, playerKey) {
   const player = state[playerKey];
   const army = player?.army;
   const sideLabel = playerKey === 'player1' ? 'Player 1' : 'Player 2';
+  const side = playerKey === 'player1' ? 'left' : 'right';
+  const open = isArmyDrawerOpen(playerKey, state) ? 'is-open' : '';
+
   if (!army) {
-    const collapsed = collapsedArmyPanels.has(playerKey) ? 'collapsed' : '';
     return `
-      <div class="sim-army-panel army-empty ${collapsed}" data-player="${playerKey}">
+      <aside class="sim-army-drawer sim-army-panel army-empty ${side} ${open}" data-player="${playerKey}" aria-hidden="${open ? 'false' : 'true'}">
         <div class="army-panel-header">
-          <h3>${sideLabel}</h3>
-          <button type="button" class="btn-small army-collapse-btn" data-action="toggle-army-collapse" data-player="${playerKey}" aria-expanded="${collapsed ? 'false' : 'true'}">${collapsed ? 'Show' : 'Hide'}</button>
+          <div>
+            <h3>${sideLabel}</h3>
+            <p class="army-meta">No army loaded</p>
+          </div>
+          <div class="army-panel-header-actions">
+            <button type="button" class="ui-icon-btn" data-action="toggle-army-drawer" data-player="${playerKey}" aria-label="Close army panel">×</button>
+          </div>
         </div>
         <div class="sim-army-panel-body">
-          <label class="file-btn">
+          <label class="file-btn ui-btn ui-btn-primary">
             Load Army (.json)
             <input type="file" accept=".json,application/json" data-action="load-army" data-player="${playerKey}" hidden />
           </label>
           ${renderNewRecruitHint()}
         </div>
-      </div>`;
+      </aside>`;
   }
 
   const attachments = state.leaderAttachments?.[playerKey] || {};
@@ -240,36 +282,35 @@ function renderSimArmyList(state, playerKey) {
             <strong>${esc(u.name)}</strong>
             <span class="sim-unit-meta">${remaining}${baseHint}${attachHint ? ` · ${esc(attachHint)}` : ''} · ${esc(u.statsLine || '')}</span>
           </button>
-          <button type="button" class="btn-small ${onMap ? 'withdraw-btn' : 'deploy-btn'}" data-action="${onMap ? 'map-withdraw-unit' : 'map-deploy-unit'}" data-player="${playerKey}" data-unit-id="${esc(u.id)}" ${dead ? 'disabled' : ''}>
+          <button type="button" class="ui-btn ui-btn-tiny ${onMap ? 'withdraw-btn' : 'deploy-btn'}" data-action="${onMap ? 'map-withdraw-unit' : 'map-deploy-unit'}" data-player="${playerKey}" data-unit-id="${esc(u.id)}" ${dead ? 'disabled' : ''} title="${onMap ? 'Withdraw from map' : 'Deploy to map'}">
             ${onMap ? 'Withdraw' : 'Deploy'}
           </button>
         </div>`;
     })
     .join('');
 
-  const collapsed = collapsedArmyPanels.has(playerKey) ? 'collapsed' : '';
   return `
-    <div class="sim-army-panel ${collapsed}" data-player="${playerKey}">
+    <aside class="sim-army-drawer sim-army-panel ${side} ${open}" data-player="${playerKey}" aria-hidden="${open ? 'false' : 'true'}">
       <div class="army-panel-header">
         <div>
           <h3>${esc(army.name)}</h3>
           <p class="army-meta">${esc(army.faction)} · ${army.points}${army.pointsLimit ? `/${army.pointsLimit}` : ''} pts</p>
         </div>
         <div class="army-panel-header-actions">
-          <button type="button" class="btn-small army-collapse-btn" data-action="toggle-army-collapse" data-player="${playerKey}" aria-expanded="${collapsed ? 'false' : 'true'}">${collapsed ? 'Show' : 'Hide'}</button>
-          <button type="button" class="btn-small" data-action="clear-army" data-player="${playerKey}">Clear</button>
+          <label class="ui-btn ui-btn-ghost ui-btn-tiny file-btn">
+            Replace
+            <input type="file" accept=".json,application/json" data-action="load-army" data-player="${playerKey}" hidden />
+          </label>
+          <button type="button" class="ui-btn ui-btn-ghost ui-btn-tiny" data-action="clear-army" data-player="${playerKey}">Clear</button>
+          <button type="button" class="ui-icon-btn" data-action="toggle-army-drawer" data-player="${playerKey}" aria-label="Close army panel">×</button>
         </div>
       </div>
       <div class="sim-army-panel-body">
-        <label class="file-btn btn-small">
-          Replace
-          <input type="file" accept=".json,application/json" data-action="load-army" data-player="${playerKey}" hidden />
-        </label>
         <div class="sim-unit-list">${units}</div>
         ${renderSimUnitCard(state, playerKey)}
         ${renderSimCombatOverlay(state, playerKey)}
       </div>
-    </div>`;
+    </aside>`;
 }
 
 function renderSimWeaponBlocks(unit, playerKey, selectedWeapon, selectableRange, army) {
@@ -787,30 +828,25 @@ export function renderBattleSim(root, state, dispatch) {
     }
   }
 
+  const drawerOpen = isArmyDrawerOpen('player1', state) || isArmyDrawerOpen('player2', state);
+
   root.innerHTML = `
     <div class="guide-app battle-sim-app">
-      ${renderSimScoreboard(state)}
-      <main class="battle-sim-main">
-        ${renderSimArmyList(state, 'player1')}
+      ${renderSimChrome(state)}
+      <main class="battle-sim-stage">
         <div class="battle-sim-center">
-          ${renderSimPregame(state)}
           ${renderMapSvg(state, {
             layouts: getAllLayouts(),
             radii,
             reminderHtml: renderReminderBar(state),
             modelHighlights: collectModelHighlights(state),
           })}
+          ${renderSimPregame(state)}
         </div>
+        ${renderSimArmyList(state, 'player1')}
         ${renderSimArmyList(state, 'player2')}
+        <button type="button" class="sim-drawer-scrim ${drawerOpen ? 'is-visible' : ''}" data-action="close-army-drawers" aria-label="Close army panels" tabindex="-1"></button>
       </main>
-      <footer class="guide-footer">
-        <div class="guide-footer-bar">
-          Warhammer 40,000 Battle Map
-          <button type="button" class="btn-link" data-action="open-help-guide">Instructions</button>
-          <button type="button" class="btn-link" data-action="save-game">Save</button>
-          <button type="button" class="btn-link" data-action="reset-game">Reset</button>
-        </div>
-      </footer>
       ${renderReminderPopup(state)}
       ${renderKeywordRulePopover(state)}
       ${renderLayoutImportDialog(state)}
@@ -823,7 +859,10 @@ export function renderBattleSim(root, state, dispatch) {
 }
 
 function bindBattleSimEvents(root, state, dispatch) {
-  root.querySelector('[data-action="start-game"]')?.addEventListener('click', () => dispatch({ type: 'START_GAME' }));
+  root.querySelector('[data-action="start-game"]')?.addEventListener('click', () => {
+    openArmyDrawers.clear();
+    dispatch({ type: 'START_GAME' });
+  });
   root.querySelector('[data-action="next-step"]')?.addEventListener('click', () => dispatch({ type: 'NEXT_STEP' }));
   root.querySelector('[data-action="prev-step"]')?.addEventListener('click', () => dispatch({ type: 'PREV_STEP' }));
   root.querySelector('[data-action="save-game"]')?.addEventListener('click', () => dispatch({ type: 'SAVE' }));
@@ -831,19 +870,37 @@ function bindBattleSimEvents(root, state, dispatch) {
     if (confirm('Reset the battle? Armies and scores will be cleared.')) dispatch({ type: 'RESET_GAME' });
   });
 
-  root.querySelectorAll('[data-action="toggle-army-collapse"]').forEach((btn) => {
+  function syncArmyDrawerUi() {
+    const anyOpen = openArmyDrawers.has('player1') || openArmyDrawers.has('player2');
+    root.querySelector('.sim-drawer-scrim')?.classList.toggle('is-visible', anyOpen);
+    for (const key of ['player1', 'player2']) {
+      const open = openArmyDrawers.has(key);
+      const drawer = root.querySelector(`.sim-army-drawer[data-player="${key}"]`);
+      drawer?.classList.toggle('is-open', open);
+      drawer?.setAttribute('aria-hidden', open ? 'false' : 'true');
+      root.querySelectorAll(`[data-action="toggle-army-drawer"][data-player="${key}"]`).forEach((btn) => {
+        if (btn.classList.contains('army-drawer-toggle')) {
+          btn.classList.toggle('is-active', open);
+          btn.setAttribute('aria-pressed', open ? 'true' : 'false');
+        }
+      });
+    }
+  }
+
+  root.querySelectorAll('[data-action="toggle-army-drawer"]').forEach((btn) => {
     btn.addEventListener('click', () => {
       const player = btn.dataset.player;
       if (!player) return;
-      if (collapsedArmyPanels.has(player)) collapsedArmyPanels.delete(player);
-      else collapsedArmyPanels.add(player);
-      const panel = root.querySelector(`.sim-army-panel[data-player="${player}"]`);
-      if (!panel) return;
-      const collapsed = collapsedArmyPanels.has(player);
-      panel.classList.toggle('collapsed', collapsed);
-      btn.textContent = collapsed ? 'Show' : 'Hide';
-      btn.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+      bootstrapArmyDrawers(state);
+      if (openArmyDrawers.has(player)) openArmyDrawers.delete(player);
+      else openArmyDrawers.add(player);
+      syncArmyDrawerUi();
     });
+  });
+
+  root.querySelector('[data-action="close-army-drawers"]')?.addEventListener('click', () => {
+    openArmyDrawers.clear();
+    syncArmyDrawerUi();
   });
 
   root.querySelectorAll('[data-action="set-first-player"]').forEach((btn) => {

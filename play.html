@@ -6,31 +6,151 @@
     <title>Warhammer 40,000 - Battle Map</title>
     <style>
 :root {
-  --bg: #0c0a09;
-  --surface: #1c1917;
-  --surface-2: #292524;
-  --border: #44403c;
-  --text: #fafaf9;
-  --muted: #a8a29e;
+  --bg: #0a0908;
+  --surface: #161311;
+  --surface-2: #221e1b;
+  --surface-3: #2c2723;
+  --border: #3f3a36;
+  --border-strong: #5c534c;
+  --text: #f5f0ea;
+  --text-dim: #c4bbb2;
+  --muted: #9a9188;
   --gold: #d4a853;
+  --gold-soft: rgba(212, 168, 83, 0.14);
   --blue: #60a5fa;
   --green: #4ade80;
   --red: #f87171;
   --p1: #3b82f6;
   --p2: #22c55e;
-  font-family: 'Inter', system-ui, sans-serif;
+  --radius: 8px;
+  --radius-sm: 6px;
+  --chrome-h: auto;
+  --font-ui: "Segoe UI", "Helvetica Neue", ui-sans-serif, sans-serif;
+  --font-display: "Cinzel", "Palatino Linotype", Palatino, Georgia, serif;
+  font-family: var(--font-ui);
   color: var(--text);
   background: var(--bg);
+  color-scheme: dark;
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
-body { min-height: 100vh; }
+html, body {
+  height: 100%;
+  overflow: hidden;
+}
+
+body {
+  min-height: 100%;
+  min-height: 100dvh;
+  background:
+    radial-gradient(1200px 600px at 50% -10%, rgba(212, 168, 83, 0.07), transparent 55%),
+    var(--bg);
+}
+
+#root {
+  height: 100%;
+  height: 100dvh;
+  overflow: hidden;
+}
 
 .guide-app {
-  min-height: 100vh;
+  height: 100%;
+  height: 100dvh;
+  max-height: 100dvh;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
+}
+
+/* Shared control system */
+.ui-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  padding: 0.38rem 0.7rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.72rem;
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.12s ease, border-color 0.12s ease, color 0.12s ease;
+}
+
+.ui-btn:hover:not(:disabled) {
+  background: var(--surface-3);
+  border-color: var(--border-strong);
+}
+
+.ui-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.ui-btn-ghost {
+  background: transparent;
+}
+
+.ui-btn-primary,
+.ui-btn.btn-primary {
+  background: linear-gradient(180deg, #2a4a7a, #1d3a66);
+  border-color: #4b7ec7;
+  color: #fff;
+}
+
+.ui-btn-primary:hover:not(:disabled),
+.ui-btn.btn-primary:hover:not(:disabled) {
+  background: linear-gradient(180deg, #355b90, #244879);
+}
+
+.ui-btn-danger {
+  border-color: rgba(248, 113, 113, 0.45);
+  color: #fecaca;
+  background: rgba(127, 29, 29, 0.25);
+}
+
+.ui-btn-danger:hover:not(:disabled) {
+  background: rgba(153, 27, 27, 0.4);
+}
+
+.ui-btn-tiny {
+  padding: 0.28rem 0.5rem;
+  font-size: 0.68rem;
+}
+
+.ui-icon-btn {
+  width: 1.7rem;
+  height: 1.7rem;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.ui-icon-btn:hover:not(:disabled) {
+  background: var(--surface-3);
+  border-color: var(--gold);
+}
+
+.ui-icon-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
 }
 
 /* Scoreboard */
@@ -48,10 +168,10 @@ body { min-height: 100vh; }
 .score-right { align-items: flex-end; }
 
 .score-player-name {
-  font-family: 'Cinzel', serif;
-  font-size: 0.85rem;
+  font-family: var(--font-display);
+  font-size: 0.78rem;
   color: var(--gold);
-  max-width: 280px;
+  max-width: 220px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -107,19 +227,11 @@ body { min-height: 100vh; }
   gap: 0.25rem;
 }
 
-.score-controls button {
-  width: 22px;
-  height: 22px;
-  border: 1px solid var(--border);
-  background: var(--surface-2);
-  color: var(--text);
-  border-radius: 3px;
-  cursor: pointer;
-  font-size: 0.85rem;
-  line-height: 1;
+.score-controls .ui-icon-btn {
+  width: 1.45rem;
+  height: 1.45rem;
+  font-size: 0.75rem;
 }
-
-.score-controls button:hover { background: #3f3a36; }
 
 .score-value {
   min-width: 24px;
@@ -129,71 +241,41 @@ body { min-height: 100vh; }
 }
 
 .score-total-cell .score-total {
-  font-family: 'Cinzel', serif;
-  font-size: 1.25rem;
+  font-family: var(--font-display);
+  font-size: 1.05rem;
   font-weight: 700;
   color: var(--gold);
-}
-
-.battle-ready-btn {
-  align-self: center;
-  padding: 0.45rem 0.55rem;
-  min-height: 44px;
-  max-width: 92px;
-  background: var(--surface-2);
-  border: 2px solid var(--border);
-  border-radius: 6px;
-  color: var(--text-dim);
-  font-size: 0.58rem;
-  font-weight: 600;
-  line-height: 1.25;
-  text-align: center;
-  cursor: pointer;
-  transition: background 0.15s, border-color 0.15s, color 0.15s;
-}
-
-.battle-ready-btn:hover {
-  border-color: var(--gold);
-  background: var(--surface-3);
+  line-height: 1.2;
+  min-height: 1.45rem;
+  display: inline-flex;
+  align-items: center;
 }
 
 .battle-ready-btn.active {
-  background: rgba(76, 140, 90, 0.25);
+  background: rgba(76, 140, 90, 0.22);
   border-color: var(--green);
   color: #b8e0c0;
 }
 
-.stratagems-btn {
-  align-self: center;
-  padding: 0.45rem 0.55rem;
-  min-height: 44px;
-  max-width: 92px;
-  background: var(--surface-2);
-  border: 2px solid var(--border);
-  border-radius: 6px;
-  color: var(--text-dim);
-  font-size: 0.58rem;
-  font-weight: 600;
-  line-height: 1.25;
-  text-align: center;
-  cursor: pointer;
-  transition: background 0.15s, border-color 0.15s, color 0.15s;
-}
-
-.stratagems-btn:hover {
-  border-color: var(--gold);
-  background: var(--surface-3);
-}
-
 .stratagems-btn.has-deck {
-  color: var(--text);
   border-color: #8a7340;
 }
 
 .stratagems-btn.active {
-  background: rgba(212, 168, 83, 0.2);
+  background: var(--gold-soft);
   border-color: var(--gold);
   color: #f0d78c;
+}
+
+.army-drawer-toggle.is-active {
+  background: var(--gold-soft);
+  border-color: var(--gold);
+  color: #f0d78c;
+}
+
+.army-drawer-toggle.needs-attention:not(.is-active) {
+  border-color: rgba(96, 165, 250, 0.55);
+  color: #93c5fd;
 }
 
 .strat-panel-backdrop {
@@ -1497,56 +1579,136 @@ body { min-height: 100vh; }
   .score-center { order: -1; }
 }
 
-/* ===== Battle Sim ===== */
-.view-mode-bar {
-  display: flex;
-  gap: 0.35rem;
-  justify-content: center;
-  margin: 0.35rem 0;
+/* ===== Battle Sim / Map shell ===== */
+.battle-sim-app {
+  height: 100%;
+  max-height: 100dvh;
+  overflow: hidden;
 }
 
-.view-mode-btn {
-  padding: 0.25rem 0.65rem;
-  font-size: 0.7rem;
+.sim-chrome {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  padding: 0.55rem 0.75rem 0.5rem;
+  background: linear-gradient(180deg, #1a1512 0%, var(--surface) 100%);
+  border-bottom: 1px solid var(--border);
+  z-index: 30;
+}
+
+.sim-chrome-scores {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  gap: 0.65rem;
+  align-items: start;
+}
+
+.sim-chrome-tools {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 0.4rem;
+  padding-top: 0.15rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.sim-brand {
+  font-family: var(--font-display);
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--gold);
+  opacity: 0.9;
+}
+
+.score-player-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  margin-top: 0.35rem;
+}
+
+.score-player-actions-mirror {
+  justify-content: flex-end;
+}
+
+.battle-sim-stage {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  overflow: hidden;
+  background: #050505;
+}
+
+.sim-army-drawer {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: min(320px, 92vw);
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  background: rgba(18, 15, 13, 0.97);
   border: 1px solid var(--border);
-  border-radius: 4px;
-  background: var(--surface-2);
-  color: var(--text);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(10px);
+  transform: translateX(-105%);
+  transition: transform 0.2s ease;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.sim-army-drawer.right {
+  right: 0;
+  left: auto;
+  transform: translateX(105%);
+}
+
+.sim-army-drawer.left {
+  left: 0;
+}
+
+.sim-army-drawer.is-open {
+  transform: translateX(0);
+  pointer-events: auto;
+}
+
+.sim-drawer-scrim {
+  display: none;
+  position: absolute;
+  inset: 0;
+  z-index: 15;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  background: rgba(0, 0, 0, 0.35);
   cursor: pointer;
 }
 
-.view-mode-btn.active {
-  border-color: var(--gold);
-  color: var(--gold);
-  background: rgba(201, 162, 39, 0.12);
+.sim-drawer-scrim.is-visible {
+  display: block;
 }
 
-.battle-sim-app {
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
+@media (min-width: 1101px) {
+  /* Desktop: keep the map usable while a drawer is open */
+  .sim-drawer-scrim.is-visible {
+    display: none;
+  }
 }
 
-.battle-sim-main {
-  flex: 1;
-  display: grid;
-  grid-template-columns: minmax(180px, 0.85fr) minmax(420px, 2.2fr) minmax(180px, 0.85fr);
-  min-height: 0;
-  gap: 0;
+.file-btn.ui-btn {
+  background: linear-gradient(180deg, #2a4a7a, #1d3a66);
+  border-color: #4b7ec7;
+  color: #fff;
 }
 
-.sim-army-panel {
-  position: relative;
-  padding: 0.75rem;
-  overflow-y: auto;
-  background: var(--surface);
-  border-right: 1px solid var(--border);
-  max-height: calc(100vh - 200px);
-}
-
-.battle-sim-main > .sim-army-panel:last-child {
-  border-right: none;
-  border-left: 1px solid var(--border);
+.file-btn.ui-btn-ghost {
+  background: transparent;
+  border-color: var(--border);
+  color: var(--text);
 }
 
 .sim-unit-list {
@@ -1674,46 +1836,62 @@ tr.weapon-row-selected td {
 }
 
 .battle-sim-center {
+  flex: 1;
   display: flex;
   flex-direction: column;
+  min-width: 0;
   min-height: 0;
   background: #050505;
   position: relative;
+  z-index: 1;
 }
 
 .sim-pregame {
-  flex-shrink: 0;
-  padding: 0.65rem 0.75rem;
-  border-bottom: 1px solid var(--border);
-  background: var(--surface);
+  position: absolute;
+  inset: 0;
+  z-index: 6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: rgba(6, 5, 4, 0.55);
+  backdrop-filter: blur(5px);
+  pointer-events: auto;
 }
 
 .sim-pregame-inner {
   display: flex;
   flex-direction: column;
-  gap: 0.55rem;
+  gap: 0.7rem;
   align-items: stretch;
-  max-width: 520px;
-  margin: 0 auto;
+  width: min(440px, 100%);
+  margin: 0;
+  padding: 1.1rem 1.15rem 1.15rem;
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: 12px;
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.5);
 }
 
 .sim-pregame-inner h3 {
   margin: 0;
-  font-size: 0.95rem;
+  font-family: var(--font-display);
+  font-size: 1.05rem;
   color: var(--gold);
   text-align: center;
 }
 
 .sim-pregame-hint {
   margin: 0;
-  font-size: 0.72rem;
+  font-size: 0.74rem;
   color: var(--muted);
   text-align: center;
+  line-height: 1.45;
 }
 
 .sim-first-turn {
   margin: 0;
-  padding: 0.5rem;
+  padding: 0.55rem;
 }
 
 .sim-first-turn .first-turn-options {
@@ -1734,15 +1912,46 @@ tr.weapon-row-selected td {
   font-size: 0.7rem;
 }
 
-.sim-army-panel .army-panel-header {
+.sim-army-drawer .army-panel-header {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
   gap: 0.5rem;
+  padding: 0.7rem 0.75rem;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+  background: var(--surface);
 }
 
-.sim-army-panel .file-btn.btn-small {
-  margin-top: 0.35rem;
+.sim-army-drawer .army-panel-header h3 {
+  font-family: var(--font-display);
+  font-size: 0.85rem;
+  color: var(--gold);
+}
+
+.sim-army-drawer .army-meta {
+  font-size: 0.65rem;
+  color: var(--muted);
+  margin-top: 0.15rem;
+}
+
+.sim-army-panel-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 0.65rem 0.75rem 1rem;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-strong) transparent;
+}
+
+.sim-army-panel-body::-webkit-scrollbar {
+  width: 8px;
+}
+
+.sim-army-panel-body::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: 8px;
 }
 
 .battle-map-viewport {
@@ -1750,44 +1959,72 @@ tr.weapon-row-selected td {
   display: flex;
   flex-direction: column;
   min-height: 0;
+  overflow: hidden;
 }
 
 .battle-map-toolbar {
   display: flex;
   flex-wrap: nowrap;
-  gap: 0.5rem;
+  gap: 0.45rem;
   align-items: center;
-  padding: 0.5rem 0.75rem;
+  justify-content: space-between;
+  padding: 0.4rem 0.65rem;
   border-bottom: 1px solid var(--border);
-  background: var(--surface);
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: thin;
+  background: rgba(22, 19, 17, 0.94);
+  flex-shrink: 0;
+  overflow: visible;
 }
 
-.battle-map-toolbar-primary,
-.battle-map-toolbar-more {
+.battle-map-toolbar-primary {
   display: flex;
-  flex-wrap: nowrap;
-  gap: 0.4rem;
+  flex-wrap: wrap;
+  gap: 0.35rem;
   align-items: center;
+  min-width: 0;
+}
+
+.battle-map-toolbar select {
+  font-size: 0.72rem;
+  padding: 0.28rem 0.45rem;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  max-width: 14rem;
+}
+
+.battle-map-more {
+  position: relative;
   flex-shrink: 0;
 }
 
-.battle-map-toolbar button,
-.battle-map-toolbar select {
-  font-size: 0.72rem;
-  padding: 0.3rem 0.55rem;
-  background: var(--surface-2);
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  color: var(--text);
+.battle-map-more > summary {
+  list-style: none;
   cursor: pointer;
-  white-space: nowrap;
+}
+
+.battle-map-more > summary::-webkit-details-marker {
+  display: none;
+}
+
+.battle-map-more-menu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 0.3rem);
+  z-index: 12;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  min-width: 9.5rem;
+  padding: 0.45rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.4);
 }
 
 .battle-map-layout-label {
-  font-size: 0.72rem;
+  font-size: 0.68rem;
   color: var(--muted);
   display: flex;
   align-items: center;
@@ -1796,10 +2033,12 @@ tr.weapon-row-selected td {
 
 .battle-map-canvas-wrap {
   flex: 1;
-  min-height: 360px;
+  min-height: 0;
   overflow: hidden;
   cursor: grab;
   background: #0a0a0a;
+  overscroll-behavior: none;
+  touch-action: none;
 }
 
 .battle-map-canvas-wrap:active {
@@ -1828,21 +2067,11 @@ tr.weapon-row-selected td {
 
 .army-panel-header-actions {
   display: flex;
-  gap: 0.35rem;
+  gap: 0.3rem;
   align-items: center;
   flex-shrink: 0;
-}
-
-.sim-army-panel-body {
-  display: block;
-}
-
-.sim-army-panel.collapsed .sim-army-panel-body {
-  display: none;
-}
-
-.sim-army-panel.collapsed {
-  max-height: none;
+  flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
 .strat-card-actions {
@@ -1866,76 +2095,70 @@ tr.weapon-row-selected td {
 }
 
 .sim-step-nav {
-  position: relative;
-  width: 22rem;
-  max-width: 100%;
-  height: 2rem;
-  margin: 0.35rem auto 0;
-  flex-shrink: 0;
-}
-
-.sim-step-nav button {
-  position: absolute;
-  top: 0;
-  width: 2.5rem;
-  height: 2rem;
-  padding: 0;
-  background: var(--surface-2);
-  border: 1px solid var(--border);
-  color: var(--text);
-  border-radius: 4px;
-  cursor: pointer;
-  font-weight: 700;
-  z-index: 1;
-}
-
-.sim-step-nav button[data-action="prev-step"] {
-  left: 0;
-}
-
-.sim-step-nav button[data-action="next-step"] {
-  right: 0;
-}
-
-.sim-step-nav button:disabled {
-  opacity: 0.35;
-  cursor: not-allowed;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.35rem;
+  width: min(22rem, 100%);
+  margin: 0.25rem auto 0;
 }
 
 .sim-step-nav .step-counter {
-  position: absolute;
-  left: 2.75rem;
-  right: 2.75rem;
-  top: 0;
-  height: 2rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  display: block;
   text-align: center;
-  font-size: 0.8rem;
-  color: var(--muted);
+  font-size: 0.72rem;
+  color: var(--text-dim);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  pointer-events: none;
+  padding: 0.2rem 0.35rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.score-center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0.15rem;
+  min-width: 11rem;
+  text-align: center;
+  padding-top: 0.1rem;
+}
+
+.score-vs {
+  display: none;
+}
+
+.turn-display {
+  font-size: 0.7rem;
+  color: var(--muted);
+  max-width: 16rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .sim-reminder-bar {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  padding: 0.55rem 0.85rem;
+  gap: 0.55rem;
+  padding: 0.35rem 0.65rem;
   border-top: 1px solid var(--border);
-  background: var(--surface);
+  background: rgba(22, 19, 17, 0.94);
   flex-shrink: 0;
   overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: thin;
+  max-height: 3.2rem;
 }
 
 .sim-reminder-under-toolbar {
   border-top: none;
   border-bottom: 1px solid var(--border);
-  max-height: 7rem;
-  overflow-y: auto;
+  max-height: 3.2rem;
 }
 
 .remove-special-btn {
@@ -2181,12 +2404,14 @@ tr.weapon-row-selected td {
   color: #fff;
 }
 
-.help-q-btn-toolbar {
+.help-q-btn-toolbar,
+.help-q-btn-chrome {
   align-self: center;
 }
 
-.view-mode-bar .help-q-btn {
-  align-self: center;
+.sim-chrome-tools .help-q-btn {
+  width: 1.7rem;
+  height: 1.7rem;
 }
 
 .help-guide-cta {
@@ -2375,23 +2600,51 @@ tr.weapon-row-selected td {
 }
 
 @media (max-width: 1100px) {
-  .battle-sim-main {
+  .sim-chrome-scores {
     grid-template-columns: 1fr;
+    gap: 0.55rem;
   }
-  .sim-army-panel {
-    max-height: 240px;
-    border-left: none !important;
-    border-right: none !important;
+
+  .score-center {
+    order: -1;
+    width: 100%;
+    min-width: 0;
   }
-  .sim-army-panel.collapsed {
-    max-height: none;
+
+  .score-player-actions,
+  .score-player-actions-mirror {
+    justify-content: flex-start;
   }
-  .battle-map-toolbar {
-    padding: 0.4rem 0.5rem;
+
+  .sim-chrome-tools {
+    justify-content: stretch;
   }
-  .battle-map-toolbar-more {
-    padding-left: 0.35rem;
-    border-left: 1px solid var(--border);
+
+  .sim-chrome-tools .ui-btn {
+    flex: 1;
+  }
+
+  .sim-army-drawer {
+    width: min(100%, 380px);
+  }
+
+  .battle-map-toolbar select {
+    max-width: 10rem;
+  }
+}
+
+@media (max-width: 720px) {
+  .sim-reminder-bar {
+    max-height: 4.5rem;
+    align-items: flex-start;
+  }
+
+  .score-row {
+    gap: 0.3rem;
+  }
+
+  .score-cell {
+    min-width: 52px;
   }
 }
 
@@ -4253,23 +4506,25 @@ function renderMapSvg(state, options = {}) {
               <option value="__add_new__">Add new…</option>
             </select>
           </label>
-          <button type="button" data-action="map-zoom" data-delta="0.15">Zoom +</button>
-          <button type="button" data-action="map-zoom" data-delta="-0.15">Zoom −</button>
-          <button type="button" data-action="map-reset-camera">Reset view</button>
-          <button type="button" class="help-q-btn help-q-btn-toolbar" data-action="open-help-guide" title="Instructions / Guides" aria-label="Open instructions and guides">?</button>
-        </div>
-        <div class="battle-map-toolbar-more">
-          <button type="button" data-action="map-flip-horizontal" title="Mirror layout left/right (keeps models with terrain)">Flip</button>
-          <button type="button" data-action="map-rotate-90" title="Rotate layout 90° clockwise">Rotate 90°</button>
-          <button type="button" data-action="map-reset-orientation" title="Reset flip/rotate to original" ${state.battleMap?.layoutTransform?.ops?.length ? '' : 'disabled'}>Reset orient</button>
+          <button type="button" class="ui-btn ui-btn-ghost ui-btn-tiny" data-action="map-zoom" data-delta="0.15" title="Zoom in">+</button>
+          <button type="button" class="ui-btn ui-btn-ghost ui-btn-tiny" data-action="map-zoom" data-delta="-0.15" title="Zoom out">−</button>
+          <button type="button" class="ui-btn ui-btn-ghost ui-btn-tiny" data-action="map-reset-camera">Reset view</button>
           ${orient}
-          <button type="button" data-action="add-special-marker">Add special marker</button>
           ${
             selectedSpecial
-              ? `<button type="button" class="remove-special-btn" data-action="remove-special-marker" data-special-id="${esc(selectedSpecial.id)}">Remove marker</button>`
+              ? `<button type="button" class="ui-btn ui-btn-danger ui-btn-tiny remove-special-btn" data-action="remove-special-marker" data-special-id="${esc(selectedSpecial.id)}">Remove marker</button>`
               : ''
           }
         </div>
+        <details class="battle-map-more">
+          <summary class="ui-btn ui-btn-ghost ui-btn-tiny">More</summary>
+          <div class="battle-map-more-menu">
+            <button type="button" class="ui-btn ui-btn-ghost ui-btn-tiny" data-action="map-flip-horizontal" title="Mirror layout left/right">Flip</button>
+            <button type="button" class="ui-btn ui-btn-ghost ui-btn-tiny" data-action="map-rotate-90" title="Rotate layout 90° clockwise">Rotate 90°</button>
+            <button type="button" class="ui-btn ui-btn-ghost ui-btn-tiny" data-action="map-reset-orientation" title="Reset flip/rotate" ${state.battleMap?.layoutTransform?.ops?.length ? '' : 'disabled'}>Reset orient</button>
+            <button type="button" class="ui-btn ui-btn-ghost ui-btn-tiny" data-action="add-special-marker">Add marker</button>
+          </div>
+        </details>
       </div>
       ${options.reminderHtml || ''}
       <div class="battle-map-canvas-wrap">
@@ -6237,8 +6492,8 @@ function esc(s) {
 function renderStratagemsBtn(state, playerKey) {
   const count = state.stratagems?.[playerKey]?.length || 0;
   const open = state.stratagemPanel?.player === playerKey;
-  const label = count ? `Stratagems (${count})` : 'Stratagems';
-  return `<button type="button" class="stratagems-btn ${open ? 'active' : ''} ${count ? 'has-deck' : ''}" data-action="open-stratagems" data-player="${playerKey}">${esc(label)}</button>`;
+  const label = count ? `Strat (${count})` : 'Strat';
+  return `<button type="button" class="ui-btn ui-btn-ghost stratagems-btn ${open ? 'active' : ''} ${count ? 'has-deck' : ''}" data-action="open-stratagems" data-player="${playerKey}" title="Stratagems">${esc(label)}</button>`;
 }
 
 function renderPhasePips(phases) {
@@ -8559,8 +8814,23 @@ function getProgress(state) {
  * Battle Sim alternate view — map-focused UI sharing guide state.
  */
 
-/** Survives remounts so mobile army collapse stays put. */
-const collapsedArmyPanels = new Set();
+/** Which army drawers are open — survives remounts. */
+const openArmyDrawers = new Set();
+let armyDrawersBootstrapped = false;
+
+function bootstrapArmyDrawers(state) {
+  if (armyDrawersBootstrapped) return;
+  armyDrawersBootstrapped = true;
+  for (const key of ['player1', 'player2']) {
+    // Pre-game or missing army: open so load/deploy is obvious. In battle: closed for map space.
+    if (!state.started || !state[key]?.army) openArmyDrawers.add(key);
+  }
+}
+
+function isArmyDrawerOpen(playerKey, state) {
+  bootstrapArmyDrawers(state);
+  return openArmyDrawers.has(playerKey);
+}
 
 function esc(s) {
   return String(s ?? '')
@@ -8574,76 +8844,96 @@ function renderScoreCell(player, field, label, value, playerKey) {
     <div class="score-cell">
       <span class="score-label">${label}</span>
       <div class="score-controls">
-        <button type="button" data-action="score" data-player="${playerKey}" data-field="${field}" data-delta="-1">−</button>
+        <button type="button" class="ui-icon-btn" data-action="score" data-player="${playerKey}" data-field="${field}" data-delta="-1" aria-label="Decrease ${label}">−</button>
         <span class="score-value" data-score-player="${playerKey}" data-score-field="${field}">${value}</span>
-        <button type="button" data-action="score" data-player="${playerKey}" data-field="${field}" data-delta="1">+</button>
+        <button type="button" class="ui-icon-btn" data-action="score" data-player="${playerKey}" data-field="${field}" data-delta="1" aria-label="Increase ${label}">+</button>
       </div>
     </div>`;
 }
 
 function renderBattleReadyBtn(state, playerKey) {
   const active = !!state.battleReady?.[playerKey];
-  return `<button type="button" class="battle-ready-btn ${active ? 'active' : ''}" data-action="toggle-battle-ready" data-player="${playerKey}">Battle Ready Army</button>`;
+  return `<button type="button" class="ui-btn ui-btn-ghost battle-ready-btn ${active ? 'active' : ''}" data-action="toggle-battle-ready" data-player="${playerKey}" title="Battle Ready Army (+10 Primary)">${active ? 'Ready ✓' : 'Ready'}</button>`;
 }
 
 function renderFirstTurnBadge(state, key) {
-  return state.firstPlayer === key ? '<span class="first-turn-badge">Goes first</span>' : '';
+  return state.firstPlayer === key ? '<span class="first-turn-badge">1st</span>' : '';
 }
 
-function renderViewModeBar() {
-  return `<div class="view-mode-bar">${renderHelpQuestionBtn()}</div>`;
+function renderArmyDrawerToggle(state, playerKey) {
+  const open = isArmyDrawerOpen(playerKey, state);
+  const short = playerKey === 'player1' ? 'P1' : 'P2';
+  const needsLoad = !state[playerKey]?.army;
+  const label = needsLoad ? `${short} Load` : `${short} Army`;
+  return `<button type="button" class="ui-btn ui-btn-ghost army-drawer-toggle ${open ? 'is-active' : ''} ${needsLoad ? 'needs-attention' : ''}" data-action="toggle-army-drawer" data-player="${playerKey}" aria-pressed="${open ? 'true' : 'false'}">${esc(label)}</button>`;
 }
 
-function renderSimScoreboard(state) {
+function renderSimChrome(state) {
   const p1 = state.player1;
   const p2 = state.player2;
   const step = getCurrentStep(state);
   const turnLabel = state.started
     ? step?.turnLabel || ''
     : p1.army && p2.army
-      ? 'Choose who goes first, then begin'
-      : 'Load both armies to begin';
+      ? 'Choose who goes first'
+      : 'Load armies to begin';
+  const phaseLabel = state.started ? step?.label || '' : '';
 
   return `
-    <header class="scoreboard sim-scoreboard">
-      <div class="score-player score-left">
-        <div class="score-player-name">${esc(p1.army?.name || p1.name)}${renderFirstTurnBadge(state, 'player1')}</div>
-        <div class="score-row">
-          ${renderScoreCell(p1, 'cp', 'CP', p1.score.cp, 'player1')}
-          ${renderScoreCell(p1, 'secondary', 'Sec', p1.score.secondary, 'player1')}
-          ${renderScoreCell(p1, 'primary', 'Prim', p1.score.primary, 'player1')}
-          <div class="score-cell score-total-cell">
-            <span class="score-label">Total</span>
-            <span class="score-total" data-score-total="player1">${totalScore(p1.score)}</span>
+    <header class="sim-chrome">
+      <div class="sim-chrome-scores">
+        <div class="score-player score-left">
+          <div class="score-player-name">${esc(p1.army?.name || p1.name)}${renderFirstTurnBadge(state, 'player1')}</div>
+          <div class="score-row">
+            ${renderScoreCell(p1, 'cp', 'CP', p1.score.cp, 'player1')}
+            ${renderScoreCell(p1, 'secondary', 'Sec', p1.score.secondary, 'player1')}
+            ${renderScoreCell(p1, 'primary', 'Prim', p1.score.primary, 'player1')}
+            <div class="score-cell score-total-cell">
+              <span class="score-label">Total</span>
+              <span class="score-total" data-score-total="player1">${totalScore(p1.score)}</span>
+            </div>
           </div>
-          ${renderBattleReadyBtn(state, 'player1')}
-          ${renderStratagemsBtn(state, 'player1')}
+          <div class="score-player-actions">
+            ${renderArmyDrawerToggle(state, 'player1')}
+            ${renderStratagemsBtn(state, 'player1')}
+            ${renderBattleReadyBtn(state, 'player1')}
+          </div>
+        </div>
+        <div class="score-center">
+          <div class="sim-brand">Battle Map</div>
+          <div class="turn-display">${esc(turnLabel)}</div>
+          ${
+            state.started
+              ? `<div class="sim-step-nav">
+            <button type="button" class="ui-icon-btn" data-action="prev-step" ${state.stepIndex === 0 ? 'disabled' : ''} aria-label="Previous step">←</button>
+            <span class="step-counter" title="${esc(phaseLabel)}">${esc(phaseLabel)}</span>
+            <button type="button" class="ui-icon-btn" data-action="next-step" ${state.stepIndex >= state.flow.length - 1 ? 'disabled' : ''} aria-label="Next step">→</button>
+          </div>`
+              : ''
+          }
+        </div>
+        <div class="score-player score-right">
+          <div class="score-player-name">${renderFirstTurnBadge(state, 'player2')}${esc(p2.army?.name || p2.name)}</div>
+          <div class="score-row score-row-mirror">
+            <div class="score-cell score-total-cell">
+              <span class="score-label">Total</span>
+              <span class="score-total" data-score-total="player2">${totalScore(p2.score)}</span>
+            </div>
+            ${renderScoreCell(p2, 'primary', 'Prim', p2.score.primary, 'player2')}
+            ${renderScoreCell(p2, 'secondary', 'Sec', p2.score.secondary, 'player2')}
+            ${renderScoreCell(p2, 'cp', 'CP', p2.score.cp, 'player2')}
+          </div>
+          <div class="score-player-actions score-player-actions-mirror">
+            ${renderBattleReadyBtn(state, 'player2')}
+            ${renderStratagemsBtn(state, 'player2')}
+            ${renderArmyDrawerToggle(state, 'player2')}
+          </div>
         </div>
       </div>
-      <div class="score-center">
-        <div class="score-vs">VS</div>
-        <div class="turn-display">${esc(turnLabel)}</div>
-        ${renderViewModeBar()}
-        ${state.started ? `
-          <div class="sim-step-nav">
-            <button type="button" data-action="prev-step" ${state.stepIndex === 0 ? 'disabled' : ''} aria-label="Previous step">←</button>
-            <span class="step-counter" title="${esc(step?.label || '')}">${esc(step?.label || '')}</span>
-            <button type="button" data-action="next-step" ${state.stepIndex >= state.flow.length - 1 ? 'disabled' : ''} aria-label="Next step">→</button>
-          </div>` : ''}
-      </div>
-      <div class="score-player score-right">
-        <div class="score-player-name">${renderFirstTurnBadge(state, 'player2')}${esc(p2.army?.name || p2.name)}</div>
-        <div class="score-row score-row-mirror">
-          ${renderStratagemsBtn(state, 'player2')}
-          ${renderBattleReadyBtn(state, 'player2')}
-          <div class="score-cell score-total-cell">
-            <span class="score-label">Total</span>
-            <span class="score-total" data-score-total="player2">${totalScore(p2.score)}</span>
-          </div>
-          ${renderScoreCell(p2, 'primary', 'Prim', p2.score.primary, 'player2')}
-          ${renderScoreCell(p2, 'secondary', 'Sec', p2.score.secondary, 'player2')}
-          ${renderScoreCell(p2, 'cp', 'CP', p2.score.cp, 'player2')}
-        </div>
+      <div class="sim-chrome-tools">
+        ${renderHelpQuestionBtn('help-q-btn-chrome')}
+        <button type="button" class="ui-btn ui-btn-ghost" data-action="save-game">Save</button>
+        <button type="button" class="ui-btn ui-btn-danger" data-action="reset-game">Reset</button>
       </div>
     </header>`;
 }
@@ -8659,7 +8949,7 @@ function renderSimPregame(state) {
     <div class="sim-pregame">
       <div class="sim-pregame-inner">
         <h3>Start battle</h3>
-        <p class="sim-pregame-hint">Load both armies in the side panels, pick who takes the first turn, then begin.</p>
+        <p class="sim-pregame-hint">Open <strong>P1 Load</strong> / <strong>P2 Load</strong> above, pick who goes first, then begin. The map stays full-screen underneath.</p>
         <div class="first-turn-picker sim-first-turn">
           <h4>Who goes first?</h4>
           <div class="first-turn-options">
@@ -8673,7 +8963,7 @@ function renderSimPregame(state) {
             </button>
           </div>
         </div>
-        <button type="button" class="btn-primary" data-action="start-game" ${canStart ? '' : 'disabled'}>
+        <button type="button" class="ui-btn ui-btn-primary btn-primary" data-action="start-game" ${canStart ? '' : 'disabled'}>
           ${canStart ? 'Begin Battle' : 'Load both armies first'}
         </button>
       </div>
@@ -8704,22 +8994,29 @@ function renderSimArmyList(state, playerKey) {
   const player = state[playerKey];
   const army = player?.army;
   const sideLabel = playerKey === 'player1' ? 'Player 1' : 'Player 2';
+  const side = playerKey === 'player1' ? 'left' : 'right';
+  const open = isArmyDrawerOpen(playerKey, state) ? 'is-open' : '';
+
   if (!army) {
-    const collapsed = collapsedArmyPanels.has(playerKey) ? 'collapsed' : '';
     return `
-      <div class="sim-army-panel army-empty ${collapsed}" data-player="${playerKey}">
+      <aside class="sim-army-drawer sim-army-panel army-empty ${side} ${open}" data-player="${playerKey}" aria-hidden="${open ? 'false' : 'true'}">
         <div class="army-panel-header">
-          <h3>${sideLabel}</h3>
-          <button type="button" class="btn-small army-collapse-btn" data-action="toggle-army-collapse" data-player="${playerKey}" aria-expanded="${collapsed ? 'false' : 'true'}">${collapsed ? 'Show' : 'Hide'}</button>
+          <div>
+            <h3>${sideLabel}</h3>
+            <p class="army-meta">No army loaded</p>
+          </div>
+          <div class="army-panel-header-actions">
+            <button type="button" class="ui-icon-btn" data-action="toggle-army-drawer" data-player="${playerKey}" aria-label="Close army panel">×</button>
+          </div>
         </div>
         <div class="sim-army-panel-body">
-          <label class="file-btn">
+          <label class="file-btn ui-btn ui-btn-primary">
             Load Army (.json)
             <input type="file" accept=".json,application/json" data-action="load-army" data-player="${playerKey}" hidden />
           </label>
           ${renderNewRecruitHint()}
         </div>
-      </div>`;
+      </aside>`;
   }
 
   const attachments = state.leaderAttachments?.[playerKey] || {};
@@ -8756,36 +9053,35 @@ function renderSimArmyList(state, playerKey) {
             <strong>${esc(u.name)}</strong>
             <span class="sim-unit-meta">${remaining}${baseHint}${attachHint ? ` · ${esc(attachHint)}` : ''} · ${esc(u.statsLine || '')}</span>
           </button>
-          <button type="button" class="btn-small ${onMap ? 'withdraw-btn' : 'deploy-btn'}" data-action="${onMap ? 'map-withdraw-unit' : 'map-deploy-unit'}" data-player="${playerKey}" data-unit-id="${esc(u.id)}" ${dead ? 'disabled' : ''}>
+          <button type="button" class="ui-btn ui-btn-tiny ${onMap ? 'withdraw-btn' : 'deploy-btn'}" data-action="${onMap ? 'map-withdraw-unit' : 'map-deploy-unit'}" data-player="${playerKey}" data-unit-id="${esc(u.id)}" ${dead ? 'disabled' : ''} title="${onMap ? 'Withdraw from map' : 'Deploy to map'}">
             ${onMap ? 'Withdraw' : 'Deploy'}
           </button>
         </div>`;
     })
     .join('');
 
-  const collapsed = collapsedArmyPanels.has(playerKey) ? 'collapsed' : '';
   return `
-    <div class="sim-army-panel ${collapsed}" data-player="${playerKey}">
+    <aside class="sim-army-drawer sim-army-panel ${side} ${open}" data-player="${playerKey}" aria-hidden="${open ? 'false' : 'true'}">
       <div class="army-panel-header">
         <div>
           <h3>${esc(army.name)}</h3>
           <p class="army-meta">${esc(army.faction)} · ${army.points}${army.pointsLimit ? `/${army.pointsLimit}` : ''} pts</p>
         </div>
         <div class="army-panel-header-actions">
-          <button type="button" class="btn-small army-collapse-btn" data-action="toggle-army-collapse" data-player="${playerKey}" aria-expanded="${collapsed ? 'false' : 'true'}">${collapsed ? 'Show' : 'Hide'}</button>
-          <button type="button" class="btn-small" data-action="clear-army" data-player="${playerKey}">Clear</button>
+          <label class="ui-btn ui-btn-ghost ui-btn-tiny file-btn">
+            Replace
+            <input type="file" accept=".json,application/json" data-action="load-army" data-player="${playerKey}" hidden />
+          </label>
+          <button type="button" class="ui-btn ui-btn-ghost ui-btn-tiny" data-action="clear-army" data-player="${playerKey}">Clear</button>
+          <button type="button" class="ui-icon-btn" data-action="toggle-army-drawer" data-player="${playerKey}" aria-label="Close army panel">×</button>
         </div>
       </div>
       <div class="sim-army-panel-body">
-        <label class="file-btn btn-small">
-          Replace
-          <input type="file" accept=".json,application/json" data-action="load-army" data-player="${playerKey}" hidden />
-        </label>
         <div class="sim-unit-list">${units}</div>
         ${renderSimUnitCard(state, playerKey)}
         ${renderSimCombatOverlay(state, playerKey)}
       </div>
-    </div>`;
+    </aside>`;
 }
 
 function renderSimWeaponBlocks(unit, playerKey, selectedWeapon, selectableRange, army) {
@@ -9303,30 +9599,25 @@ function renderBattleSim(root, state, dispatch) {
     }
   }
 
+  const drawerOpen = isArmyDrawerOpen('player1', state) || isArmyDrawerOpen('player2', state);
+
   root.innerHTML = `
     <div class="guide-app battle-sim-app">
-      ${renderSimScoreboard(state)}
-      <main class="battle-sim-main">
-        ${renderSimArmyList(state, 'player1')}
+      ${renderSimChrome(state)}
+      <main class="battle-sim-stage">
         <div class="battle-sim-center">
-          ${renderSimPregame(state)}
           ${renderMapSvg(state, {
             layouts: getAllLayouts(),
             radii,
             reminderHtml: renderReminderBar(state),
             modelHighlights: collectModelHighlights(state),
           })}
+          ${renderSimPregame(state)}
         </div>
+        ${renderSimArmyList(state, 'player1')}
         ${renderSimArmyList(state, 'player2')}
+        <button type="button" class="sim-drawer-scrim ${drawerOpen ? 'is-visible' : ''}" data-action="close-army-drawers" aria-label="Close army panels" tabindex="-1"></button>
       </main>
-      <footer class="guide-footer">
-        <div class="guide-footer-bar">
-          Warhammer 40,000 Battle Map
-          <button type="button" class="btn-link" data-action="open-help-guide">Instructions</button>
-          <button type="button" class="btn-link" data-action="save-game">Save</button>
-          <button type="button" class="btn-link" data-action="reset-game">Reset</button>
-        </div>
-      </footer>
       ${renderReminderPopup(state)}
       ${renderKeywordRulePopover(state)}
       ${renderLayoutImportDialog(state)}
@@ -9339,7 +9630,10 @@ function renderBattleSim(root, state, dispatch) {
 }
 
 function bindBattleSimEvents(root, state, dispatch) {
-  root.querySelector('[data-action="start-game"]')?.addEventListener('click', () => dispatch({ type: 'START_GAME' }));
+  root.querySelector('[data-action="start-game"]')?.addEventListener('click', () => {
+    openArmyDrawers.clear();
+    dispatch({ type: 'START_GAME' });
+  });
   root.querySelector('[data-action="next-step"]')?.addEventListener('click', () => dispatch({ type: 'NEXT_STEP' }));
   root.querySelector('[data-action="prev-step"]')?.addEventListener('click', () => dispatch({ type: 'PREV_STEP' }));
   root.querySelector('[data-action="save-game"]')?.addEventListener('click', () => dispatch({ type: 'SAVE' }));
@@ -9347,19 +9641,37 @@ function bindBattleSimEvents(root, state, dispatch) {
     if (confirm('Reset the battle? Armies and scores will be cleared.')) dispatch({ type: 'RESET_GAME' });
   });
 
-  root.querySelectorAll('[data-action="toggle-army-collapse"]').forEach((btn) => {
+  function syncArmyDrawerUi() {
+    const anyOpen = openArmyDrawers.has('player1') || openArmyDrawers.has('player2');
+    root.querySelector('.sim-drawer-scrim')?.classList.toggle('is-visible', anyOpen);
+    for (const key of ['player1', 'player2']) {
+      const open = openArmyDrawers.has(key);
+      const drawer = root.querySelector(`.sim-army-drawer[data-player="${key}"]`);
+      drawer?.classList.toggle('is-open', open);
+      drawer?.setAttribute('aria-hidden', open ? 'false' : 'true');
+      root.querySelectorAll(`[data-action="toggle-army-drawer"][data-player="${key}"]`).forEach((btn) => {
+        if (btn.classList.contains('army-drawer-toggle')) {
+          btn.classList.toggle('is-active', open);
+          btn.setAttribute('aria-pressed', open ? 'true' : 'false');
+        }
+      });
+    }
+  }
+
+  root.querySelectorAll('[data-action="toggle-army-drawer"]').forEach((btn) => {
     btn.addEventListener('click', () => {
       const player = btn.dataset.player;
       if (!player) return;
-      if (collapsedArmyPanels.has(player)) collapsedArmyPanels.delete(player);
-      else collapsedArmyPanels.add(player);
-      const panel = root.querySelector(`.sim-army-panel[data-player="${player}"]`);
-      if (!panel) return;
-      const collapsed = collapsedArmyPanels.has(player);
-      panel.classList.toggle('collapsed', collapsed);
-      btn.textContent = collapsed ? 'Show' : 'Hide';
-      btn.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+      bootstrapArmyDrawers(state);
+      if (openArmyDrawers.has(player)) openArmyDrawers.delete(player);
+      else openArmyDrawers.add(player);
+      syncArmyDrawerUi();
     });
+  });
+
+  root.querySelector('[data-action="close-army-drawers"]')?.addEventListener('click', () => {
+    openArmyDrawers.clear();
+    syncArmyDrawerUi();
   });
 
   root.querySelectorAll('[data-action="set-first-player"]').forEach((btn) => {

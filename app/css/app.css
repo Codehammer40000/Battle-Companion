@@ -1,29 +1,149 @@
 :root {
-  --bg: #0c0a09;
-  --surface: #1c1917;
-  --surface-2: #292524;
-  --border: #44403c;
-  --text: #fafaf9;
-  --muted: #a8a29e;
+  --bg: #0a0908;
+  --surface: #161311;
+  --surface-2: #221e1b;
+  --surface-3: #2c2723;
+  --border: #3f3a36;
+  --border-strong: #5c534c;
+  --text: #f5f0ea;
+  --text-dim: #c4bbb2;
+  --muted: #9a9188;
   --gold: #d4a853;
+  --gold-soft: rgba(212, 168, 83, 0.14);
   --blue: #60a5fa;
   --green: #4ade80;
   --red: #f87171;
   --p1: #3b82f6;
   --p2: #22c55e;
-  font-family: 'Inter', system-ui, sans-serif;
+  --radius: 8px;
+  --radius-sm: 6px;
+  --chrome-h: auto;
+  --font-ui: "Segoe UI", "Helvetica Neue", ui-sans-serif, sans-serif;
+  --font-display: "Cinzel", "Palatino Linotype", Palatino, Georgia, serif;
+  font-family: var(--font-ui);
   color: var(--text);
   background: var(--bg);
+  color-scheme: dark;
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
-body { min-height: 100vh; }
+html, body {
+  height: 100%;
+  overflow: hidden;
+}
+
+body {
+  min-height: 100%;
+  min-height: 100dvh;
+  background:
+    radial-gradient(1200px 600px at 50% -10%, rgba(212, 168, 83, 0.07), transparent 55%),
+    var(--bg);
+}
+
+#root {
+  height: 100%;
+  height: 100dvh;
+  overflow: hidden;
+}
 
 .guide-app {
-  min-height: 100vh;
+  height: 100%;
+  height: 100dvh;
+  max-height: 100dvh;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
+}
+
+/* Shared control system */
+.ui-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  padding: 0.38rem 0.7rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.72rem;
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.12s ease, border-color 0.12s ease, color 0.12s ease;
+}
+
+.ui-btn:hover:not(:disabled) {
+  background: var(--surface-3);
+  border-color: var(--border-strong);
+}
+
+.ui-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.ui-btn-ghost {
+  background: transparent;
+}
+
+.ui-btn-primary,
+.ui-btn.btn-primary {
+  background: linear-gradient(180deg, #2a4a7a, #1d3a66);
+  border-color: #4b7ec7;
+  color: #fff;
+}
+
+.ui-btn-primary:hover:not(:disabled),
+.ui-btn.btn-primary:hover:not(:disabled) {
+  background: linear-gradient(180deg, #355b90, #244879);
+}
+
+.ui-btn-danger {
+  border-color: rgba(248, 113, 113, 0.45);
+  color: #fecaca;
+  background: rgba(127, 29, 29, 0.25);
+}
+
+.ui-btn-danger:hover:not(:disabled) {
+  background: rgba(153, 27, 27, 0.4);
+}
+
+.ui-btn-tiny {
+  padding: 0.28rem 0.5rem;
+  font-size: 0.68rem;
+}
+
+.ui-icon-btn {
+  width: 1.7rem;
+  height: 1.7rem;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.ui-icon-btn:hover:not(:disabled) {
+  background: var(--surface-3);
+  border-color: var(--gold);
+}
+
+.ui-icon-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
 }
 
 /* Scoreboard */
@@ -41,10 +161,10 @@ body { min-height: 100vh; }
 .score-right { align-items: flex-end; }
 
 .score-player-name {
-  font-family: 'Cinzel', serif;
-  font-size: 0.85rem;
+  font-family: var(--font-display);
+  font-size: 0.78rem;
   color: var(--gold);
-  max-width: 280px;
+  max-width: 220px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -100,19 +220,11 @@ body { min-height: 100vh; }
   gap: 0.25rem;
 }
 
-.score-controls button {
-  width: 22px;
-  height: 22px;
-  border: 1px solid var(--border);
-  background: var(--surface-2);
-  color: var(--text);
-  border-radius: 3px;
-  cursor: pointer;
-  font-size: 0.85rem;
-  line-height: 1;
+.score-controls .ui-icon-btn {
+  width: 1.45rem;
+  height: 1.45rem;
+  font-size: 0.75rem;
 }
-
-.score-controls button:hover { background: #3f3a36; }
 
 .score-value {
   min-width: 24px;
@@ -122,71 +234,41 @@ body { min-height: 100vh; }
 }
 
 .score-total-cell .score-total {
-  font-family: 'Cinzel', serif;
-  font-size: 1.25rem;
+  font-family: var(--font-display);
+  font-size: 1.05rem;
   font-weight: 700;
   color: var(--gold);
-}
-
-.battle-ready-btn {
-  align-self: center;
-  padding: 0.45rem 0.55rem;
-  min-height: 44px;
-  max-width: 92px;
-  background: var(--surface-2);
-  border: 2px solid var(--border);
-  border-radius: 6px;
-  color: var(--text-dim);
-  font-size: 0.58rem;
-  font-weight: 600;
-  line-height: 1.25;
-  text-align: center;
-  cursor: pointer;
-  transition: background 0.15s, border-color 0.15s, color 0.15s;
-}
-
-.battle-ready-btn:hover {
-  border-color: var(--gold);
-  background: var(--surface-3);
+  line-height: 1.2;
+  min-height: 1.45rem;
+  display: inline-flex;
+  align-items: center;
 }
 
 .battle-ready-btn.active {
-  background: rgba(76, 140, 90, 0.25);
+  background: rgba(76, 140, 90, 0.22);
   border-color: var(--green);
   color: #b8e0c0;
 }
 
-.stratagems-btn {
-  align-self: center;
-  padding: 0.45rem 0.55rem;
-  min-height: 44px;
-  max-width: 92px;
-  background: var(--surface-2);
-  border: 2px solid var(--border);
-  border-radius: 6px;
-  color: var(--text-dim);
-  font-size: 0.58rem;
-  font-weight: 600;
-  line-height: 1.25;
-  text-align: center;
-  cursor: pointer;
-  transition: background 0.15s, border-color 0.15s, color 0.15s;
-}
-
-.stratagems-btn:hover {
-  border-color: var(--gold);
-  background: var(--surface-3);
-}
-
 .stratagems-btn.has-deck {
-  color: var(--text);
   border-color: #8a7340;
 }
 
 .stratagems-btn.active {
-  background: rgba(212, 168, 83, 0.2);
+  background: var(--gold-soft);
   border-color: var(--gold);
   color: #f0d78c;
+}
+
+.army-drawer-toggle.is-active {
+  background: var(--gold-soft);
+  border-color: var(--gold);
+  color: #f0d78c;
+}
+
+.army-drawer-toggle.needs-attention:not(.is-active) {
+  border-color: rgba(96, 165, 250, 0.55);
+  color: #93c5fd;
 }
 
 .strat-panel-backdrop {
@@ -1490,56 +1572,136 @@ body { min-height: 100vh; }
   .score-center { order: -1; }
 }
 
-/* ===== Battle Sim ===== */
-.view-mode-bar {
-  display: flex;
-  gap: 0.35rem;
-  justify-content: center;
-  margin: 0.35rem 0;
+/* ===== Battle Sim / Map shell ===== */
+.battle-sim-app {
+  height: 100%;
+  max-height: 100dvh;
+  overflow: hidden;
 }
 
-.view-mode-btn {
-  padding: 0.25rem 0.65rem;
-  font-size: 0.7rem;
+.sim-chrome {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  padding: 0.55rem 0.75rem 0.5rem;
+  background: linear-gradient(180deg, #1a1512 0%, var(--surface) 100%);
+  border-bottom: 1px solid var(--border);
+  z-index: 30;
+}
+
+.sim-chrome-scores {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  gap: 0.65rem;
+  align-items: start;
+}
+
+.sim-chrome-tools {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 0.4rem;
+  padding-top: 0.15rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.sim-brand {
+  font-family: var(--font-display);
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--gold);
+  opacity: 0.9;
+}
+
+.score-player-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  margin-top: 0.35rem;
+}
+
+.score-player-actions-mirror {
+  justify-content: flex-end;
+}
+
+.battle-sim-stage {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  overflow: hidden;
+  background: #050505;
+}
+
+.sim-army-drawer {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: min(320px, 92vw);
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  background: rgba(18, 15, 13, 0.97);
   border: 1px solid var(--border);
-  border-radius: 4px;
-  background: var(--surface-2);
-  color: var(--text);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(10px);
+  transform: translateX(-105%);
+  transition: transform 0.2s ease;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.sim-army-drawer.right {
+  right: 0;
+  left: auto;
+  transform: translateX(105%);
+}
+
+.sim-army-drawer.left {
+  left: 0;
+}
+
+.sim-army-drawer.is-open {
+  transform: translateX(0);
+  pointer-events: auto;
+}
+
+.sim-drawer-scrim {
+  display: none;
+  position: absolute;
+  inset: 0;
+  z-index: 15;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  background: rgba(0, 0, 0, 0.35);
   cursor: pointer;
 }
 
-.view-mode-btn.active {
-  border-color: var(--gold);
-  color: var(--gold);
-  background: rgba(201, 162, 39, 0.12);
+.sim-drawer-scrim.is-visible {
+  display: block;
 }
 
-.battle-sim-app {
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
+@media (min-width: 1101px) {
+  /* Desktop: keep the map usable while a drawer is open */
+  .sim-drawer-scrim.is-visible {
+    display: none;
+  }
 }
 
-.battle-sim-main {
-  flex: 1;
-  display: grid;
-  grid-template-columns: minmax(180px, 0.85fr) minmax(420px, 2.2fr) minmax(180px, 0.85fr);
-  min-height: 0;
-  gap: 0;
+.file-btn.ui-btn {
+  background: linear-gradient(180deg, #2a4a7a, #1d3a66);
+  border-color: #4b7ec7;
+  color: #fff;
 }
 
-.sim-army-panel {
-  position: relative;
-  padding: 0.75rem;
-  overflow-y: auto;
-  background: var(--surface);
-  border-right: 1px solid var(--border);
-  max-height: calc(100vh - 200px);
-}
-
-.battle-sim-main > .sim-army-panel:last-child {
-  border-right: none;
-  border-left: 1px solid var(--border);
+.file-btn.ui-btn-ghost {
+  background: transparent;
+  border-color: var(--border);
+  color: var(--text);
 }
 
 .sim-unit-list {
@@ -1667,46 +1829,62 @@ tr.weapon-row-selected td {
 }
 
 .battle-sim-center {
+  flex: 1;
   display: flex;
   flex-direction: column;
+  min-width: 0;
   min-height: 0;
   background: #050505;
   position: relative;
+  z-index: 1;
 }
 
 .sim-pregame {
-  flex-shrink: 0;
-  padding: 0.65rem 0.75rem;
-  border-bottom: 1px solid var(--border);
-  background: var(--surface);
+  position: absolute;
+  inset: 0;
+  z-index: 6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: rgba(6, 5, 4, 0.55);
+  backdrop-filter: blur(5px);
+  pointer-events: auto;
 }
 
 .sim-pregame-inner {
   display: flex;
   flex-direction: column;
-  gap: 0.55rem;
+  gap: 0.7rem;
   align-items: stretch;
-  max-width: 520px;
-  margin: 0 auto;
+  width: min(440px, 100%);
+  margin: 0;
+  padding: 1.1rem 1.15rem 1.15rem;
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: 12px;
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.5);
 }
 
 .sim-pregame-inner h3 {
   margin: 0;
-  font-size: 0.95rem;
+  font-family: var(--font-display);
+  font-size: 1.05rem;
   color: var(--gold);
   text-align: center;
 }
 
 .sim-pregame-hint {
   margin: 0;
-  font-size: 0.72rem;
+  font-size: 0.74rem;
   color: var(--muted);
   text-align: center;
+  line-height: 1.45;
 }
 
 .sim-first-turn {
   margin: 0;
-  padding: 0.5rem;
+  padding: 0.55rem;
 }
 
 .sim-first-turn .first-turn-options {
@@ -1727,15 +1905,46 @@ tr.weapon-row-selected td {
   font-size: 0.7rem;
 }
 
-.sim-army-panel .army-panel-header {
+.sim-army-drawer .army-panel-header {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
   gap: 0.5rem;
+  padding: 0.7rem 0.75rem;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+  background: var(--surface);
 }
 
-.sim-army-panel .file-btn.btn-small {
-  margin-top: 0.35rem;
+.sim-army-drawer .army-panel-header h3 {
+  font-family: var(--font-display);
+  font-size: 0.85rem;
+  color: var(--gold);
+}
+
+.sim-army-drawer .army-meta {
+  font-size: 0.65rem;
+  color: var(--muted);
+  margin-top: 0.15rem;
+}
+
+.sim-army-panel-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 0.65rem 0.75rem 1rem;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-strong) transparent;
+}
+
+.sim-army-panel-body::-webkit-scrollbar {
+  width: 8px;
+}
+
+.sim-army-panel-body::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: 8px;
 }
 
 .battle-map-viewport {
@@ -1743,44 +1952,72 @@ tr.weapon-row-selected td {
   display: flex;
   flex-direction: column;
   min-height: 0;
+  overflow: hidden;
 }
 
 .battle-map-toolbar {
   display: flex;
   flex-wrap: nowrap;
-  gap: 0.5rem;
+  gap: 0.45rem;
   align-items: center;
-  padding: 0.5rem 0.75rem;
+  justify-content: space-between;
+  padding: 0.4rem 0.65rem;
   border-bottom: 1px solid var(--border);
-  background: var(--surface);
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: thin;
+  background: rgba(22, 19, 17, 0.94);
+  flex-shrink: 0;
+  overflow: visible;
 }
 
-.battle-map-toolbar-primary,
-.battle-map-toolbar-more {
+.battle-map-toolbar-primary {
   display: flex;
-  flex-wrap: nowrap;
-  gap: 0.4rem;
+  flex-wrap: wrap;
+  gap: 0.35rem;
   align-items: center;
+  min-width: 0;
+}
+
+.battle-map-toolbar select {
+  font-size: 0.72rem;
+  padding: 0.28rem 0.45rem;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  max-width: 14rem;
+}
+
+.battle-map-more {
+  position: relative;
   flex-shrink: 0;
 }
 
-.battle-map-toolbar button,
-.battle-map-toolbar select {
-  font-size: 0.72rem;
-  padding: 0.3rem 0.55rem;
-  background: var(--surface-2);
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  color: var(--text);
+.battle-map-more > summary {
+  list-style: none;
   cursor: pointer;
-  white-space: nowrap;
+}
+
+.battle-map-more > summary::-webkit-details-marker {
+  display: none;
+}
+
+.battle-map-more-menu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 0.3rem);
+  z-index: 12;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  min-width: 9.5rem;
+  padding: 0.45rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.4);
 }
 
 .battle-map-layout-label {
-  font-size: 0.72rem;
+  font-size: 0.68rem;
   color: var(--muted);
   display: flex;
   align-items: center;
@@ -1789,10 +2026,12 @@ tr.weapon-row-selected td {
 
 .battle-map-canvas-wrap {
   flex: 1;
-  min-height: 360px;
+  min-height: 0;
   overflow: hidden;
   cursor: grab;
   background: #0a0a0a;
+  overscroll-behavior: none;
+  touch-action: none;
 }
 
 .battle-map-canvas-wrap:active {
@@ -1821,21 +2060,11 @@ tr.weapon-row-selected td {
 
 .army-panel-header-actions {
   display: flex;
-  gap: 0.35rem;
+  gap: 0.3rem;
   align-items: center;
   flex-shrink: 0;
-}
-
-.sim-army-panel-body {
-  display: block;
-}
-
-.sim-army-panel.collapsed .sim-army-panel-body {
-  display: none;
-}
-
-.sim-army-panel.collapsed {
-  max-height: none;
+  flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
 .strat-card-actions {
@@ -1859,76 +2088,70 @@ tr.weapon-row-selected td {
 }
 
 .sim-step-nav {
-  position: relative;
-  width: 22rem;
-  max-width: 100%;
-  height: 2rem;
-  margin: 0.35rem auto 0;
-  flex-shrink: 0;
-}
-
-.sim-step-nav button {
-  position: absolute;
-  top: 0;
-  width: 2.5rem;
-  height: 2rem;
-  padding: 0;
-  background: var(--surface-2);
-  border: 1px solid var(--border);
-  color: var(--text);
-  border-radius: 4px;
-  cursor: pointer;
-  font-weight: 700;
-  z-index: 1;
-}
-
-.sim-step-nav button[data-action="prev-step"] {
-  left: 0;
-}
-
-.sim-step-nav button[data-action="next-step"] {
-  right: 0;
-}
-
-.sim-step-nav button:disabled {
-  opacity: 0.35;
-  cursor: not-allowed;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.35rem;
+  width: min(22rem, 100%);
+  margin: 0.25rem auto 0;
 }
 
 .sim-step-nav .step-counter {
-  position: absolute;
-  left: 2.75rem;
-  right: 2.75rem;
-  top: 0;
-  height: 2rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  display: block;
   text-align: center;
-  font-size: 0.8rem;
-  color: var(--muted);
+  font-size: 0.72rem;
+  color: var(--text-dim);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  pointer-events: none;
+  padding: 0.2rem 0.35rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.score-center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0.15rem;
+  min-width: 11rem;
+  text-align: center;
+  padding-top: 0.1rem;
+}
+
+.score-vs {
+  display: none;
+}
+
+.turn-display {
+  font-size: 0.7rem;
+  color: var(--muted);
+  max-width: 16rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .sim-reminder-bar {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  padding: 0.55rem 0.85rem;
+  gap: 0.55rem;
+  padding: 0.35rem 0.65rem;
   border-top: 1px solid var(--border);
-  background: var(--surface);
+  background: rgba(22, 19, 17, 0.94);
   flex-shrink: 0;
   overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: thin;
+  max-height: 3.2rem;
 }
 
 .sim-reminder-under-toolbar {
   border-top: none;
   border-bottom: 1px solid var(--border);
-  max-height: 7rem;
-  overflow-y: auto;
+  max-height: 3.2rem;
 }
 
 .remove-special-btn {
@@ -2174,12 +2397,14 @@ tr.weapon-row-selected td {
   color: #fff;
 }
 
-.help-q-btn-toolbar {
+.help-q-btn-toolbar,
+.help-q-btn-chrome {
   align-self: center;
 }
 
-.view-mode-bar .help-q-btn {
-  align-self: center;
+.sim-chrome-tools .help-q-btn {
+  width: 1.7rem;
+  height: 1.7rem;
 }
 
 .help-guide-cta {
@@ -2368,22 +2593,50 @@ tr.weapon-row-selected td {
 }
 
 @media (max-width: 1100px) {
-  .battle-sim-main {
+  .sim-chrome-scores {
     grid-template-columns: 1fr;
+    gap: 0.55rem;
   }
-  .sim-army-panel {
-    max-height: 240px;
-    border-left: none !important;
-    border-right: none !important;
+
+  .score-center {
+    order: -1;
+    width: 100%;
+    min-width: 0;
   }
-  .sim-army-panel.collapsed {
-    max-height: none;
+
+  .score-player-actions,
+  .score-player-actions-mirror {
+    justify-content: flex-start;
   }
-  .battle-map-toolbar {
-    padding: 0.4rem 0.5rem;
+
+  .sim-chrome-tools {
+    justify-content: stretch;
   }
-  .battle-map-toolbar-more {
-    padding-left: 0.35rem;
-    border-left: 1px solid var(--border);
+
+  .sim-chrome-tools .ui-btn {
+    flex: 1;
+  }
+
+  .sim-army-drawer {
+    width: min(100%, 380px);
+  }
+
+  .battle-map-toolbar select {
+    max-width: 10rem;
+  }
+}
+
+@media (max-width: 720px) {
+  .sim-reminder-bar {
+    max-height: 4.5rem;
+    align-items: flex-start;
+  }
+
+  .score-row {
+    gap: 0.3rem;
+  }
+
+  .score-cell {
+    min-width: 52px;
   }
 }

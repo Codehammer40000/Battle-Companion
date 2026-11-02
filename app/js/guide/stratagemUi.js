@@ -14,8 +14,8 @@ function esc(s) {
 export function renderStratagemsBtn(state, playerKey) {
   const count = state.stratagems?.[playerKey]?.length || 0;
   const open = state.stratagemPanel?.player === playerKey;
-  const label = count ? `Stratagems (${count})` : 'Stratagems';
-  return `<button type="button" class="stratagems-btn ${open ? 'active' : ''} ${count ? 'has-deck' : ''}" data-action="open-stratagems" data-player="${playerKey}">${esc(label)}</button>`;
+  const label = count ? `Strat (${count})` : 'Strat';
+  return `<button type="button" class="ui-btn ui-btn-ghost stratagems-btn ${open ? 'active' : ''} ${count ? 'has-deck' : ''}" data-action="open-stratagems" data-player="${playerKey}" title="Stratagems">${esc(label)}</button>`;
 }
 
 function renderPhasePips(phases) {

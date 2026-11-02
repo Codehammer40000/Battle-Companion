@@ -277,23 +277,25 @@ export function renderMapSvg(state, options = {}) {
               <option value="__add_new__">Add new…</option>
             </select>
           </label>
-          <button type="button" data-action="map-zoom" data-delta="0.15">Zoom +</button>
-          <button type="button" data-action="map-zoom" data-delta="-0.15">Zoom −</button>
-          <button type="button" data-action="map-reset-camera">Reset view</button>
-          <button type="button" class="help-q-btn help-q-btn-toolbar" data-action="open-help-guide" title="Instructions / Guides" aria-label="Open instructions and guides">?</button>
-        </div>
-        <div class="battle-map-toolbar-more">
-          <button type="button" data-action="map-flip-horizontal" title="Mirror layout left/right (keeps models with terrain)">Flip</button>
-          <button type="button" data-action="map-rotate-90" title="Rotate layout 90° clockwise">Rotate 90°</button>
-          <button type="button" data-action="map-reset-orientation" title="Reset flip/rotate to original" ${state.battleMap?.layoutTransform?.ops?.length ? '' : 'disabled'}>Reset orient</button>
+          <button type="button" class="ui-btn ui-btn-ghost ui-btn-tiny" data-action="map-zoom" data-delta="0.15" title="Zoom in">+</button>
+          <button type="button" class="ui-btn ui-btn-ghost ui-btn-tiny" data-action="map-zoom" data-delta="-0.15" title="Zoom out">−</button>
+          <button type="button" class="ui-btn ui-btn-ghost ui-btn-tiny" data-action="map-reset-camera">Reset view</button>
           ${orient}
-          <button type="button" data-action="add-special-marker">Add special marker</button>
           ${
             selectedSpecial
-              ? `<button type="button" class="remove-special-btn" data-action="remove-special-marker" data-special-id="${esc(selectedSpecial.id)}">Remove marker</button>`
+              ? `<button type="button" class="ui-btn ui-btn-danger ui-btn-tiny remove-special-btn" data-action="remove-special-marker" data-special-id="${esc(selectedSpecial.id)}">Remove marker</button>`
               : ''
           }
         </div>
+        <details class="battle-map-more">
+          <summary class="ui-btn ui-btn-ghost ui-btn-tiny">More</summary>
+          <div class="battle-map-more-menu">
+            <button type="button" class="ui-btn ui-btn-ghost ui-btn-tiny" data-action="map-flip-horizontal" title="Mirror layout left/right">Flip</button>
+            <button type="button" class="ui-btn ui-btn-ghost ui-btn-tiny" data-action="map-rotate-90" title="Rotate layout 90° clockwise">Rotate 90°</button>
+            <button type="button" class="ui-btn ui-btn-ghost ui-btn-tiny" data-action="map-reset-orientation" title="Reset flip/rotate" ${state.battleMap?.layoutTransform?.ops?.length ? '' : 'disabled'}>Reset orient</button>
+            <button type="button" class="ui-btn ui-btn-ghost ui-btn-tiny" data-action="add-special-marker">Add marker</button>
+          </div>
+        </details>
       </div>
       ${options.reminderHtml || ''}
       <div class="battle-map-canvas-wrap">
