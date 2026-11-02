@@ -2287,6 +2287,71 @@ tr.weapon-row-selected td {
   flex-direction: column;
   min-height: 0;
   background: #050505;
+  position: relative;
+}
+
+.sim-pregame {
+  flex-shrink: 0;
+  padding: 0.65rem 0.75rem;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.sim-pregame-inner {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  align-items: stretch;
+  max-width: 520px;
+  margin: 0 auto;
+}
+
+.sim-pregame-inner h3 {
+  margin: 0;
+  font-size: 0.95rem;
+  color: var(--gold);
+  text-align: center;
+}
+
+.sim-pregame-hint {
+  margin: 0;
+  font-size: 0.72rem;
+  color: var(--muted);
+  text-align: center;
+}
+
+.sim-first-turn {
+  margin: 0;
+  padding: 0.5rem;
+}
+
+.sim-first-turn .first-turn-options {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.4rem;
+}
+
+.sim-pregame .btn-primary {
+  width: 100%;
+}
+
+.sim-leader-attach {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin: 0.35rem 0 0;
+  font-size: 0.7rem;
+}
+
+.sim-army-panel .army-panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+
+.sim-army-panel .file-btn.btn-small {
+  margin-top: 0.35rem;
 }
 
 .battle-map-viewport {

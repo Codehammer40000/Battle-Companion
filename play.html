@@ -2294,6 +2294,71 @@ tr.weapon-row-selected td {
   flex-direction: column;
   min-height: 0;
   background: #050505;
+  position: relative;
+}
+
+.sim-pregame {
+  flex-shrink: 0;
+  padding: 0.65rem 0.75rem;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.sim-pregame-inner {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  align-items: stretch;
+  max-width: 520px;
+  margin: 0 auto;
+}
+
+.sim-pregame-inner h3 {
+  margin: 0;
+  font-size: 0.95rem;
+  color: var(--gold);
+  text-align: center;
+}
+
+.sim-pregame-hint {
+  margin: 0;
+  font-size: 0.72rem;
+  color: var(--muted);
+  text-align: center;
+}
+
+.sim-first-turn {
+  margin: 0;
+  padding: 0.5rem;
+}
+
+.sim-first-turn .first-turn-options {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.4rem;
+}
+
+.sim-pregame .btn-primary {
+  width: 100%;
+}
+
+.sim-leader-attach {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin: 0.35rem 0 0;
+  font-size: 0.7rem;
+}
+
+.sim-army-panel .army-panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+
+.sim-army-panel .file-btn.btn-small {
+  margin-top: 0.35rem;
 }
 
 .battle-map-viewport {
@@ -6794,10 +6859,9 @@ const HELP_GUIDE_SECTIONS = [
         title: 'What this app is',
         keywords: 'overview companion battle map browser play aid',
         body: [
-          'Battle Companion is a browser play aid for Warhammer 40,000 tabletop games.',
-          'Use Companion to walk Core Rules phases, track scores, and see ability reminders.',
-          'Use Battle Map to place models on terrain layouts, check ranges, and preview line of sight.',
-          'Play on the physical table; use this app as your digital reference and tracker.',
+          'Battle Map is the main play surface: load armies, deploy models, track scores, and advance phases.',
+          'Place models on terrain layouts, check ranges, and preview line of sight during shooting.',
+          'Reminder! chips surface army/unit rules for the current phase. Stratagem decks are available from the scoreboard.',
         ],
       },
       {
@@ -6816,10 +6880,10 @@ const HELP_GUIDE_SECTIONS = [
         title: 'Upload army lists (.json)',
         keywords: 'upload army roster json newrecruit load replace clear',
         body: [
-          'In Companion, use Load Army (.json) on Player 1 and Player 2.',
+          'On each side panel, use Load Army (.json) for Player 1 and Player 2.',
           'Export your list as JSON from New Recruit (newrecruit.eu) or a compatible army builder.',
-          'After loading, you can Replace a side’s list or Clear it from the army panel.',
-          'Load both armies before Begin Battle Guide. Battle Map uses the same loaded armies.',
+          'After loading, use Replace or Clear on that side’s panel header.',
+          'Load both armies, pick who goes first in the center Start battle card, then Begin Battle.',
         ],
       },
       {
@@ -6846,13 +6910,13 @@ const HELP_GUIDE_SECTIONS = [
       },
       {
         id: 'gen-views',
-        title: 'Companion vs Battle Map',
-        keywords: 'view mode companion battle map switch',
+        title: 'Battle Map layout',
+        keywords: 'view mode battle map panels deploy',
         body: [
-          'Use the Companion / Battle Map buttons in the center of the top bar to switch views.',
-          'Companion: phase steps, army cards, ability reminders, checklists.',
-          'Battle Map: terrain layout, deploy/move models, ranges, LoS during shooting.',
-          'Scores, armies, stratagems, and guide progress are shared between views.',
+          'The app opens on the Battle Map. Side panels hold armies; the center is the board.',
+          'Deploy/Withdraw units, drag models, rotate Frame hulls with the yellow handle when selected.',
+          'Use ← / → under the turn label to advance phases after you Begin Battle.',
+          'Scores, Reminder!, and stratagems stay in the top bar while you play on the map.',
         ],
       },
       {
@@ -6964,8 +7028,8 @@ const HELP_GUIDE_SECTIONS = [
         title: 'Open Battle Map',
         keywords: 'battle map view deploy companion first',
         body: [
-          'Load armies in Companion first, then switch to Battle Map from the top bar or footer.',
-          'Side panels list each army. Empty sides send you back to Companion to load lists.',
+          'Load armies from the side panels on the Battle Map (Load Army .json).',
+          'Empty sides show a Load Army button. Replace/Clear sit in the panel header once loaded.',
         ],
       },
       {
@@ -7354,6 +7418,9 @@ function renderKeywordRulePopover(state) {
 /* --- guide\guideState.js --- */
 const STORAGE_KEY = 'wh40k-battle-guide-v2';
 
+/** Phase A map-first: Companion UI is hidden; keep code path for later hard-delete. */
+const SHOW_COMPANION_VIEW = false;
+
 function emptyScore() {
   return { cp: 0, secondary: 0, primary: 0 };
 }
@@ -7386,7 +7453,7 @@ function createInitialGuideState() {
     unitDetail: null,
     keywordRulePopup: null,
     started: false,
-    viewMode: 'companion',
+    viewMode: 'battleSim',
     battleMap: createEmptyBattleMap(),
     layoutImport: null,
   };
@@ -7648,15 +7715,15 @@ function awardCpForStepIndex(state, index) {
   const awardKey = String(index);
   if (state.cpAwarded?.[awardKey]) return state;
 
+  // Gain Core CP goes to the active player's Command phase only
+  const playerKey = step.player === 'p1' ? 'player1' : step.player === 'p2' ? 'player2' : null;
+  if (!playerKey || !state[playerKey]) return state;
+
   return {
     ...state,
-    player1: {
-      ...state.player1,
-      score: { ...state.player1.score, cp: state.player1.score.cp + 1 },
-    },
-    player2: {
-      ...state.player2,
-      score: { ...state.player2.score, cp: state.player2.score.cp + 1 },
+    [playerKey]: {
+      ...state[playerKey],
+      score: { ...state[playerKey].score, cp: state[playerKey].score.cp + 1 },
     },
     cpAwarded: { ...(state.cpAwarded || {}), [awardKey]: true },
   };
@@ -8288,7 +8355,8 @@ function guideReducer(state, action) {
       return { ...state, keywordRulePopup: null };
 
     case 'SET_VIEW_MODE': {
-      const mode = action.mode === 'battleSim' ? 'battleSim' : 'companion';
+      let mode = action.mode === 'battleSim' ? 'battleSim' : 'companion';
+      if (!SHOW_COMPANION_VIEW) mode = 'battleSim';
       if (mode !== 'battleSim') return { ...state, viewMode: mode };
       const battleMap = migrateBattleMapModelIds(state.battleMap || createEmptyBattleMap());
       return { ...state, viewMode: mode, battleMap };
@@ -8878,7 +8946,7 @@ function guideReducer(state, action) {
             saved.roundSnapshots && typeof saved.roundSnapshots === 'object' ? saved.roundSnapshots : {},
           combat: saved.combat && typeof saved.combat === 'object' ? saved.combat : null,
           started: !!saved.started,
-          viewMode: saved.viewMode === 'battleSim' ? 'battleSim' : 'companion',
+          viewMode: SHOW_COMPANION_VIEW && saved.viewMode === 'companion' ? 'companion' : 'battleSim',
           battleMap:
             saved.battleMap && typeof saved.battleMap === 'object'
               ? migrateBattleMapModelIds({
@@ -8960,15 +9028,36 @@ function renderBattleReadyBtn(state, playerKey) {
   return `<button type="button" class="battle-ready-btn ${active ? 'active' : ''}" data-action="toggle-battle-ready" data-player="${playerKey}">Battle Ready Army</button>`;
 }
 
+function renderFirstTurnBadge(state, key) {
+  return state.firstPlayer === key ? '<span class="first-turn-badge">Goes first</span>' : '';
+}
+
+function renderViewModeBar() {
+  if (!SHOW_COMPANION_VIEW) {
+    return `<div class="view-mode-bar">${renderHelpQuestionBtn()}</div>`;
+  }
+  return `
+    <div class="view-mode-bar">
+      <button type="button" class="view-mode-btn" data-action="set-view-mode" data-mode="companion">Companion</button>
+      <button type="button" class="view-mode-btn active" data-action="set-view-mode" data-mode="battleSim">Battle Map</button>
+      ${renderHelpQuestionBtn()}
+    </div>`;
+}
+
 function renderSimScoreboard(state) {
   const p1 = state.player1;
   const p2 = state.player2;
   const step = getCurrentStep(state);
+  const turnLabel = state.started
+    ? step?.turnLabel || ''
+    : p1.army && p2.army
+      ? 'Choose who goes first, then begin'
+      : 'Load both armies to begin';
 
   return `
     <header class="scoreboard sim-scoreboard">
       <div class="score-player score-left">
-        <div class="score-player-name">${esc(p1.army?.name || p1.name)}</div>
+        <div class="score-player-name">${esc(p1.army?.name || p1.name)}${renderFirstTurnBadge(state, 'player1')}</div>
         <div class="score-row">
           ${renderScoreCell(p1, 'cp', 'CP', p1.score.cp, 'player1')}
           ${renderScoreCell(p1, 'secondary', 'Sec', p1.score.secondary, 'player1')}
@@ -8983,12 +9072,8 @@ function renderSimScoreboard(state) {
       </div>
       <div class="score-center">
         <div class="score-vs">VS</div>
-        <div class="turn-display">${esc(step?.turnLabel || 'Load armies to begin')}</div>
-        <div class="view-mode-bar">
-          <button type="button" class="view-mode-btn" data-action="set-view-mode" data-mode="companion">Companion</button>
-          <button type="button" class="view-mode-btn active" data-action="set-view-mode" data-mode="battleSim">Battle Map</button>
-          ${renderHelpQuestionBtn()}
-        </div>
+        <div class="turn-display">${esc(turnLabel)}</div>
+        ${renderViewModeBar()}
         ${state.started ? `
           <div class="sim-step-nav">
             <button type="button" data-action="prev-step" ${state.stepIndex === 0 ? 'disabled' : ''} aria-label="Previous step">←</button>
@@ -8997,7 +9082,7 @@ function renderSimScoreboard(state) {
           </div>` : ''}
       </div>
       <div class="score-player score-right">
-        <div class="score-player-name">${esc(p2.army?.name || p2.name)}</div>
+        <div class="score-player-name">${renderFirstTurnBadge(state, 'player2')}${esc(p2.army?.name || p2.name)}</div>
         <div class="score-row score-row-mirror">
           ${renderStratagemsBtn(state, 'player2')}
           ${renderBattleReadyBtn(state, 'player2')}
@@ -9013,15 +9098,71 @@ function renderSimScoreboard(state) {
     </header>`;
 }
 
+function renderNewRecruitHint() {
+  return `<p class="hint newrecruit-hint">Upload Army JSON from New Recruit. Create/export as JSON <a class="external-link" href="https://www.newrecruit.eu" target="_blank" rel="noopener noreferrer">here</a>.</p>`;
+}
+
+function renderSimPregame(state) {
+  if (state.started) return '';
+  const canStart = !!(state.player1.army && state.player2.army);
+  return `
+    <div class="sim-pregame">
+      <div class="sim-pregame-inner">
+        <h3>Start battle</h3>
+        <p class="sim-pregame-hint">Load both armies in the side panels, pick who takes the first turn, then begin.</p>
+        <div class="first-turn-picker sim-first-turn">
+          <h4>Who goes first?</h4>
+          <div class="first-turn-options">
+            <button type="button" class="first-turn-btn ${state.firstPlayer === 'player1' ? 'selected' : ''}" data-action="set-first-player" data-player="player1" ${state.player1.army ? '' : 'disabled'}>
+              <span class="first-turn-side">Left</span>
+              <strong>${esc(state.player1.army?.name || 'Player 1')}</strong>
+            </button>
+            <button type="button" class="first-turn-btn ${state.firstPlayer === 'player2' ? 'selected' : ''}" data-action="set-first-player" data-player="player2" ${state.player2.army ? '' : 'disabled'}>
+              <span class="first-turn-side">Right</span>
+              <strong>${esc(state.player2.army?.name || 'Player 2')}</strong>
+            </button>
+          </div>
+        </div>
+        <button type="button" class="btn-primary" data-action="start-game" ${canStart ? '' : 'disabled'}>
+          ${canStart ? 'Begin Battle' : 'Load both armies first'}
+        </button>
+      </div>
+    </div>`;
+}
+
+function renderSimLeaderAttach(unit, playerKey, armyUnits, state) {
+  if (!unitCanLead(unit)) return '';
+  const attachedId = state.leaderAttachments?.[playerKey]?.[unit.id] || '';
+  const label = unitIsSupport(unit) ? 'Support:' : 'Leading:';
+  const options = armyUnits
+    .filter((other) => other.id !== unit.id)
+    .map(
+      (other) =>
+        `<option value="${esc(other.id)}" ${other.id === attachedId ? 'selected' : ''}>${esc(other.name)}</option>`,
+    )
+    .join('');
+  return `<label class="leader-attach sim-leader-attach">
+    <em class="leader-label">${label}</em>
+    <select class="leader-select" data-action="set-leader-attach" data-player="${playerKey}" data-leader-id="${esc(unit.id)}">
+      <option value="">—</option>
+      ${options}
+    </select>
+  </label>`;
+}
+
 function renderSimArmyList(state, playerKey) {
   const player = state[playerKey];
   const army = player?.army;
+  const sideLabel = playerKey === 'player1' ? 'Player 1' : 'Player 2';
   if (!army) {
     return `
       <div class="sim-army-panel army-empty" data-player="${playerKey}">
-        <h3>${playerKey === 'player1' ? 'Player 1' : 'Player 2'}</h3>
-        <p class="hint">Load an army in Companion view first.</p>
-        <button type="button" class="btn-small" data-action="set-view-mode" data-mode="companion">Open Companion</button>
+        <h3>${sideLabel}</h3>
+        <label class="file-btn">
+          Load Army (.json)
+          <input type="file" accept=".json,application/json" data-action="load-army" data-player="${playerKey}" hidden />
+        </label>
+        ${renderNewRecruitHint()}
       </div>`;
   }
 
@@ -9071,9 +9212,14 @@ function renderSimArmyList(state, playerKey) {
       <div class="army-panel-header">
         <div>
           <h3>${esc(army.name)}</h3>
-          <p class="army-meta">${esc(army.faction)} · ${army.points} pts</p>
+          <p class="army-meta">${esc(army.faction)} · ${army.points}${army.pointsLimit ? `/${army.pointsLimit}` : ''} pts</p>
         </div>
+        <button type="button" class="btn-small" data-action="clear-army" data-player="${playerKey}">Clear</button>
       </div>
+      <label class="file-btn btn-small">
+        Replace
+        <input type="file" accept=".json,application/json" data-action="load-army" data-player="${playerKey}" hidden />
+      </label>
       <div class="sim-unit-list">${units}</div>
       ${renderSimUnitCard(state, playerKey)}
       ${renderSimCombatOverlay(state, playerKey)}
@@ -9174,11 +9320,13 @@ function renderSimUnitCard(state, playerKey) {
       const attachLine = attachedTo
         ? `<p class="combat-unit-attach">${unitIsSupport(unit) ? 'Supporting' : 'Leading'} ${esc(attachedTo.name)}</p>`
         : '';
+      const leaderAttach = renderSimLeaderAttach(unit, playerKey, army?.units || [], state);
       return `
       <div class="combat-unit-block">
         <div class="combat-unit-header">
           <h3>${esc(unit.name)}${roleTag ? ` <span class="combat-role-tag">${roleTag}</span>` : ''}</h3>
           <p class="combat-unit-meta">${remaining} models · ${woundsTaken}/${woundCap} wounds${unit.baseLabel ? ` · ${esc(unit.baseLabel)}` : ''}</p>
+          ${leaderAttach}
           ${attachLine}
           ${unit.statsLine ? `<p class="combat-unit-stats">${esc(unit.statsLine)}</p>` : ''}
         </div>
@@ -9504,12 +9652,17 @@ function renderBattleSim(root, state, dispatch) {
     }
   }
 
+  const companionFooterLink = SHOW_COMPANION_VIEW
+    ? `<button type="button" class="btn-link" data-action="set-view-mode" data-mode="companion">Companion</button>`
+    : '';
+
   root.innerHTML = `
     <div class="guide-app battle-sim-app">
       ${renderSimScoreboard(state)}
       <main class="battle-sim-main">
         ${renderSimArmyList(state, 'player1')}
         <div class="battle-sim-center">
+          ${renderSimPregame(state)}
           ${renderMapSvg(state, {
             layouts: getAllLayouts(),
             radii,
@@ -9521,8 +9674,8 @@ function renderBattleSim(root, state, dispatch) {
       </main>
       <footer class="guide-footer">
         <div class="guide-footer-bar">
-          Warhammer 40,000 Battle Companion · Battle Sim
-          <button type="button" class="btn-link" data-action="set-view-mode" data-mode="companion">Companion</button>
+          Warhammer 40,000 Battle Map
+          ${companionFooterLink}
           <button type="button" class="btn-link" data-action="open-help-guide">Instructions</button>
           <button type="button" class="btn-link" data-action="save-game">Save</button>
           <button type="button" class="btn-link" data-action="reset-game">Reset</button>
@@ -9542,11 +9695,51 @@ function bindBattleSimEvents(root, state, dispatch) {
   root.querySelectorAll('[data-action="set-view-mode"]').forEach((btn) => {
     btn.addEventListener('click', () => dispatch({ type: 'SET_VIEW_MODE', mode: btn.dataset.mode }));
   });
+  root.querySelector('[data-action="start-game"]')?.addEventListener('click', () => dispatch({ type: 'START_GAME' }));
   root.querySelector('[data-action="next-step"]')?.addEventListener('click', () => dispatch({ type: 'NEXT_STEP' }));
   root.querySelector('[data-action="prev-step"]')?.addEventListener('click', () => dispatch({ type: 'PREV_STEP' }));
   root.querySelector('[data-action="save-game"]')?.addEventListener('click', () => dispatch({ type: 'SAVE' }));
   root.querySelector('[data-action="reset-game"]')?.addEventListener('click', () => {
-    if (confirm('Reset the battle guide? Armies and scores will be cleared.')) dispatch({ type: 'RESET_GAME' });
+    if (confirm('Reset the battle? Armies and scores will be cleared.')) dispatch({ type: 'RESET_GAME' });
+  });
+
+  root.querySelectorAll('[data-action="set-first-player"]').forEach((btn) => {
+    btn.addEventListener('click', () => dispatch({ type: 'SET_FIRST_PLAYER', player: btn.dataset.player }));
+  });
+
+  root.querySelectorAll('[data-action="clear-army"]').forEach((btn) => {
+    btn.addEventListener('click', () => dispatch({ type: 'CLEAR_ARMY', player: btn.dataset.player }));
+  });
+
+  root.querySelectorAll('input[data-action="load-army"]').forEach((input) => {
+    input.addEventListener('change', (e) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        try {
+          dispatch({ type: 'LOAD_ARMY', player: input.dataset.player, json: reader.result });
+        } catch (err) {
+          alert('Failed to load roster: ' + err.message);
+        }
+      };
+      reader.readAsText(file);
+      e.target.value = '';
+    });
+  });
+
+  root.querySelectorAll('[data-action="set-leader-attach"]').forEach((sel) => {
+    sel.addEventListener('click', (e) => e.stopPropagation());
+    sel.addEventListener('mousedown', (e) => e.stopPropagation());
+    sel.addEventListener('change', (e) => {
+      e.stopPropagation();
+      dispatch({
+        type: 'SET_LEADER_ATTACHMENT',
+        player: sel.dataset.player,
+        leaderId: sel.dataset.leaderId,
+        attachedUnitId: sel.value || null,
+      });
+    });
   });
 
   root.querySelectorAll('[data-action="score"]').forEach((btn) => {
@@ -10937,7 +11130,8 @@ function restoreArmyPanelScroll(root, saved) {
 }
 
 function renderGuide(root, state, dispatch) {
-  if (state.viewMode === 'battleSim') {
+  // Map-first: Companion view is behind SHOW_COMPANION_VIEW
+  if (!SHOW_COMPANION_VIEW || state.viewMode === 'battleSim') {
     renderBattleSim(root, state, dispatch);
     return;
   }

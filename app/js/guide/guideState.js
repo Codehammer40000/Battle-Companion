@@ -34,6 +34,9 @@ import { computeLosFromCombat } from '../battleSim/battleLos.js';
 
 const STORAGE_KEY = 'wh40k-battle-guide-v2';
 
+/** Phase A map-first: Companion UI is hidden; keep code path for later hard-delete. */
+export const SHOW_COMPANION_VIEW = false;
+
 function emptyScore() {
   return { cp: 0, secondary: 0, primary: 0 };
 }
@@ -66,7 +69,7 @@ export function createInitialGuideState() {
     unitDetail: null,
     keywordRulePopup: null,
     started: false,
-    viewMode: 'companion',
+    viewMode: 'battleSim',
     battleMap: createEmptyBattleMap(),
     layoutImport: null,
   };
@@ -328,15 +331,15 @@ function awardCpForStepIndex(state, index) {
   const awardKey = String(index);
   if (state.cpAwarded?.[awardKey]) return state;
 
+  // Gain Core CP goes to the active player's Command phase only
+  const playerKey = step.player === 'p1' ? 'player1' : step.player === 'p2' ? 'player2' : null;
+  if (!playerKey || !state[playerKey]) return state;
+
   return {
     ...state,
-    player1: {
-      ...state.player1,
-      score: { ...state.player1.score, cp: state.player1.score.cp + 1 },
-    },
-    player2: {
-      ...state.player2,
-      score: { ...state.player2.score, cp: state.player2.score.cp + 1 },
+    [playerKey]: {
+      ...state[playerKey],
+      score: { ...state[playerKey].score, cp: state[playerKey].score.cp + 1 },
     },
     cpAwarded: { ...(state.cpAwarded || {}), [awardKey]: true },
   };
@@ -968,7 +971,8 @@ export function guideReducer(state, action) {
       return { ...state, keywordRulePopup: null };
 
     case 'SET_VIEW_MODE': {
-      const mode = action.mode === 'battleSim' ? 'battleSim' : 'companion';
+      let mode = action.mode === 'battleSim' ? 'battleSim' : 'companion';
+      if (!SHOW_COMPANION_VIEW) mode = 'battleSim';
       if (mode !== 'battleSim') return { ...state, viewMode: mode };
       const battleMap = migrateBattleMapModelIds(state.battleMap || createEmptyBattleMap());
       return { ...state, viewMode: mode, battleMap };
@@ -1558,7 +1562,7 @@ export function guideReducer(state, action) {
             saved.roundSnapshots && typeof saved.roundSnapshots === 'object' ? saved.roundSnapshots : {},
           combat: saved.combat && typeof saved.combat === 'object' ? saved.combat : null,
           started: !!saved.started,
-          viewMode: saved.viewMode === 'battleSim' ? 'battleSim' : 'companion',
+          viewMode: SHOW_COMPANION_VIEW && saved.viewMode === 'companion' ? 'companion' : 'battleSim',
           battleMap:
             saved.battleMap && typeof saved.battleMap === 'object'
               ? migrateBattleMapModelIds({

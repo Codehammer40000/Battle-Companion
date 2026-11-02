@@ -14,10 +14,12 @@ import {
   getUnitGroupInfo,
   getCombatDisplayUnits,
   unitIsSupport,
+  unitCanLead,
   getLeadersOnBodyguard,
   isGroupBattleShocked,
   getBattleShockActivePlayer,
   groupMustTakeBattleShockTest,
+  SHOW_COMPANION_VIEW,
 } from '../guide/guideState.js';
 import { getAllAbilitiesForStep } from '../guide/abilityMapper.js';
 import { getUnitDisplayAbilities, buildKeywordRuleIndex } from '../guide/rosterParser.js';
@@ -66,15 +68,36 @@ function renderBattleReadyBtn(state, playerKey) {
   return `<button type="button" class="battle-ready-btn ${active ? 'active' : ''}" data-action="toggle-battle-ready" data-player="${playerKey}">Battle Ready Army</button>`;
 }
 
+function renderFirstTurnBadge(state, key) {
+  return state.firstPlayer === key ? '<span class="first-turn-badge">Goes first</span>' : '';
+}
+
+function renderViewModeBar() {
+  if (!SHOW_COMPANION_VIEW) {
+    return `<div class="view-mode-bar">${renderHelpQuestionBtn()}</div>`;
+  }
+  return `
+    <div class="view-mode-bar">
+      <button type="button" class="view-mode-btn" data-action="set-view-mode" data-mode="companion">Companion</button>
+      <button type="button" class="view-mode-btn active" data-action="set-view-mode" data-mode="battleSim">Battle Map</button>
+      ${renderHelpQuestionBtn()}
+    </div>`;
+}
+
 function renderSimScoreboard(state) {
   const p1 = state.player1;
   const p2 = state.player2;
   const step = getCurrentStep(state);
+  const turnLabel = state.started
+    ? step?.turnLabel || ''
+    : p1.army && p2.army
+      ? 'Choose who goes first, then begin'
+      : 'Load both armies to begin';
 
   return `
     <header class="scoreboard sim-scoreboard">
       <div class="score-player score-left">
-        <div class="score-player-name">${esc(p1.army?.name || p1.name)}</div>
+        <div class="score-player-name">${esc(p1.army?.name || p1.name)}${renderFirstTurnBadge(state, 'player1')}</div>
         <div class="score-row">
           ${renderScoreCell(p1, 'cp', 'CP', p1.score.cp, 'player1')}
           ${renderScoreCell(p1, 'secondary', 'Sec', p1.score.secondary, 'player1')}
@@ -89,12 +112,8 @@ function renderSimScoreboard(state) {
       </div>
       <div class="score-center">
         <div class="score-vs">VS</div>
-        <div class="turn-display">${esc(step?.turnLabel || 'Load armies to begin')}</div>
-        <div class="view-mode-bar">
-          <button type="button" class="view-mode-btn" data-action="set-view-mode" data-mode="companion">Companion</button>
-          <button type="button" class="view-mode-btn active" data-action="set-view-mode" data-mode="battleSim">Battle Map</button>
-          ${renderHelpQuestionBtn()}
-        </div>
+        <div class="turn-display">${esc(turnLabel)}</div>
+        ${renderViewModeBar()}
         ${state.started ? `
           <div class="sim-step-nav">
             <button type="button" data-action="prev-step" ${state.stepIndex === 0 ? 'disabled' : ''} aria-label="Previous step">←</button>
@@ -103,7 +122,7 @@ function renderSimScoreboard(state) {
           </div>` : ''}
       </div>
       <div class="score-player score-right">
-        <div class="score-player-name">${esc(p2.army?.name || p2.name)}</div>
+        <div class="score-player-name">${renderFirstTurnBadge(state, 'player2')}${esc(p2.army?.name || p2.name)}</div>
         <div class="score-row score-row-mirror">
           ${renderStratagemsBtn(state, 'player2')}
           ${renderBattleReadyBtn(state, 'player2')}
@@ -119,15 +138,71 @@ function renderSimScoreboard(state) {
     </header>`;
 }
 
+function renderNewRecruitHint() {
+  return `<p class="hint newrecruit-hint">Upload Army JSON from New Recruit. Create/export as JSON <a class="external-link" href="https://www.newrecruit.eu" target="_blank" rel="noopener noreferrer">here</a>.</p>`;
+}
+
+function renderSimPregame(state) {
+  if (state.started) return '';
+  const canStart = !!(state.player1.army && state.player2.army);
+  return `
+    <div class="sim-pregame">
+      <div class="sim-pregame-inner">
+        <h3>Start battle</h3>
+        <p class="sim-pregame-hint">Load both armies in the side panels, pick who takes the first turn, then begin.</p>
+        <div class="first-turn-picker sim-first-turn">
+          <h4>Who goes first?</h4>
+          <div class="first-turn-options">
+            <button type="button" class="first-turn-btn ${state.firstPlayer === 'player1' ? 'selected' : ''}" data-action="set-first-player" data-player="player1" ${state.player1.army ? '' : 'disabled'}>
+              <span class="first-turn-side">Left</span>
+              <strong>${esc(state.player1.army?.name || 'Player 1')}</strong>
+            </button>
+            <button type="button" class="first-turn-btn ${state.firstPlayer === 'player2' ? 'selected' : ''}" data-action="set-first-player" data-player="player2" ${state.player2.army ? '' : 'disabled'}>
+              <span class="first-turn-side">Right</span>
+              <strong>${esc(state.player2.army?.name || 'Player 2')}</strong>
+            </button>
+          </div>
+        </div>
+        <button type="button" class="btn-primary" data-action="start-game" ${canStart ? '' : 'disabled'}>
+          ${canStart ? 'Begin Battle' : 'Load both armies first'}
+        </button>
+      </div>
+    </div>`;
+}
+
+function renderSimLeaderAttach(unit, playerKey, armyUnits, state) {
+  if (!unitCanLead(unit)) return '';
+  const attachedId = state.leaderAttachments?.[playerKey]?.[unit.id] || '';
+  const label = unitIsSupport(unit) ? 'Support:' : 'Leading:';
+  const options = armyUnits
+    .filter((other) => other.id !== unit.id)
+    .map(
+      (other) =>
+        `<option value="${esc(other.id)}" ${other.id === attachedId ? 'selected' : ''}>${esc(other.name)}</option>`,
+    )
+    .join('');
+  return `<label class="leader-attach sim-leader-attach">
+    <em class="leader-label">${label}</em>
+    <select class="leader-select" data-action="set-leader-attach" data-player="${playerKey}" data-leader-id="${esc(unit.id)}">
+      <option value="">—</option>
+      ${options}
+    </select>
+  </label>`;
+}
+
 function renderSimArmyList(state, playerKey) {
   const player = state[playerKey];
   const army = player?.army;
+  const sideLabel = playerKey === 'player1' ? 'Player 1' : 'Player 2';
   if (!army) {
     return `
       <div class="sim-army-panel army-empty" data-player="${playerKey}">
-        <h3>${playerKey === 'player1' ? 'Player 1' : 'Player 2'}</h3>
-        <p class="hint">Load an army in Companion view first.</p>
-        <button type="button" class="btn-small" data-action="set-view-mode" data-mode="companion">Open Companion</button>
+        <h3>${sideLabel}</h3>
+        <label class="file-btn">
+          Load Army (.json)
+          <input type="file" accept=".json,application/json" data-action="load-army" data-player="${playerKey}" hidden />
+        </label>
+        ${renderNewRecruitHint()}
       </div>`;
   }
 
@@ -177,9 +252,14 @@ function renderSimArmyList(state, playerKey) {
       <div class="army-panel-header">
         <div>
           <h3>${esc(army.name)}</h3>
-          <p class="army-meta">${esc(army.faction)} · ${army.points} pts</p>
+          <p class="army-meta">${esc(army.faction)} · ${army.points}${army.pointsLimit ? `/${army.pointsLimit}` : ''} pts</p>
         </div>
+        <button type="button" class="btn-small" data-action="clear-army" data-player="${playerKey}">Clear</button>
       </div>
+      <label class="file-btn btn-small">
+        Replace
+        <input type="file" accept=".json,application/json" data-action="load-army" data-player="${playerKey}" hidden />
+      </label>
       <div class="sim-unit-list">${units}</div>
       ${renderSimUnitCard(state, playerKey)}
       ${renderSimCombatOverlay(state, playerKey)}
@@ -280,11 +360,13 @@ function renderSimUnitCard(state, playerKey) {
       const attachLine = attachedTo
         ? `<p class="combat-unit-attach">${unitIsSupport(unit) ? 'Supporting' : 'Leading'} ${esc(attachedTo.name)}</p>`
         : '';
+      const leaderAttach = renderSimLeaderAttach(unit, playerKey, army?.units || [], state);
       return `
       <div class="combat-unit-block">
         <div class="combat-unit-header">
           <h3>${esc(unit.name)}${roleTag ? ` <span class="combat-role-tag">${roleTag}</span>` : ''}</h3>
           <p class="combat-unit-meta">${remaining} models · ${woundsTaken}/${woundCap} wounds${unit.baseLabel ? ` · ${esc(unit.baseLabel)}` : ''}</p>
+          ${leaderAttach}
           ${attachLine}
           ${unit.statsLine ? `<p class="combat-unit-stats">${esc(unit.statsLine)}</p>` : ''}
         </div>
@@ -610,12 +692,17 @@ export function renderBattleSim(root, state, dispatch) {
     }
   }
 
+  const companionFooterLink = SHOW_COMPANION_VIEW
+    ? `<button type="button" class="btn-link" data-action="set-view-mode" data-mode="companion">Companion</button>`
+    : '';
+
   root.innerHTML = `
     <div class="guide-app battle-sim-app">
       ${renderSimScoreboard(state)}
       <main class="battle-sim-main">
         ${renderSimArmyList(state, 'player1')}
         <div class="battle-sim-center">
+          ${renderSimPregame(state)}
           ${renderMapSvg(state, {
             layouts: getAllLayouts(),
             radii,
@@ -627,8 +714,8 @@ export function renderBattleSim(root, state, dispatch) {
       </main>
       <footer class="guide-footer">
         <div class="guide-footer-bar">
-          Warhammer 40,000 Battle Companion · Battle Sim
-          <button type="button" class="btn-link" data-action="set-view-mode" data-mode="companion">Companion</button>
+          Warhammer 40,000 Battle Map
+          ${companionFooterLink}
           <button type="button" class="btn-link" data-action="open-help-guide">Instructions</button>
           <button type="button" class="btn-link" data-action="save-game">Save</button>
           <button type="button" class="btn-link" data-action="reset-game">Reset</button>
@@ -648,11 +735,51 @@ function bindBattleSimEvents(root, state, dispatch) {
   root.querySelectorAll('[data-action="set-view-mode"]').forEach((btn) => {
     btn.addEventListener('click', () => dispatch({ type: 'SET_VIEW_MODE', mode: btn.dataset.mode }));
   });
+  root.querySelector('[data-action="start-game"]')?.addEventListener('click', () => dispatch({ type: 'START_GAME' }));
   root.querySelector('[data-action="next-step"]')?.addEventListener('click', () => dispatch({ type: 'NEXT_STEP' }));
   root.querySelector('[data-action="prev-step"]')?.addEventListener('click', () => dispatch({ type: 'PREV_STEP' }));
   root.querySelector('[data-action="save-game"]')?.addEventListener('click', () => dispatch({ type: 'SAVE' }));
   root.querySelector('[data-action="reset-game"]')?.addEventListener('click', () => {
-    if (confirm('Reset the battle guide? Armies and scores will be cleared.')) dispatch({ type: 'RESET_GAME' });
+    if (confirm('Reset the battle? Armies and scores will be cleared.')) dispatch({ type: 'RESET_GAME' });
+  });
+
+  root.querySelectorAll('[data-action="set-first-player"]').forEach((btn) => {
+    btn.addEventListener('click', () => dispatch({ type: 'SET_FIRST_PLAYER', player: btn.dataset.player }));
+  });
+
+  root.querySelectorAll('[data-action="clear-army"]').forEach((btn) => {
+    btn.addEventListener('click', () => dispatch({ type: 'CLEAR_ARMY', player: btn.dataset.player }));
+  });
+
+  root.querySelectorAll('input[data-action="load-army"]').forEach((input) => {
+    input.addEventListener('change', (e) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        try {
+          dispatch({ type: 'LOAD_ARMY', player: input.dataset.player, json: reader.result });
+        } catch (err) {
+          alert('Failed to load roster: ' + err.message);
+        }
+      };
+      reader.readAsText(file);
+      e.target.value = '';
+    });
+  });
+
+  root.querySelectorAll('[data-action="set-leader-attach"]').forEach((sel) => {
+    sel.addEventListener('click', (e) => e.stopPropagation());
+    sel.addEventListener('mousedown', (e) => e.stopPropagation());
+    sel.addEventListener('change', (e) => {
+      e.stopPropagation();
+      dispatch({
+        type: 'SET_LEADER_ATTACHMENT',
+        player: sel.dataset.player,
+        leaderId: sel.dataset.leaderId,
+        attachedUnitId: sel.value || null,
+      });
+    });
   });
 
   root.querySelectorAll('[data-action="score"]').forEach((btn) => {

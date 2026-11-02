@@ -16,6 +16,7 @@ import {
   getLeadersOnBodyguard,
   isCombatActionStep,
   getCombatDisplayUnits,
+  SHOW_COMPANION_VIEW,
 } from './guide/guideState.js';
 import { getPhaseGroupLabel, MAX_BATTLE_ROUNDS } from './guide/phaseFlow.js';
 import { getAllAbilitiesForStep, listAllAbilities } from './guide/abilityMapper.js';
@@ -892,7 +893,8 @@ function restoreArmyPanelScroll(root, saved) {
 }
 
 export function renderGuide(root, state, dispatch) {
-  if (state.viewMode === 'battleSim') {
+  // Map-first: Companion view is behind SHOW_COMPANION_VIEW
+  if (!SHOW_COMPANION_VIEW || state.viewMode === 'battleSim') {
     renderBattleSim(root, state, dispatch);
     return;
   }

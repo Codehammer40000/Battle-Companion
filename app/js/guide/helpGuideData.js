@@ -14,10 +14,9 @@ export const HELP_GUIDE_SECTIONS = [
         title: 'What this app is',
         keywords: 'overview companion battle map browser play aid',
         body: [
-          'Battle Companion is a browser play aid for Warhammer 40,000 tabletop games.',
-          'Use Companion to walk Core Rules phases, track scores, and see ability reminders.',
-          'Use Battle Map to place models on terrain layouts, check ranges, and preview line of sight.',
-          'Play on the physical table; use this app as your digital reference and tracker.',
+          'Battle Map is the main play surface: load armies, deploy models, track scores, and advance phases.',
+          'Place models on terrain layouts, check ranges, and preview line of sight during shooting.',
+          'Reminder! chips surface army/unit rules for the current phase. Stratagem decks are available from the scoreboard.',
         ],
       },
       {
@@ -36,10 +35,10 @@ export const HELP_GUIDE_SECTIONS = [
         title: 'Upload army lists (.json)',
         keywords: 'upload army roster json newrecruit load replace clear',
         body: [
-          'In Companion, use Load Army (.json) on Player 1 and Player 2.',
+          'On each side panel, use Load Army (.json) for Player 1 and Player 2.',
           'Export your list as JSON from New Recruit (newrecruit.eu) or a compatible army builder.',
-          'After loading, you can Replace a side’s list or Clear it from the army panel.',
-          'Load both armies before Begin Battle Guide. Battle Map uses the same loaded armies.',
+          'After loading, use Replace or Clear on that side’s panel header.',
+          'Load both armies, pick who goes first in the center Start battle card, then Begin Battle.',
         ],
       },
       {
@@ -66,13 +65,13 @@ export const HELP_GUIDE_SECTIONS = [
       },
       {
         id: 'gen-views',
-        title: 'Companion vs Battle Map',
-        keywords: 'view mode companion battle map switch',
+        title: 'Battle Map layout',
+        keywords: 'view mode battle map panels deploy',
         body: [
-          'Use the Companion / Battle Map buttons in the center of the top bar to switch views.',
-          'Companion: phase steps, army cards, ability reminders, checklists.',
-          'Battle Map: terrain layout, deploy/move models, ranges, LoS during shooting.',
-          'Scores, armies, stratagems, and guide progress are shared between views.',
+          'The app opens on the Battle Map. Side panels hold armies; the center is the board.',
+          'Deploy/Withdraw units, drag models, rotate Frame hulls with the yellow handle when selected.',
+          'Use ← / → under the turn label to advance phases after you Begin Battle.',
+          'Scores, Reminder!, and stratagems stay in the top bar while you play on the map.',
         ],
       },
       {
@@ -184,8 +183,8 @@ export const HELP_GUIDE_SECTIONS = [
         title: 'Open Battle Map',
         keywords: 'battle map view deploy companion first',
         body: [
-          'Load armies in Companion first, then switch to Battle Map from the top bar or footer.',
-          'Side panels list each army. Empty sides send you back to Companion to load lists.',
+          'Load armies from the side panels on the Battle Map (Load Army .json).',
+          'Empty sides show a Load Army button. Replace/Clear sit in the panel header once loaded.',
         ],
       },
       {
