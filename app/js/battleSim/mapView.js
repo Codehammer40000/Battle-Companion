@@ -298,29 +298,32 @@ export function renderMapSvg(state, options = {}) {
         </details>
       </div>
       ${options.reminderHtml || ''}
-      <div class="battle-map-canvas-wrap">
-        <svg class="battle-map-svg" width="100%" height="100%" viewBox="0 0 ${svgW} ${svgH}" data-board-w="${board.width}" data-board-h="${board.height}" data-ppi="${PPI}" data-pad="${pad}">
-          <rect x="0" y="0" width="${svgW}" height="${svgH}" fill="#0c0c0c" />
-          <g class="battle-map-world" transform="${transform}">
-            <rect x="0" y="0" width="${toPx(board.width)}" height="${toPx(board.height)}" fill="#111" stroke="#666" stroke-width="2" />
-            ${renderGrid(board.width, board.height)}
-            ${renderDeploymentZones(layout.deploymentZones)}
-            ${renderTerrainAreas(layout.terrainAreas)}
-            ${renderTerrainFeatures(layout.terrainFeatures)}
-            ${renderRadii(options.radii)}
-            ${renderModels(
-              state.battleMap?.unitsOnMap,
-              state.battleMap?.selectedUnitKey,
-              state.battleMap?.selectedModelId,
-              {
-                ...(options.modelHighlights || {}),
-                losCanSeeIds: new Set(state.battleMap?.losPreview?.canSeeModelIds || []),
-              },
-            )}
-            ${renderSpecialMarkers(state.battleMap?.specialMarkers, state.battleMap?.selectedModelId)}
-            ${renderLos(state.battleMap?.losPreview)}
-          </g>
-        </svg>
+      <div class="battle-map-body">
+        <div class="battle-map-canvas-wrap">
+          <svg class="battle-map-svg" width="100%" height="100%" viewBox="0 0 ${svgW} ${svgH}" data-board-w="${board.width}" data-board-h="${board.height}" data-ppi="${PPI}" data-pad="${pad}">
+            <rect x="0" y="0" width="${svgW}" height="${svgH}" fill="#0c0c0c" />
+            <g class="battle-map-world" transform="${transform}">
+              <rect x="0" y="0" width="${toPx(board.width)}" height="${toPx(board.height)}" fill="#111" stroke="#666" stroke-width="2" />
+              ${renderGrid(board.width, board.height)}
+              ${renderDeploymentZones(layout.deploymentZones)}
+              ${renderTerrainAreas(layout.terrainAreas)}
+              ${renderTerrainFeatures(layout.terrainFeatures)}
+              ${renderRadii(options.radii)}
+              ${renderModels(
+                state.battleMap?.unitsOnMap,
+                state.battleMap?.selectedUnitKey,
+                state.battleMap?.selectedModelId,
+                {
+                  ...(options.modelHighlights || {}),
+                  losCanSeeIds: new Set(state.battleMap?.losPreview?.canSeeModelIds || []),
+                },
+              )}
+              ${renderSpecialMarkers(state.battleMap?.specialMarkers, state.battleMap?.selectedModelId)}
+              ${renderLos(state.battleMap?.losPreview)}
+            </g>
+          </svg>
+        </div>
+        ${options.bodyExtras || ''}
       </div>
     </div>`;
 }

@@ -648,6 +648,15 @@ function getSelectedRadii(state) {
   return radii;
 }
 
+function renderReminderChip(a) {
+  const side = a.player === 'p1' ? 'p1' : 'p2';
+  return `
+    <button type="button" class="sim-reminder-chip ${side}" data-action="show-reminder" data-rule-name="${esc(a.ruleName)}" data-rule-desc="${esc(a.description)}" data-unit-name="${esc(a.unitName)}">
+      <span class="sim-reminder-unit">${esc(a.unitName)}</span>
+      <span class="sim-reminder-rule">${esc(a.ruleName)}</span>
+    </button>`;
+}
+
 function renderReminderBar(state) {
   if (!state.started) {
     return `<div class="sim-reminder-bar sim-reminder-under-toolbar"><span class="sim-reminder-label">Reminder!</span><span class="sim-reminder-empty">Start the battle guide to see phase reminders</span></div>`;
@@ -658,20 +667,16 @@ function renderReminderBar(state) {
     return `<div class="sim-reminder-bar sim-reminder-under-toolbar"><span class="sim-reminder-label">Reminder!</span><span class="sim-reminder-empty">No phase reminders</span></div>`;
   }
 
-  const chips = abilities
-    .map(
-      (a) => `
-      <button type="button" class="sim-reminder-chip ${a.player === 'p1' ? 'p1' : 'p2'}" data-action="show-reminder" data-rule-name="${esc(a.ruleName)}" data-rule-desc="${esc(a.description)}" data-unit-name="${esc(a.unitName)}">
-        <span class="sim-reminder-unit">${esc(a.unitName)}</span>
-        <span class="sim-reminder-rule">${esc(a.ruleName)}</span>
-      </button>`,
-    )
-    .join('');
+  const p1Chips = abilities.filter((a) => a.player === 'p1').map(renderReminderChip).join('');
+  const p2Chips = abilities.filter((a) => a.player !== 'p1').map(renderReminderChip).join('');
 
   return `
     <div class="sim-reminder-bar sim-reminder-under-toolbar">
       <span class="sim-reminder-label">Reminder!</span>
-      <div class="sim-reminder-chips">${chips}</div>
+      <div class="sim-reminder-lanes">
+        <div class="sim-reminder-chips sim-reminder-chips-p1">${p1Chips || '<span class="sim-reminder-lane-empty"></span>'}</div>
+        <div class="sim-reminder-chips sim-reminder-chips-p2">${p2Chips || '<span class="sim-reminder-lane-empty"></span>'}</div>
+      </div>
     </div>`;
 }
 
@@ -856,6 +861,10 @@ export function renderBattleSim(root, state, dispatch) {
   }
 
   const drawerOpen = isArmyDrawerOpen('player1', state) || isArmyDrawerOpen('player2', state);
+  const mapBodyExtras = `
+    ${renderSimArmyList(state, 'player1')}
+    ${renderSimArmyList(state, 'player2')}
+    <button type="button" class="sim-drawer-scrim ${drawerOpen ? 'is-visible' : ''}" data-action="close-army-drawers" aria-label="Close army panels" tabindex="-1"></button>`;
 
   root.innerHTML = `
     <div class="guide-app battle-sim-app">
@@ -867,12 +876,10 @@ export function renderBattleSim(root, state, dispatch) {
             radii,
             reminderHtml: renderReminderBar(state),
             modelHighlights: collectModelHighlights(state),
+            bodyExtras: mapBodyExtras,
           })}
           ${renderSimPregame(state)}
         </div>
-        ${renderSimArmyList(state, 'player1')}
-        ${renderSimArmyList(state, 'player2')}
-        <button type="button" class="sim-drawer-scrim ${drawerOpen ? 'is-visible' : ''}" data-action="close-army-drawers" aria-label="Close army panels" tabindex="-1"></button>
       </main>
       ${renderReminderPopup(state)}
       ${renderKeywordRulePopover(state)}
