@@ -1,5 +1,4 @@
 import { buildFullGuideFlow } from './phaseFlow.js';
-import { extractArmyAbilities, injectAbilitiesIntoFlow } from './abilityMapper.js';
 import {
   parseRosterJson,
   normalizeArmy,
@@ -223,8 +222,12 @@ export function groupMustTakeBattleShockTest(state, playerKey, groupInfo, army) 
 
 export function getBattleShockActivePlayer(state) {
   const step = state.flow[state.stepIndex];
-  if (!step?.id?.endsWith('-cmd-shock')) return null;
-  return step.player === 'p1' ? 'player1' : 'player2';
+  if (!step?.player) return null;
+  // Coarse Command Phase (or legacy *-cmd-shock micro-step)
+  if (step.phase === 'command' || step.id?.endsWith('-cmd-shock') || step.id?.endsWith('-cmd')) {
+    return step.player === 'p1' ? 'player1' : 'player2';
+  }
+  return null;
 }
 
 function reorderForLeaderAttachment(units, leaderId, attachedId) {
@@ -325,21 +328,29 @@ function preserveStepIndex(state, flow) {
   return idx >= 0 ? idx : state.stepIndex;
 }
 
+function isGainCoreCpStep(step) {
+  if (!step) return false;
+  if (step.id?.endsWith('-cmd-cp')) return true;
+  // Coarse Command Phase step (map-first clock)
+  return step.phase === 'command' && (step.id?.endsWith('-cmd') || /cmd-cp/.test(step.id || ''));
+}
+
 function awardCpForStepIndex(state, index) {
   const step = state.flow[index];
-  if (!step?.id?.endsWith('-cmd-cp')) return state;
+  if (!isGainCoreCpStep(step)) return state;
   const awardKey = String(index);
   if (state.cpAwarded?.[awardKey]) return state;
 
-  // Gain Core CP goes to the active player's Command phase only
-  const playerKey = step.player === 'p1' ? 'player1' : step.player === 'p2' ? 'player2' : null;
-  if (!playerKey || !state[playerKey]) return state;
-
+  // Both players gain 1 Core CP — reactive currency for the player whose turn it is not
   return {
     ...state,
-    [playerKey]: {
-      ...state[playerKey],
-      score: { ...state[playerKey].score, cp: state[playerKey].score.cp + 1 },
+    player1: {
+      ...state.player1,
+      score: { ...state.player1.score, cp: state.player1.score.cp + 1 },
+    },
+    player2: {
+      ...state.player2,
+      score: { ...state.player2.score, cp: state.player2.score.cp + 1 },
     },
     cpAwarded: { ...(state.cpAwarded || {}), [awardKey]: true },
   };
@@ -349,18 +360,8 @@ export function rebuildFlow(state) {
   const p1Name = state.player1.army?.name || state.player1.name;
   const p2Name = state.player2.army?.name || state.player2.name;
   const firstPlayer = state.firstPlayer || 'player1';
-  let flow = buildFullGuideFlow(p1Name, p2Name, firstPlayer);
-
-  if (state.player1.army) {
-    const abilities = extractArmyAbilities(state.player1.army);
-    flow = injectAbilitiesIntoFlow(flow, abilities, 'p1');
-  }
-  if (state.player2.army) {
-    const abilities = extractArmyAbilities(state.player2.army);
-    flow = injectAbilitiesIntoFlow(flow, abilities, 'p2');
-  }
-
-  return flow;
+  // Reminder! uses getAllAbilitiesForStep at render time (no inject into flow steps)
+  return buildFullGuideFlow(p1Name, p2Name, firstPlayer);
 }
 
 function syncBattleMapModels(state) {

@@ -276,8 +276,8 @@ export const HELP_GUIDE_SECTIONS = [
         title: 'Step controls on Battle Map',
         keywords: 'next previous step nav guide progress',
         body: [
-          'When the guide has started, Battle Map shows compact ← / → step controls under the turn label.',
-          'You can keep advancing the Companion guide while looking at the map.',
+          'After Begin Battle, use ← / → under the turn label to advance setup and phases (Command, Movement, Shooting, Charge, Fight).',
+          'Each Command Phase awards 1 Core CP to both players. Reminder! chips update for the current phase.',
         ],
       },
     ],

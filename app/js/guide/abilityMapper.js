@@ -158,6 +158,7 @@ const PHASE_SLOTS = [
   },
 ];
 
+/** Coarse map-first clock: micro-slots map onto the single phase step. */
 const SLOT_TO_STEP_SUFFIX = {
   'setup-pre-battle': 'setup-pre-battle',
   'setup-deploy': 'setup-deploy',
@@ -165,23 +166,23 @@ const SLOT_TO_STEP_SUFFIX = {
   'setup-formations': 'setup-formations',
   'br-start': (round) => `br${round}-start`,
   'turn-start': (player) => `${player}-turn-start`,
-  'cmd-start': (player) => `${player}-cmd-start`,
-  'cmd-end': (player) => `${player}-cmd-end`,
-  cmd: (player) => `${player}-cmd-abilities`,
-  'mov-start': (player) => `${player}-mov-start`,
-  mov: (player) => `${player}-mov-units`,
-  'mov-end': (player) => `${player}-mov-end`,
-  'shoot-start': (player) => `${player}-shoot-start`,
+  'cmd-start': (player) => `${player}-cmd`,
+  'cmd-end': (player) => `${player}-cmd`,
+  cmd: (player) => `${player}-cmd`,
+  'mov-start': (player) => `${player}-mov`,
+  mov: (player) => `${player}-mov`,
+  'mov-end': (player) => `${player}-mov`,
+  'shoot-start': (player) => `${player}-shoot`,
   shoot: (player) => `${player}-shoot`,
-  'shoot-end': (player) => `${player}-shoot-end`,
-  'charge-start': (player) => `${player}-charge-start`,
+  'shoot-end': (player) => `${player}-shoot`,
+  'charge-start': (player) => `${player}-charge`,
   charge: (player) => `${player}-charge`,
-  'charge-end': (player) => `${player}-charge-end`,
-  'fight-start': (player) => `${player}-fight-start`,
-  'pile-in': (player) => `${player}-pile-in`,
+  'charge-end': (player) => `${player}-charge`,
+  'fight-start': (player) => `${player}-fight`,
+  'pile-in': (player) => `${player}-fight`,
   fight: (player) => `${player}-fight`,
-  consolidate: (player) => `${player}-consolidate`,
-  'fight-end': (player) => `${player}-fight-end`,
+  consolidate: (player) => `${player}-fight`,
+  'fight-end': (player) => `${player}-fight`,
   'turn-end': (player) => `${player}-turn-end`,
   'br-end': (round) => `br${round}-end`,
   passive: (player) => `${player}-turn-start`,
@@ -358,11 +359,14 @@ export function getPhaseContext(step) {
   if (id.startsWith('br') && id.endsWith('-end')) return { kind: 'phase', prefix: 'br', broad: true };
   if (id.endsWith('-turn-start')) return { kind: 'phase', prefix: 'turn', broad: true };
   if (id.endsWith('-turn-end')) return { kind: 'phase', prefix: 'turn', broad: true };
-  if (/-cmd-/.test(id)) return { kind: 'phase', prefix: 'cmd', broad: false };
-  if (/-mov-/.test(id)) return { kind: 'phase', prefix: 'mov', broad: true };
+  // Coarse ids: p1-cmd / p1-mov / …  Legacy micro-ids: p1-cmd-start, p1-mov-units, …
+  if (id.endsWith('-cmd') || /-cmd-/.test(id)) return { kind: 'phase', prefix: 'cmd', broad: true };
+  if (id.endsWith('-mov') || /-mov-/.test(id)) return { kind: 'phase', prefix: 'mov', broad: true };
   if (/-shoot/.test(id)) return { kind: 'phase', prefix: 'shoot', broad: true };
   if (/-charge/.test(id)) return { kind: 'phase', prefix: 'charge', broad: true };
-  if (/-fight|-pile-in|-consolidate/.test(id)) return { kind: 'phase', prefix: 'fight', broad: true };
+  if (id.endsWith('-fight') || /-fight|-pile-in|-consolidate/.test(id)) {
+    return { kind: 'phase', prefix: 'fight', broad: true };
+  }
 
   return null;
 }
@@ -391,13 +395,14 @@ function unitAbilityMatchesStep(abilitySlot, step, ctx) {
   const abPrefix = abilityPhasePrefix(abilitySlot);
   if (abPrefix !== ctx.prefix) return false;
 
+  // Coarse phase clock: all slots for that phase show on the single phase step
+  if (ctx.broad) return true;
+
   if (ctx.prefix === 'cmd') {
     if (abilitySlot === 'cmd-end') return step.id.endsWith('-cmd-end');
     if (abilitySlot === 'cmd-start') return step.id.endsWith('-cmd-start');
-    return step.id.includes('-cmd-');
+    return step.id.includes('-cmd');
   }
-
-  if (ctx.broad) return true;
 
   return false;
 }
