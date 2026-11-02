@@ -8,7 +8,7 @@ function showBootError(err) {
   if (root) {
     root.innerHTML =
       '<div style="padding:2rem;font-family:monospace;color:#f87171;min-height:100vh">' +
-      '<h2 style="color:#fbbf24">Battle Companion failed to start</h2>' +
+      '<h2 style="color:#fbbf24">Battle Map failed to start</h2>' +
       '<p>' + msg + '</p>' + stack +
       '<p style="color:#a8a29e;margin-top:1rem">Try running build.bat, then launch-offline.bat again.</p></div>';
   }

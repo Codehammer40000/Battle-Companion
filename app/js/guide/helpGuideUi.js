@@ -1,5 +1,5 @@
 /**
- * In-app Instructions / Guides panel — searchable, shared by Companion + Battle Map.
+ * In-app Instructions / Guides panel — searchable Battle Map help.
  */
 
 import { HELP_GUIDE_SECTIONS, searchHelpGuide } from './helpGuideData.js';
@@ -69,7 +69,7 @@ export function renderHelpGuidePanel(state) {
         <div class="help-guide-header">
           <div>
             <h2 id="help-guide-title">Instructions / Guides</h2>
-            <p class="help-guide-sub">Searchable help for General setup, Companion, and Battle Map.</p>
+            <p class="help-guide-sub">Searchable help for General, Play, and Battle Map.</p>
           </div>
           <button type="button" class="unit-modal-close" data-action="close-help-guide" aria-label="Close">×</button>
         </div>

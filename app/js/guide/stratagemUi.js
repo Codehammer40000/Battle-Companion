@@ -1,5 +1,5 @@
 /**
- * Stratagem deck button + panel UI shared by Companion and Battle Map views.
+ * Stratagem deck button + panel UI for Battle Map.
  */
 
 import { parseStratagemHtml } from './stratagemParser.js';

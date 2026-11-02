@@ -33,9 +33,6 @@ import { computeLosFromCombat } from '../battleSim/battleLos.js';
 
 const STORAGE_KEY = 'wh40k-battle-guide-v2';
 
-/** Phase A map-first: Companion UI is hidden; keep code path for later hard-delete. */
-export const SHOW_COMPANION_VIEW = false;
-
 function emptyScore() {
   return { cp: 0, secondary: 0, primary: 0 };
 }
@@ -1001,11 +998,9 @@ export function guideReducer(state, action) {
       return { ...state, keywordRulePopup: null };
 
     case 'SET_VIEW_MODE': {
-      let mode = action.mode === 'battleSim' ? 'battleSim' : 'companion';
-      if (!SHOW_COMPANION_VIEW) mode = 'battleSim';
-      if (mode !== 'battleSim') return { ...state, viewMode: mode };
+      // Map-only shell — ignore companion requests
       const battleMap = migrateBattleMapModelIds(state.battleMap || createEmptyBattleMap());
-      return { ...state, viewMode: mode, battleMap };
+      return { ...state, viewMode: 'battleSim', battleMap };
     }
 
     case 'MAP_MIGRATE_MODEL_IDS': {
@@ -1592,7 +1587,7 @@ export function guideReducer(state, action) {
             saved.roundSnapshots && typeof saved.roundSnapshots === 'object' ? saved.roundSnapshots : {},
           combat: saved.combat && typeof saved.combat === 'object' ? saved.combat : null,
           started: !!saved.started,
-          viewMode: SHOW_COMPANION_VIEW && saved.viewMode === 'companion' ? 'companion' : 'battleSim',
+          viewMode: 'battleSim',
           battleMap:
             saved.battleMap && typeof saved.battleMap === 'object'
               ? migrateBattleMapModelIds({

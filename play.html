@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Warhammer 40,000 - Battle Companion</title>
+    <title>Warhammer 40,000 - Battle Map</title>
     <style>
 :root {
   --bg: #0c0a09;
@@ -1207,84 +1207,7 @@ body { min-height: 100vh; }
   color: #e8c468;
 }
 
-/* Guide center */
-.guide-center {
-  padding: 1rem;
-  overflow: hidden;
-  background: #0a0807;
-  flex: 1;
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
-
-.guide-center .step-content {
-  flex: 1;
-  overflow-y: auto;
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
-
-.guide-welcome {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  min-height: 400px;
-  gap: 1rem;
-}
-
-.guide-welcome h2 {
-  font-family: 'Cinzel', serif;
-  color: var(--gold);
-}
-
-.welcome-list {
-  text-align: left;
-  color: var(--muted);
-  font-size: 0.85rem;
-  line-height: 1.8;
-}
-
-.step-card {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 1.25rem;
-  flex-shrink: 0;
-}
-
-.step-phase {
-  font-size: 0.7rem;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  color: var(--gold);
-  margin-bottom: 0.35rem;
-}
-
-.step-title {
-  font-family: 'Cinzel', serif;
-  font-size: 1.25rem;
-  margin-bottom: 0.75rem;
-}
-
-.step-detail {
-  font-size: 0.9rem;
-  line-height: 1.55;
-  color: var(--text);
-}
-
-.step-ref {
-  font-size: 0.7rem;
-  color: var(--muted);
-  margin-top: 0.75rem;
-  font-style: italic;
-}
-
+/* First-turn picker (map pregame) */
 .first-turn-picker {
   margin-top: 1rem;
   padding: 1rem;
@@ -1354,313 +1277,7 @@ body { min-height: 100vh; }
   border-top: 1px solid var(--border);
 }
 
-.ability-list h4 {
-  font-size: 0.75rem;
-  color: var(--gold);
-  margin-bottom: 0.5rem;
-  text-transform: uppercase;
-}
-
-.ability-reminder {
-  background: var(--surface-2);
-  border-left: 3px solid var(--muted);
-  padding: 0.6rem 0.75rem;
-  margin-bottom: 0.5rem;
-  border-radius: 0 4px 4px 0;
-  font-size: 0.78rem;
-}
-
-.ability-reminder.p1 { border-left-color: var(--p1); }
-.ability-reminder.p2 { border-left-color: var(--p2); }
-
-.ability-header { margin-bottom: 0.25rem; display: flex; align-items: center; flex-wrap: wrap; gap: 0.35rem; }
-.ability-army-tag {
-  font-size: 0.55rem;
-  padding: 0.05rem 0.3rem;
-  border-radius: 2px;
-  background: rgba(201, 162, 39, 0.2);
-  color: var(--gold);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-.ability-timing-tag {
-  font-size: 0.55rem;
-  padding: 0.05rem 0.3rem;
-  border-radius: 2px;
-  background: rgba(120, 180, 220, 0.2);
-  color: #8ec8f0;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-.ability-timing-tag.opponent {
-  background: rgba(220, 140, 100, 0.2);
-  color: #e8a87c;
-}
-.ability-player {
-  display: inline-block;
-  font-size: 0.6rem;
-  font-weight: 700;
-  padding: 0.1rem 0.35rem;
-  border-radius: 2px;
-  margin-right: 0.35rem;
-  background: var(--border);
-}
-
-.step-nav {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  flex-shrink: 0;
-}
-
-.step-nav-top {
-  padding-bottom: 0.25rem;
-  border-bottom: 1px solid var(--border);
-  margin-bottom: 0;
-}
-
-.step-nav button {
-  padding: 0.55rem 1.1rem;
-  min-width: 120px;
-  background: var(--surface-2);
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  color: var(--text);
-  cursor: pointer;
-  font-size: 0.85rem;
-  font-weight: 600;
-}
-
-.step-nav button:disabled { opacity: 0.35; cursor: not-allowed; }
-
 .step-counter { font-size: 0.8rem; color: var(--muted); }
-
-.checklist-panel {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 0.75rem;
-}
-
-.checklist-bottom {
-  width: 100%;
-  margin: 0;
-  border-radius: 0;
-  border-left: none;
-  border-right: none;
-  border-bottom: none;
-}
-
-.unit-phase-checklist {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 1rem;
-  flex-shrink: 0;
-}
-
-.unit-phase-checklist h4 {
-  font-size: 0.85rem;
-  color: var(--gold);
-  margin-bottom: 0.35rem;
-}
-
-.unit-phase-hint {
-  font-size: 0.72rem;
-  color: var(--muted);
-  margin-bottom: 0.75rem;
-}
-
-.unit-phase-buttons {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-  gap: 0.5rem;
-}
-
-.unit-phase-btn {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 0.2rem;
-  padding: 0.75rem 0.9rem;
-  min-height: 56px;
-  background: var(--surface-2);
-  border: 2px solid var(--border);
-  border-radius: 6px;
-  color: var(--text);
-  cursor: pointer;
-  text-align: left;
-  transition: background 0.15s, border-color 0.15s;
-}
-
-.unit-phase-btn:hover {
-  border-color: var(--gold);
-  background: var(--surface-3);
-}
-
-.unit-phase-btn.used {
-  background: rgba(76, 140, 90, 0.25);
-  border-color: var(--green);
-  color: #b8e0c0;
-}
-
-.unit-phase-btn-name {
-  font-size: 0.82rem;
-  font-weight: 600;
-  line-height: 1.25;
-}
-
-.unit-phase-btn-meta {
-  font-size: 0.65rem;
-  color: var(--muted);
-}
-
-.unit-phase-btn.used .unit-phase-btn-meta {
-  color: #8ec89a;
-}
-
-.formations-deep-strike {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 1rem;
-  flex-shrink: 0;
-}
-
-.formations-deep-strike h4 {
-  font-size: 0.85rem;
-  color: var(--gold);
-  margin-bottom: 0.35rem;
-}
-
-.formations-ds-hint {
-  font-size: 0.72rem;
-  color: var(--muted);
-  margin-bottom: 0.75rem;
-}
-
-.formations-ds-players {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0.75rem;
-}
-
-.formations-ds-player h5 {
-  font-size: 0.78rem;
-  color: var(--text);
-  margin-bottom: 0.35rem;
-}
-
-.formations-ds-list {
-  margin: 0;
-  padding-left: 1.1rem;
-  font-size: 0.78rem;
-  line-height: 1.5;
-}
-
-.formations-ds-unit {
-  color: var(--text);
-}
-
-.formations-ds-empty {
-  margin: 0;
-  font-size: 0.72rem;
-  color: var(--muted);
-  font-style: italic;
-}
-
-/* Combat UI (shoot / fight action steps) */
-.combat-ui {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 1rem;
-  flex-shrink: 0;
-}
-
-.combat-ui h4 {
-  font-size: 0.85rem;
-  color: var(--gold);
-  margin-bottom: 0.35rem;
-}
-
-.combat-ui-hint {
-  font-size: 0.72rem;
-  color: var(--muted);
-  margin-bottom: 0.75rem;
-}
-
-.combat-ui-buttons {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-  gap: 0.5rem;
-}
-
-.combat-btn {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 0.2rem;
-  padding: 0.75rem 0.9rem;
-  min-height: 56px;
-  background: var(--surface-2);
-  border: 2px solid var(--border);
-  border-radius: 6px;
-  color: var(--text);
-  cursor: pointer;
-  text-align: left;
-  transition: background 0.15s, border-color 0.15s;
-}
-
-.combat-btn:hover {
-  border-color: var(--gold);
-  background: var(--surface-3);
-}
-
-.combat-btn-active.selected {
-  background: rgba(76, 140, 90, 0.25);
-  border-color: var(--green);
-  color: #b8e0c0;
-}
-
-.combat-btn-target.selected {
-  background: rgba(180, 60, 60, 0.25);
-  border-color: #c44;
-  color: #e8b0b0;
-}
-
-.combat-btn-name {
-  font-size: 0.82rem;
-  font-weight: 600;
-  line-height: 1.25;
-}
-
-.combat-btn-meta {
-  font-size: 0.65rem;
-  color: var(--muted);
-}
-
-.combat-btn-active.selected .combat-btn-meta {
-  color: #8ec89a;
-}
-
-.combat-btn-target.selected .combat-btn-meta {
-  color: #d89090;
-}
-
-.combat-ui-target {
-  margin-top: 1rem;
-  padding-top: 0.75rem;
-  border-top: 1px solid var(--border);
-}
-
-.combat-target-label {
-  font-size: 0.8rem;
-  color: #d88;
-  margin-bottom: 0.5rem;
-  letter-spacing: 0.05em;
-}
 
 .combat-overlay {
   position: absolute;
@@ -1848,51 +1465,6 @@ body { min-height: 100vh; }
   color: var(--gold);
 }
 
-.checklist-panel summary {
-  cursor: pointer;
-  font-size: 0.8rem;
-  color: var(--muted);
-}
-
-.checklist {
-  max-height: 240px;
-  overflow-y: auto;
-  margin-top: 0.5rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.15rem;
-}
-
-.check-item {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.35rem 0.5rem;
-  background: none;
-  border: none;
-  color: var(--muted);
-  font-size: 0.72rem;
-  text-align: left;
-  cursor: pointer;
-  border-radius: 3px;
-  width: 100%;
-}
-
-.check-item:hover { background: var(--surface-2); }
-.check-item.current { background: rgba(212, 168, 83, 0.12); color: var(--gold); }
-.check-item.done .check-text { text-decoration: line-through; opacity: 0.55; }
-
-.check-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--border);
-  flex-shrink: 0;
-}
-
-.check-item.current .check-dot { background: var(--gold); box-shadow: 0 0 6px var(--gold); }
-.check-item.done .check-dot { background: var(--green); }
-
 .guide-footer {
   border-top: 1px solid var(--border);
   display: flex;
@@ -1907,194 +1479,6 @@ body { min-height: 100vh; }
   display: flex;
   align-items: center;
   gap: 1rem;
-}
-
-/* Game summary */
-.guide-main-summary {
-  grid-template-columns: 1fr !important;
-}
-
-.guide-main-summary .army-panel {
-  display: none;
-}
-
-.guide-summary {
-  overflow-y: auto;
-}
-
-.summary-panel {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 1.25rem 1.5rem;
-  margin-top: 0.5rem;
-}
-
-.summary-title {
-  font-family: 'Cinzel', serif;
-  font-size: 1.35rem;
-  color: var(--gold);
-  text-align: center;
-  margin-bottom: 1rem;
-}
-
-.summary-army-names {
-  display: grid;
-  grid-template-columns: 1fr auto 1fr;
-  align-items: center;
-  gap: 1rem;
-  margin-bottom: 0.75rem;
-}
-
-.summary-army-p1 {
-  font-family: 'Cinzel', serif;
-  font-size: 0.9rem;
-  color: var(--gold);
-  text-align: left;
-}
-
-.summary-army-p2 {
-  font-family: 'Cinzel', serif;
-  font-size: 0.9rem;
-  color: var(--gold);
-  text-align: right;
-}
-
-.summary-final-score {
-  font-family: 'Cinzel', serif;
-  font-size: 1.75rem;
-  font-weight: 700;
-  color: var(--text);
-  white-space: nowrap;
-}
-
-.summary-v {
-  color: var(--muted);
-  font-weight: 500;
-  margin: 0 0.35rem;
-}
-
-.summary-final-breakdown {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1rem;
-  margin-bottom: 1.25rem;
-  padding-bottom: 1rem;
-  border-bottom: 1px solid var(--border);
-}
-
-.summary-breakdown-p1,
-.summary-breakdown-p2 {
-  display: flex;
-  gap: 1rem;
-  font-size: 0.8rem;
-  color: var(--muted);
-}
-
-.summary-breakdown-p1 {
-  justify-content: flex-start;
-}
-
-.summary-breakdown-p2 {
-  justify-content: flex-end;
-}
-
-.summary-breakdown-p1 strong,
-.summary-breakdown-p2 strong {
-  color: var(--text);
-}
-
-.summary-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 0.78rem;
-}
-
-.summary-table thead th {
-  font-family: 'Cinzel', serif;
-  font-size: 0.75rem;
-  color: var(--gold);
-  padding: 0.5rem 0.75rem;
-  border-bottom: 2px solid var(--border);
-}
-
-.summary-col {
-  padding: 0.5rem 0.75rem;
-  vertical-align: top;
-  width: 45%;
-}
-
-.summary-col.summary-left {
-  text-align: left;
-}
-
-.summary-col.summary-right {
-  text-align: right;
-}
-
-.summary-vs-col {
-  width: 10%;
-}
-
-.summary-round-row th {
-  text-align: left;
-  font-size: 0.7rem;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--gold);
-  padding: 0.75rem 0.75rem 0.35rem;
-  border-top: 1px solid var(--border);
-  background: rgba(201, 162, 39, 0.06);
-}
-
-.summary-score-row td {
-  border-bottom: 1px solid var(--border);
-  padding-bottom: 0.65rem;
-}
-
-.summary-stat {
-  display: inline-block;
-  margin-right: 0.75rem;
-  color: var(--muted);
-}
-
-.summary-col.summary-right .summary-stat {
-  margin-right: 0;
-  margin-left: 0.75rem;
-}
-
-.summary-total-stat {
-  color: var(--text-dim);
-}
-
-.summary-total-stat strong {
-  color: var(--gold);
-}
-
-.summary-battle-ready-row td {
-  padding: 0.65rem 0.75rem;
-  border-bottom: 1px solid var(--border);
-  font-size: 0.75rem;
-  color: var(--muted);
-}
-
-.summary-battle-ready-row em {
-  font-style: italic;
-}
-
-.summary-battle-ready-row strong {
-  color: #b8e0c0;
-}
-
-.summary-empty {
-  color: var(--muted);
-}
-
-.summary-footnote {
-  font-size: 0.68rem;
-  color: var(--muted);
-  margin-top: 1rem;
-  line-height: 1.45;
 }
 
 @media (max-width: 1000px) {
@@ -2947,7 +2331,7 @@ tr.weapon-row-selected td {
     </style>
   </head>
   <body>
-    <div id="root"><p style="padding:2rem;color:#d4a853;font-family:Georgia,serif">Loading Battle Guide...</p></div>
+    <div id="root"><p style="padding:2rem;color:#d4a853;font-family:Georgia,serif">Loading Battle Map...</p></div>
     <script>
 /* WH40k Battle Guide - bundled for offline use */
 (function () {
@@ -6739,7 +6123,7 @@ function normalizeStratagemDeck(deck) {
 
 /* --- guide\stratagemUi.js --- */
 /**
- * Stratagem deck button + panel UI shared by Companion and Battle Map views.
+ * Stratagem deck button + panel UI for Battle Map.
  */
 
 function esc(s) {
@@ -6870,8 +6254,8 @@ function bindStratagemEvents(root, dispatch) {
 
 /* --- guide\helpGuideData.js --- */
 /**
- * Searchable in-app instructions for Battle Companion.
- * Sections: General, Companion, Battle Map.
+ * Searchable in-app instructions for Battle Map.
+ * Sections: General, Play, Battle Map.
  */
 
 const HELP_GUIDE_SECTIONS = [
@@ -6883,22 +6267,22 @@ const HELP_GUIDE_SECTIONS = [
       {
         id: 'gen-what',
         title: 'What this app is',
-        keywords: 'overview companion battle map browser play aid',
+        keywords: 'overview battle map browser play aid online',
         body: [
-          'Battle Map is the main play surface: load armies, deploy models, track scores, and advance phases.',
+          'Battle Map is a browser play surface for Warhammer 40,000: load armies, deploy models, track scores, and advance phases.',
           'Place models on terrain layouts, check ranges, and preview line of sight during shooting.',
           'Reminder! chips surface army/unit rules for the current phase. Stratagem decks are available from the scoreboard.',
         ],
       },
       {
         id: 'gen-official-app',
-        title: 'Best practice: official 40k app for the game + secondaries',
+        title: 'Best practice: official 40k app for missions + secondaries',
         keywords: 'official app warhammer app secondaries mission draw cards primary',
         body: [
           'Create and run the matched play / Event Companion game in the official Warhammer 40,000 app when you can.',
           'Use that app to set the mission, draw or choose secondaries, and keep the official mission card flow.',
-          'Battle Companion does not replace mission generation or secondary draws — enter Secondary and Primary VP on the scoreboard as you score them in the official flow.',
-          'Keep both apps open: official app for mission/secondaries, Battle Companion for phase guide, armies, stratagems, and the map.',
+          'This Battle Map does not replace mission generation or secondary draws — enter Secondary and Primary VP on the scoreboard as you score them.',
+          'Keep both apps open: official app for mission/secondaries, Battle Map for armies, stratagems, board, and phase tracking.',
         ],
       },
       {
@@ -6909,7 +6293,7 @@ const HELP_GUIDE_SECTIONS = [
           'On each side panel, use Load Army (.json) for Player 1 and Player 2.',
           'Export your list as JSON from New Recruit (newrecruit.eu) or a compatible army builder.',
           'After loading, use Replace or Clear on that side’s panel header.',
-          'Load both armies, pick who goes first in the center Start battle card, then Begin Battle.',
+          'Load both armies, pick who goes first in the Start battle card, then Begin Battle.',
         ],
       },
       {
@@ -6917,9 +6301,9 @@ const HELP_GUIDE_SECTIONS = [
         title: 'Upload stratagem decks (.html)',
         keywords: 'stratagems deck html upload cp cost export',
         body: [
-          'Click Stratagems next to Battle Ready Army on either side (Companion or Battle Map).',
+          'Click Stratagems next to Battle Ready Army on either side.',
           'Export your stratagems as HTML from your army builder, then Upload deck (.html).',
-          'The panel lists each stratagem with CP cost, timing (your / opponent / either turn), phases, and full rules text.',
+          'The panel lists each stratagem with CP cost, timing, phases, and full rules text.',
           'Decks are per side and stay loaded if you replace an army JSON. Use Clear inside the Stratagems panel to remove a deck.',
         ],
       },
@@ -6930,19 +6314,9 @@ const HELP_GUIDE_SECTIONS = [
         body: [
           'Top bar tracks CP, Sec (secondary VP), Prim (primary VP), and Total for each player.',
           'Use − / + to adjust scores as you play.',
+          'Each Command Phase awards 1 Core CP to both players automatically.',
           'Battle Ready Army toggles +10 primary VP for that side when marked battle-ready.',
-          'Stratagems opens that player’s stratagem deck viewer.',
-        ],
-      },
-      {
-        id: 'gen-views',
-        title: 'Battle Map layout',
-        keywords: 'view mode battle map panels deploy',
-        body: [
-          'The app opens on the Battle Map. Side panels hold armies; the center is the board.',
-          'Deploy/Withdraw units, drag models, rotate Frame hulls with the yellow handle when selected.',
-          'Use ← / → under the turn label to advance phases after you Begin Battle.',
-          'Scores, Reminder!, and stratagems stay in the top bar while you play on the map.',
+          'Stratagems opens that player’s stratagem deck viewer (reference — spend CP on the scoreboard when you use one).',
         ],
       },
       {
@@ -6952,7 +6326,7 @@ const HELP_GUIDE_SECTIONS = [
         body: [
           'Save stores the current game in this browser (armies, scores, map, progress).',
           'Refresh or reopen the same browser to continue a saved game when restore runs on load.',
-          'Reset clears the battle guide session (armies and scores) after confirmation — use carefully.',
+          'Reset clears the battle session (armies and scores) after confirmation — use carefully.',
         ],
       },
       {
@@ -6961,85 +6335,55 @@ const HELP_GUIDE_SECTIONS = [
         keywords: 'offline launch-offline bat play.html file',
         body: [
           'On a local copy of the project, double-click launch-offline.bat to rebuild and open the single-file play.html.',
-          'The live GitHub Pages site works in any modern browser with an internet connection for fonts; core play does not need a server once the page is loaded.',
+          'The live GitHub Pages site works in any modern browser; core play does not need a server once the page is loaded.',
         ],
       },
     ],
   },
   {
-    id: 'companion',
-    title: 'Companion',
-    blurb: 'Phase guide, army panels, abilities, combat helpers, and score tracking.',
+    id: 'play',
+    title: 'Play',
+    blurb: 'Phases, armies, attachments, wounds, and combat on the map.',
     items: [
       {
-        id: 'comp-start',
-        title: 'Start the Battle Guide',
-        keywords: 'begin battle guide next step previous start',
+        id: 'play-start',
+        title: 'Start a battle',
+        keywords: 'begin battle first player next previous phase',
         body: [
-          'Load both army JSONs on the home screen.',
-          'Press Begin Battle Guide when both sides are loaded.',
-          'Advance with Next Step; go back with Previous. The top progress bar tracks where you are.',
-          'Follow each step on the tabletop, then click Next Step when that rule step is done.',
+          'Load both army JSONs in the side panels.',
+          'Pick who goes first, then press Begin Battle.',
+          'Advance with ← / → under the turn label: short setup, then Command / Movement / Shooting / Charge / Fight each turn.',
         ],
       },
       {
-        id: 'comp-phases',
-        title: 'Phases, turns, and first player',
-        keywords: 'command movement shooting charge fight battle round first turn',
+        id: 'play-phases',
+        title: 'Phases and Reminder!',
+        keywords: 'command movement shooting charge fight battle round reminder',
         body: [
-          'The guide covers setup/deployment, then five battle rounds with the full turn sequence.',
-          'On the Who goes first step, pick Left or Right — that sets turn order for all five rounds.',
-          'Ability reminders for army/detachment/unit rules appear on the steps where they usually matter.',
-          'Optional unit checklists in some phases let you mark units finished for that phase (not required to advance).',
+          'Reminder! chips show army and unit rules that usually matter in the current phase.',
+          'Dead units (0 wounds remaining) do not show Reminder! chips.',
+          'During Command Phase, battle-shock highlights can mark units that must test.',
         ],
       },
       {
-        id: 'comp-army-cards',
-        title: 'Army panels and unit details',
-        keywords: 'unit card keywords weapons abilities wounds dead reorder attach leader',
+        id: 'play-army',
+        title: 'Army panels, attach, wounds',
+        keywords: 'unit card weapons abilities wounds attach leader support battleshock',
         body: [
-          'Each side’s army list shows units, wounds remaining, and key stats.',
-          'Open a unit for full keywords, abilities, and weapon profiles. Keyword links open short rule popovers when available.',
-          'Adjust wounds with − / +, mark units destroyed, and reorder the list if needed.',
-          'Attach leaders/support to bodyguards with the attach controls before or during deployment as your rules allow.',
-          'Toggle BattleShocked on a unit/group when they fail (or pass via stratagem) battle-shock as needed for reminders.',
+          'Select a unit in the side list or on the map to open its card (weapons, abilities, wounds).',
+          'Attach leaders/support to bodyguards with the Leading / Support dropdown on the unit card.',
+          'Adjust wounds with − / +. Hitting 0 hides models but keeps attachments — healing restores them by the leader.',
+          'Toggle BattleShocked when a group fails (or is affected by) battle-shock.',
         ],
       },
       {
-        id: 'comp-combat',
-        title: 'Shooting / fight helpers in Companion',
-        keywords: 'combat active target overlay shoot fight select',
+        id: 'play-combat',
+        title: 'Shooting and fight on the map',
+        keywords: 'combat active target overlay shoot fight select los range',
         body: [
-          'On combat action steps, pick an active unit then a target — overlays show weapons and details on the army columns.',
-          'This tracks who is shooting/fighting whom for reference; resolve dice and wounds on the table (or use Battle Map LoS/ranges as a visual aid).',
-        ],
-      },
-      {
-        id: 'comp-formations',
-        title: 'Deep Strike / Strategic Reserves reminder',
-        keywords: 'deep strike formations reserves ingress',
-        body: [
-          'During Declare Battle Formations, the guide lists Deep Strike-capable units as a reminder for Strategic Reserves.',
-          'Place reserves and ingresses on the table (and optionally on Battle Map) according to the Core Rules.',
-        ],
-      },
-      {
-        id: 'comp-summary',
-        title: 'End of battle summary',
-        keywords: 'summary battle ready rounds vp',
-        body: [
-          'After five rounds, the summary shows round VP snapshots and Battle Ready awards.',
-          'Round totals lock when you complete each End of Battle Round step — keep entering VP as you go.',
-        ],
-      },
-      {
-        id: 'comp-stratagems',
-        title: 'Using stratagems during Companion play',
-        keywords: 'stratagems cp spend timing when target effect',
-        body: [
-          'Open Stratagems anytime from the top bar to read timing, target, effect, and CP cost.',
-          'Spend CP on the scoreboard when you use a stratagem on the table.',
-          'The deck is a reference — it does not auto-spend CP or enforce once-per-battle limits for you.',
+          'In Shooting or Fight, click your unit then an enemy on the map to set active/target.',
+          'Click a ranged weapon name for a range ring. LoS preview appears when both sides are set in shooting.',
+          'Resolve dice on the table (or however you play); the map is the board and measure aid.',
         ],
       },
     ],
@@ -7050,23 +6394,13 @@ const HELP_GUIDE_SECTIONS = [
     blurb: 'Layouts, deploy/move models, camera, ranges, LoS, and custom terrain import.',
     items: [
       {
-        id: 'map-open',
-        title: 'Open Battle Map',
-        keywords: 'battle map view deploy companion first',
-        body: [
-          'Load armies from the side panels on the Battle Map (Load Army .json).',
-          'Empty sides show a Load Army button. Replace/Clear sit in the panel header once loaded.',
-        ],
-      },
-      {
         id: 'map-layouts',
         title: 'Choose a terrain layout',
         keywords: 'layout terrain deployment zones priority assets search destroy meatgrinder flip rotate mirror',
         body: [
-          'Use the Layout dropdown above the map to pick a built-in board (blank grid or Event Companion-style layouts such as Search and Destroy, Meatgrinder, Unstoppable Force, Purge vs Take and Hold C, Priority Assets layouts, and more as added).',
-          'Layouts show deployment zones, terrain footprints, and feature pieces used for LoS/obscuring.',
-          'Flip mirrors the board left/right (useful on mobile or to match which army list sits on which side). Rotate 90° turns the board clockwise. Reset orient restores the original facing. Models and markers move with the terrain.',
-          'Choose Add new… to import another Rapid Ingress layout (see Import custom layout).',
+          'Use the Layout dropdown to pick a built-in board (blank grid or Event Companion-style layouts).',
+          'Flip mirrors left/right; Rotate 90° turns clockwise; Reset orient restores facing. Models move with terrain.',
+          'Choose Add new… to import a Rapid Ingress layout.',
         ],
       },
       {
@@ -7074,10 +6408,10 @@ const HELP_GUIDE_SECTIONS = [
         title: 'Deploy and withdraw units',
         keywords: 'deploy withdraw staging models markers',
         body: [
-          'Press Deploy on a unit to place its models in the off-board staging area for that player.',
+          'Press Deploy on a unit to place its models in off-board staging for that player.',
           'Attached leaders deploy with their bodyguard group.',
           'Withdraw removes that unit’s models from the map.',
-          'Player 1 models are blue; Player 2 models are green. Mirror-match (same faction) units stay separate.',
+          'Player 1 models are blue; Player 2 models are green.',
         ],
       },
       {
@@ -7085,21 +6419,18 @@ const HELP_GUIDE_SECTIONS = [
         title: 'Select and move models',
         keywords: 'drag move pan select unit right click rotate frame',
         body: [
-          'Left-drag a model to move that model. Right-drag (or secondary button drag) moves the whole unit group.',
-          'Click a model or use the side list to select a unit; the selected unit and model are highlighted.',
-          'Click empty board space (without dragging) to clear selection.',
-          'Drag empty space to pan. Use Zoom + / −, mouse wheel over the map, or Reset view for the camera.',
-          'Frame hulls (e.g. Land Raiders) deploy as rectangles ~1.25× a dreadnought base. Select one, then drag the yellow handle ahead of the nose to set facing (rotates about the hull center).',
+          'Left-drag a model to move that model. Right-drag moves the whole unit group.',
+          'Click empty board space (without dragging) to clear selection. Drag empty space to pan.',
+          'Frame hulls: select one, then drag the yellow handle ahead of the nose to set facing.',
         ],
       },
       {
         id: 'map-ranges',
-        title: 'Move, charge, and weapon range rings',
+        title: 'Move and weapon range rings',
         keywords: 'range ring move charge shoot weapon select',
         body: [
-          'With a model selected during movement/charge-style steps, a range ring shows approximate reach from the base edge.',
-          'During shooting steps, click a ranged weapon name on the selected unit’s card to show that weapon’s range ring.',
-          'While picking shoot/fight targets, controlling-unit ranges stay on the active unit; enemy target rings are suppressed so the board stays readable.',
+          'With a model selected in Movement, a ring shows approximate reach from the base edge.',
+          'In Shooting, click a ranged weapon name on the unit card for that weapon’s range ring.',
         ],
       },
       {
@@ -7107,9 +6438,8 @@ const HELP_GUIDE_SECTIONS = [
         title: 'Line of sight preview',
         keywords: 'los line of sight obscure terrain shooting see',
         body: [
-          'During shooting, when an active shooter and a target are set, the map can show LoS rays and highlight attacker models that have a clear shot.',
-          'Dense/obscuring terrain and see-through rules follow the imported layout features; treat the preview as a play aid, not a tournament judge.',
-          'Touching centre objective halves may merge for LoS as implemented in the map LoS helper.',
+          'In Shooting, with active shooter and target set, LoS rays highlight attackers with a clear shot.',
+          'Treat the preview as a play aid, not a tournament judge.',
         ],
       },
       {
@@ -7117,17 +6447,8 @@ const HELP_GUIDE_SECTIONS = [
         title: 'Special markers',
         keywords: 'special marker objective token reminder',
         body: [
-          'Add special marker places a purple token you can drag (objectives tokens, reminders, etc.).',
+          'Add special marker places a purple token you can drag.',
           'Select a marker to show Remove marker.',
-        ],
-      },
-      {
-        id: 'map-shock-wounds',
-        title: 'Battle-shock and wounds on the map',
-        keywords: 'battleshock wounds remaining models highlight',
-        body: [
-          'Selected unit cards on the map support wound tracking and BattleShocked toggles like Companion.',
-          'Map highlights can show units that must test battle-shock or are currently shocked during the relevant steps.',
         ],
       },
       {
@@ -7136,19 +6457,8 @@ const HELP_GUIDE_SECTIONS = [
         keywords: 'import add new rapid ingress html terrain-data-11e custom layout',
         body: [
           'Choose Add new… in the Layout dropdown.',
-          'Upload a saved Rapid Ingress layout page (Complete webpage). Prefer including terrain-data-11e.js.download from the page’s _files folder — multi-select with the .html when possible.',
-          'You can also use a RapidIngress-*.png filename for slug detection; polygon data still needs the terrain JS/HTML export for a full board.',
-          'Pick the matching RI layout id, name it, then Import & use. Customs are stored in this browser and appear in the Layout list.',
-          'Delete imported customs from the import dialog’s Imported layouts list when you no longer need them.',
-        ],
-      },
-      {
-        id: 'map-steps',
-        title: 'Step controls on Battle Map',
-        keywords: 'next previous step nav guide progress',
-        body: [
-          'After Begin Battle, use ← / → under the turn label to advance setup and phases (Command, Movement, Shooting, Charge, Fight).',
-          'Each Command Phase awards 1 Core CP to both players. Reminder! chips update for the current phase.',
+          'Upload a saved Rapid Ingress layout page (Complete webpage), preferably with terrain-data-11e.js from the _files folder.',
+          'Pick the RI layout id, name it, then Import & use. Customs are stored in this browser.',
         ],
       },
     ],
@@ -7178,7 +6488,7 @@ function searchHelpGuide(query) {
 
 /* --- guide\helpGuideUi.js --- */
 /**
- * In-app Instructions / Guides panel — searchable, shared by Companion + Battle Map.
+ * In-app Instructions / Guides panel — searchable Battle Map help.
  */
 
 function esc(s) {
@@ -7246,7 +6556,7 @@ function renderHelpGuidePanel(state) {
         <div class="help-guide-header">
           <div>
             <h2 id="help-guide-title">Instructions / Guides</h2>
-            <p class="help-guide-sub">Searchable help for General setup, Companion, and Battle Map.</p>
+            <p class="help-guide-sub">Searchable help for General, Play, and Battle Map.</p>
           </div>
           <button type="button" class="unit-modal-close" data-action="close-help-guide" aria-label="Close">×</button>
         </div>
@@ -7323,7 +6633,7 @@ function bindHelpGuideEvents(root, dispatch) {
 
 /* --- guide\weaponUi.js --- */
 /**
- * Shared weapon table + clickable keyword chips (Companion + Battle Sim).
+ * Weapon table + clickable keyword chips for Battle Map unit cards.
  */
 
 function esc(s) {
@@ -7443,9 +6753,6 @@ function renderKeywordRulePopover(state) {
 
 /* --- guide\guideState.js --- */
 const STORAGE_KEY = 'wh40k-battle-guide-v2';
-
-/** Phase A map-first: Companion UI is hidden; keep code path for later hard-delete. */
-const SHOW_COMPANION_VIEW = false;
 
 function emptyScore() {
   return { cp: 0, secondary: 0, primary: 0 };
@@ -8412,11 +7719,9 @@ function guideReducer(state, action) {
       return { ...state, keywordRulePopup: null };
 
     case 'SET_VIEW_MODE': {
-      let mode = action.mode === 'battleSim' ? 'battleSim' : 'companion';
-      if (!SHOW_COMPANION_VIEW) mode = 'battleSim';
-      if (mode !== 'battleSim') return { ...state, viewMode: mode };
+      // Map-only shell — ignore companion requests
       const battleMap = migrateBattleMapModelIds(state.battleMap || createEmptyBattleMap());
-      return { ...state, viewMode: mode, battleMap };
+      return { ...state, viewMode: 'battleSim', battleMap };
     }
 
     case 'MAP_MIGRATE_MODEL_IDS': {
@@ -9003,7 +8308,7 @@ function guideReducer(state, action) {
             saved.roundSnapshots && typeof saved.roundSnapshots === 'object' ? saved.roundSnapshots : {},
           combat: saved.combat && typeof saved.combat === 'object' ? saved.combat : null,
           started: !!saved.started,
-          viewMode: SHOW_COMPANION_VIEW && saved.viewMode === 'companion' ? 'companion' : 'battleSim',
+          viewMode: 'battleSim',
           battleMap:
             saved.battleMap && typeof saved.battleMap === 'object'
               ? migrateBattleMapModelIds({
@@ -9090,15 +8395,7 @@ function renderFirstTurnBadge(state, key) {
 }
 
 function renderViewModeBar() {
-  if (!SHOW_COMPANION_VIEW) {
-    return `<div class="view-mode-bar">${renderHelpQuestionBtn()}</div>`;
-  }
-  return `
-    <div class="view-mode-bar">
-      <button type="button" class="view-mode-btn" data-action="set-view-mode" data-mode="companion">Companion</button>
-      <button type="button" class="view-mode-btn active" data-action="set-view-mode" data-mode="battleSim">Battle Map</button>
-      ${renderHelpQuestionBtn()}
-    </div>`;
+  return `<div class="view-mode-bar">${renderHelpQuestionBtn()}</div>`;
 }
 
 function renderSimScoreboard(state) {
@@ -9709,10 +9006,6 @@ function renderBattleSim(root, state, dispatch) {
     }
   }
 
-  const companionFooterLink = SHOW_COMPANION_VIEW
-    ? `<button type="button" class="btn-link" data-action="set-view-mode" data-mode="companion">Companion</button>`
-    : '';
-
   root.innerHTML = `
     <div class="guide-app battle-sim-app">
       ${renderSimScoreboard(state)}
@@ -9732,7 +9025,6 @@ function renderBattleSim(root, state, dispatch) {
       <footer class="guide-footer">
         <div class="guide-footer-bar">
           Warhammer 40,000 Battle Map
-          ${companionFooterLink}
           <button type="button" class="btn-link" data-action="open-help-guide">Instructions</button>
           <button type="button" class="btn-link" data-action="save-game">Save</button>
           <button type="button" class="btn-link" data-action="reset-game">Reset</button>
@@ -9749,9 +9041,6 @@ function renderBattleSim(root, state, dispatch) {
 }
 
 function bindBattleSimEvents(root, state, dispatch) {
-  root.querySelectorAll('[data-action="set-view-mode"]').forEach((btn) => {
-    btn.addEventListener('click', () => dispatch({ type: 'SET_VIEW_MODE', mode: btn.dataset.mode }));
-  });
   root.querySelector('[data-action="start-game"]')?.addEventListener('click', () => dispatch({ type: 'START_GAME' }));
   root.querySelector('[data-action="next-step"]')?.addEventListener('click', () => dispatch({ type: 'NEXT_STEP' }));
   root.querySelector('[data-action="prev-step"]')?.addEventListener('click', () => dispatch({ type: 'PREV_STEP' }));
@@ -10329,1061 +9618,11 @@ function ensureMapPointerHandlers() {
 // Helpers re-exported for tests / external use
 
 /* --- guideRender.js --- */
-const SLOT_LABELS = {
-  'setup-pre-battle': 'Pre-battle',
-  'setup-deploy': 'Deploy',
-  'setup-redeploy': 'Redeploy',
-  'setup-formations': 'Formations',
-  'cmd-start': 'Cmd start',
-  'cmd-end': 'Cmd end',
-  cmd: 'Command',
-  shoot: 'Shoot',
-  charge: 'Charge',
-  fight: 'Fight',
-  passive: 'Always on',
-};
-
-function esc(s) {
-  return String(s ?? '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/"/g, '&quot;');
-}
-
-function renderNewRecruitHint() {
-  return `<p class="hint newrecruit-hint">Upload Army JSON from NewRecruit. If you haven't created your army or have exported in a different format, create your army and export as JSON <a class="external-link" href="https://www.newrecruit.eu" target="_blank" rel="noopener noreferrer">here</a>.</p>`;
-}
-
-function renderScoreCell(player, field, label, value, playerKey) {
-  return `
-    <div class="score-cell">
-      <span class="score-label">${label}</span>
-      <div class="score-controls">
-        <button type="button" data-action="score" data-player="${playerKey}" data-field="${field}" data-delta="-1">−</button>
-        <span class="score-value">${value}</span>
-        <button type="button" data-action="score" data-player="${playerKey}" data-field="${field}" data-delta="1">+</button>
-      </div>
-    </div>`;
-}
-
-function renderBattleReadyBtn(state, playerKey) {
-  const active = !!state.battleReady?.[playerKey];
-  return `<button type="button" class="battle-ready-btn ${active ? 'active' : ''}" data-action="toggle-battle-ready" data-player="${playerKey}">Battle Ready Army</button>`;
-}
-
-function renderScoreboard(state) {
-  const p1 = state.player1;
-  const p2 = state.player2;
-
-  const renderFirstTurnBadge = (key) =>
-    state.firstPlayer === key ? '<span class="first-turn-badge">Goes first</span>' : '';
-
-  const renderPlayerLeft = (p, key) => `
-    <div class="score-player score-left">
-      <div class="score-player-name">${esc(p.army?.name || p.name)}${renderFirstTurnBadge(key)}</div>
-      <div class="score-row">
-        ${renderScoreCell(p, 'cp', 'CP', p.score.cp, key)}
-        ${renderScoreCell(p, 'secondary', 'Sec', p.score.secondary, key)}
-        ${renderScoreCell(p, 'primary', 'Prim', p.score.primary, key)}
-        <div class="score-cell score-total-cell">
-          <span class="score-label">Total</span>
-          <span class="score-total">${totalScore(p.score)}</span>
-        </div>
-        ${renderBattleReadyBtn(state, key)}
-        ${renderStratagemsBtn(state, key)}
-      </div>
-    </div>`;
-
-  const renderPlayerRight = (p, key) => `
-    <div class="score-player score-right">
-      <div class="score-player-name">${renderFirstTurnBadge(key)}${esc(p.army?.name || p.name)}</div>
-      <div class="score-row score-row-mirror">
-        ${renderStratagemsBtn(state, key)}
-        ${renderBattleReadyBtn(state, key)}
-        <div class="score-cell score-total-cell">
-          <span class="score-label">Total</span>
-          <span class="score-total">${totalScore(p.score)}</span>
-        </div>
-        ${renderScoreCell(p, 'primary', 'Prim', p.score.primary, key)}
-        ${renderScoreCell(p, 'secondary', 'Sec', p.score.secondary, key)}
-        ${renderScoreCell(p, 'cp', 'CP', p.score.cp, key)}
-      </div>
-    </div>`;
-
-  return `
-    <header class="scoreboard">
-      ${renderPlayerLeft(p1, 'player1')}
-      <div class="score-center">
-        <div class="score-vs">VS</div>
-        <div class="turn-display">${esc(getCurrentStep(state)?.turnLabel || 'Load armies to begin')}</div>
-        <div class="view-mode-bar">
-          <button type="button" class="view-mode-btn active" data-action="set-view-mode" data-mode="companion">Companion</button>
-          <button type="button" class="view-mode-btn" data-action="set-view-mode" data-mode="battleSim">Battle Map</button>
-          ${renderHelpQuestionBtn()}
-        </div>
-        <div class="progress-bar"><div class="progress-fill" style="width:${getProgress(state)}%"></div></div>
-      </div>
-      ${renderPlayerRight(p2, 'player2')}
-    </header>`;
-}
-
-function renderUnitDetailModal(state) {
-  const detail = state.unitDetail;
-  if (!detail) return '';
-
-  const player = state[detail.player];
-  const unit = findUnitInArmy(player?.army, detail.unitId);
-  if (!unit) return '';
-
-  const woundsTaken = getUnitWoundsTaken(state, detail.player, unit.id);
-  const remainingModels = getRemainingModels(unit, woundsTaken);
-  const woundCap = getUnitWoundCapacity(unit);
-  const keywordRuleIndex = buildKeywordRuleIndex(unit, player?.army);
-  const kwContext = { player: detail.player, unitId: unit.id };
-  const displayKeywords = getUnitDisplayKeywords(unit);
-
-  const abilityItems = getUnitDisplayAbilities(unit)
-    .map(
-      (a) => `
-      <div class="unit-detail-ability">
-        <strong>${esc(a.name)}</strong>
-        <p>${esc(a.description)}</p>
-      </div>`,
-    )
-    .join('');
-
-  const rangedBlock = unit.rangedWeapons?.length
-    ? `<details class="weapon-dropdown" open>
-        <summary>Ranged Weapons (${unit.rangedWeapons.length})</summary>
-        ${renderWeaponTable(unit.rangedWeapons, 'ranged', keywordRuleIndex, kwContext)}
-      </details>`
-    : '';
-
-  const meleeBlock = unit.meleeWeapons?.length
-    ? `<details class="weapon-dropdown" open>
-        <summary>Melee Weapons (${unit.meleeWeapons.length})</summary>
-        ${renderWeaponTable(unit.meleeWeapons, 'melee', keywordRuleIndex, kwContext)}
-      </details>`
-    : '';
-
-  return `
-    <div class="unit-modal-backdrop" data-action="close-unit-detail">
-      <div class="unit-modal" role="dialog" aria-modal="true" aria-labelledby="unit-modal-title">
-        <div class="unit-modal-header">
-          <div>
-            <h2 id="unit-modal-title">${esc(unit.name)}</h2>
-            <p class="unit-modal-meta">${remainingModels} model${remainingModels !== 1 ? 's' : ''} · ${unit.points} pts${unit.isWarlord ? ' · Warlord' : ''} · ${woundsTaken}/${woundCap} wounds</p>
-            ${unit.statsLine ? `<p class="unit-modal-stats">${esc(unit.statsLine)}</p>` : ''}
-          </div>
-          <button type="button" class="unit-modal-close" data-action="close-unit-detail" aria-label="Close">×</button>
-        </div>
-        <div class="unit-modal-body">
-          ${displayKeywords.length ? `<div class="unit-detail-section"><h4>Keywords</h4><p class="unit-detail-kw">${renderKeywordList(displayKeywords, keywordRuleIndex, kwContext)}</p></div>` : ''}
-          ${abilityItems ? `<div class="unit-detail-section"><h4>Abilities</h4>${abilityItems}</div>` : ''}
-          ${rangedBlock || meleeBlock ? `<div class="unit-detail-section"><h4>Weapons</h4>${rangedBlock}${meleeBlock}</div>` : ''}
-        </div>
-      </div>
-    </div>`;
-}
-
-function renderCombatCondensedUnit(unit, state, playerKey) {
-  const woundsTaken = getUnitWoundsTaken(state, playerKey, unit.id);
-  const remainingModels = getRemainingModels(unit, woundsTaken);
-  const woundCap = getUnitWoundCapacity(unit);
-  const keywordRuleIndex = buildKeywordRuleIndex(unit, state[playerKey]?.army);
-  const kwContext = { player: playerKey, unitId: unit.id };
-  const displayKeywords = getUnitDisplayKeywords(unit);
-  const woundControls = `
-    <div class="combat-wounds-row">
-      <span class="combat-wounds-label">Wounds</span>
-      <div class="combat-wounds-controls">
-        <button type="button" data-action="adjust-unit-wounds" data-player="${playerKey}" data-unit-id="${esc(unit.id)}" data-delta="-1">−</button>
-        <span class="combat-wounds-value">${woundsTaken}</span>
-        <button type="button" data-action="adjust-unit-wounds" data-player="${playerKey}" data-unit-id="${esc(unit.id)}" data-delta="1">+</button>
-      </div>
-      <span class="combat-wounds-cap">/ ${woundCap}</span>
-    </div>`;
-
-  const abilityItems = getUnitDisplayAbilities(unit)
-    .map(
-      (a) => `
-      <div class="combat-ability-item">
-        <strong>${esc(a.name)}</strong>
-        <p>${esc(a.description)}</p>
-      </div>`,
-    )
-    .join('');
-
-  const kwBlock = displayKeywords.length
-    ? `<details class="combat-collapsed">
-        <summary>Keywords (${displayKeywords.length})</summary>
-        <p class="combat-kw">${renderKeywordList(displayKeywords, keywordRuleIndex, kwContext)}</p>
-      </details>`
-    : '';
-
-  const abilityBlock = abilityItems
-    ? `<details class="combat-collapsed">
-        <summary>Abilities</summary>
-        ${abilityItems}
-      </details>`
-    : '';
-
-  const rangedBlock = unit.rangedWeapons?.length
-    ? `<div class="combat-weapons-block">
-        <h5>Ranged</h5>
-        ${renderWeaponTable(unit.rangedWeapons, 'ranged', keywordRuleIndex, kwContext)}
-      </div>`
-    : '';
-
-  const meleeBlock = unit.meleeWeapons?.length
-    ? `<div class="combat-weapons-block">
-        <h5>Melee</h5>
-        ${renderWeaponTable(unit.meleeWeapons, 'melee', keywordRuleIndex, kwContext)}
-      </div>`
-    : '';
-
-  const roleTag = unit.isLeader ? 'Leader' : unitIsSupport(unit) ? 'Support' : '';
-
-  return `
-    <div class="combat-unit-block">
-      <div class="combat-unit-header">
-        <h3>${esc(unit.name)}${roleTag ? ` <span class="combat-role-tag">${roleTag}</span>` : ''}</h3>
-        <p class="combat-unit-meta">${remainingModels} model${remainingModels !== 1 ? 's' : ''} · ${woundsTaken}/${woundCap} wounds · ${unit.points} pts</p>
-        ${unit.statsLine ? `<p class="combat-unit-stats">${esc(unit.statsLine)}</p>` : ''}
-      </div>
-      ${woundControls}
-      ${kwBlock}
-      ${abilityBlock}
-      ${rangedBlock}
-      ${meleeBlock}
-    </div>`;
-}
-
-function renderCombatOverlay(state, playerKey) {
-  const combat = state.combat;
-  if (!combat) return '';
-
-  const army = state[playerKey]?.army;
-  if (!army) return '';
-
-  const attachments = state.leaderAttachments?.[playerKey] || {};
-  let unitId = null;
-  let variant = '';
-
-  if (combat.active?.player === playerKey && combat.active.unitId) {
-    unitId = combat.active.unitId;
-    variant = 'combat-overlay-active';
-  } else if (combat.target?.player === playerKey && combat.target.unitId) {
-    unitId = combat.target.unitId;
-    variant = 'combat-overlay-target';
-  }
-
-  if (!unitId) return '';
-
-  const units = getCombatDisplayUnits(army, attachments, unitId);
-  if (!units.length) return '';
-
-  const blocks = units.map((u) => renderCombatCondensedUnit(u, state, playerKey)).join('');
-  const closeAction = variant === 'combat-overlay-active' ? 'combat-select-active' : 'combat-select-target';
-
-  return `
-    <div class="combat-overlay ${variant}">
-      <button type="button" class="combat-overlay-close" data-action="${closeAction}" data-unit-id="${esc(unitId)}" aria-label="Close">×</button>
-      <div class="combat-overlay-body">${blocks}</div>
-    </div>`;
-}
-
-function renderCombatUI(state, step) {
-  if (!isCombatActionStep(step)) return '';
-
-  const playerKey = step.player === 'p1' ? 'player1' : 'player2';
-  const enemyKey = playerKey === 'player1' ? 'player2' : 'player1';
-  const army = state[playerKey]?.army;
-  const enemyArmy = state[enemyKey]?.army;
-  if (!army?.units?.length) return '';
-
-  const phaseLabel = step.id.endsWith('-shoot') ? 'Shooting' : 'Fighting';
-  const activeId = state.combat?.active?.unitId || null;
-  const targetId = state.combat?.target?.unitId || null;
-
-  const liveUnits = army.units.filter((u) => !isUnitDead(state, playerKey, u.id));
-  if (!liveUnits.length) return '';
-
-  const activeButtons = liveUnits
-    .map((u) => {
-      const selected = activeId === u.id;
-      const remaining = getRemainingModels(u, getUnitWoundsTaken(state, playerKey, u.id));
-      return `<button type="button" class="combat-btn combat-btn-active ${selected ? 'selected' : ''}" data-action="combat-select-active" data-unit-id="${esc(u.id)}">
-        <span class="combat-btn-name">${esc(u.name)}</span>
-        <span class="combat-btn-meta">${remaining} model${remaining !== 1 ? 's' : ''}</span>
-      </button>`;
-    })
-    .join('');
-
-  let targetSection = '';
-  if (activeId && enemyArmy?.units?.length) {
-    const enemyLive = enemyArmy.units.filter((u) => !isUnitDead(state, enemyKey, u.id));
-    const targetButtons = enemyLive
-      .map((u) => {
-        const selected = targetId === u.id;
-        const remaining = getRemainingModels(u, getUnitWoundsTaken(state, enemyKey, u.id));
-        return `<button type="button" class="combat-btn combat-btn-target ${selected ? 'selected' : ''}" data-action="combat-select-target" data-unit-id="${esc(u.id)}">
-          <span class="combat-btn-name">${esc(u.name)}</span>
-          <span class="combat-btn-meta">${remaining} model${remaining !== 1 ? 's' : ''}</span>
-        </button>`;
-      })
-      .join('');
-
-    targetSection = `
-      <div class="combat-ui-target">
-        <h5 class="combat-target-label">TARGET:</h5>
-        <div class="combat-ui-buttons">${targetButtons}</div>
-      </div>`;
-  }
-
-  return `
-    <div class="combat-ui">
-      <h4>${phaseLabel} — select your unit</h4>
-      <p class="combat-ui-hint">Select an active unit, then pick a target. Unit details appear over each army list.</p>
-      <div class="combat-ui-buttons">${activeButtons}</div>
-      ${targetSection}
-    </div>`;
-}
-
-function renderLeaderAttach(u, key, armyUnits, state) {
-  if (!unitCanLead(u)) return '';
-
-  const attachedId = state.leaderAttachments?.[key]?.[u.id] || '';
-  const label = unitIsSupport(u) ? 'Support:' : 'Leading:';
-  const options = armyUnits
-    .filter((other) => other.id !== u.id)
-    .map(
-      (other) =>
-        `<option value="${esc(other.id)}" ${other.id === attachedId ? 'selected' : ''}>${esc(other.name)}</option>`,
-    )
-    .join('');
-
-  return `<label class="leader-attach">
-    <em class="leader-label">${label}</em>
-    <select class="leader-select" data-action="set-leader-attach" data-player="${key}" data-leader-id="${esc(u.id)}">
-      <option value="">—</option>
-      ${options}
-    </select>
-  </label>`;
-}
-
-/** Bodyguard-side summary: who is leading / supporting this unit. */
-function renderAttachmentSummary(u, key, armyUnits, state) {
-  const attachments = state.leaderAttachments?.[key] || {};
-  const leaderIds = getLeadersOnBodyguard(attachments, u.id);
-  if (!leaderIds.length) return '';
-  const parts = leaderIds
-    .map((id) => {
-      const leader = armyUnits.find((x) => x.id === id);
-      if (!leader) return '';
-      const role = unitIsSupport(leader) ? 'Supported by' : 'Led by';
-      return `${role} ${leader.name}`;
-    })
-    .filter(Boolean);
-  if (!parts.length) return '';
-  return `<div class="unit-attach-summary">${esc(parts.join(' · '))}</div>`;
-}
-
-function renderBattleShockBtn(key, groupId, shocked, show) {
-  if (!show) return '';
-  return `<button type="button" class="unit-shock-btn ${shocked ? 'shocked' : ''}" data-action="toggle-battle-shock" data-player="${key}" data-group-id="${esc(groupId)}">BattleShocked</button>`;
-}
-
-function renderUnitWounds(u, key, state, armyUnits) {
-  const woundsTaken = getUnitWoundsTaken(state, key, u.id);
-  const capacity = getUnitWoundCapacity(u);
-  const attachments = state.leaderAttachments?.[key] || {};
-  const groupInfo = getUnitGroupInfo({ units: armyUnits }, attachments, u.id);
-
-  const dead = isUnitDead(state, key, u.id);
-  const shocked = isGroupBattleShocked(state, key, groupInfo.groupId);
-  const shockBtn = renderBattleShockBtn(key, groupInfo.groupId, shocked, !dead);
-
-  const controls = `
-      <span class="unit-wounds-label">Wounds</span>
-      <div class="unit-wounds-controls">
-        <button type="button" data-action="adjust-unit-wounds" data-player="${key}" data-unit-id="${esc(u.id)}" data-delta="-1">−</button>
-        <span class="unit-wounds-value">${woundsTaken}</span>
-        <button type="button" data-action="adjust-unit-wounds" data-player="${key}" data-unit-id="${esc(u.id)}" data-delta="1">+</button>
-      </div>
-      <span class="unit-wounds-cap">/ ${capacity}</span>`;
-
-  if (key === 'player2') {
-    return `<div class="unit-wounds-row unit-wounds-row-mirror">${shockBtn}${controls}</div>`;
-  }
-  return `<div class="unit-wounds-row">${controls}${shockBtn}</div>`;
-}
-
-function renderUnitCard(u, key, unitAbilities, state, unitIndex, unitCount, armyUnits) {
-  const dead = isUnitDead(state, key, u.id);
-  const attachments = state.leaderAttachments?.[key] || {};
-  const groupInfo = getUnitGroupInfo({ units: armyUnits }, attachments, u.id);
-  const battleShocked = !dead && isGroupBattleShocked(state, key, groupInfo.groupId);
-  const wrapClass = dead ? 'is-dead' : battleShocked ? 'is-battle-shocked' : '';
-  const canUp = unitIndex > 0;
-  const canDown = unitIndex < unitCount - 1;
-  const woundsTaken = getUnitWoundsTaken(state, key, u.id);
-  const remainingModels = getRemainingModels(u, woundsTaken);
-  const leaderAttach = renderLeaderAttach(u, key, armyUnits, state);
-  const attachSummary = renderAttachmentSummary(u, key, armyUnits, state);
-  const displayKw = getUnitDisplayKeywords(u);
-  const baseLabel = u.baseLabel || u.stats?.Base || '';
-
-  const abilityHtml =
-    !dead && unitAbilities.length
-      ? `<div class="unit-abilities">${unitAbilities
-          .map((a) => {
-            const phase = a.slot ? `<span class="ability-phase-tag">${esc(SLOT_LABELS[a.slot] || a.slot)}</span>` : '';
-            return `<div class="unit-ability" title="${esc(a.description)}"><strong>${esc(a.ruleName)}</strong>${phase}</div>`;
-          })
-          .join('')}</div>`
-      : '';
-
-  const mainBtn = `
-      <div class="unit-card unit-card-shell">
-        <div class="unit-card-header">
-          <div class="unit-card-title-block">
-            <span class="unit-card-name">${esc(u.name)}</span>
-            ${leaderAttach}
-            ${attachSummary}
-          </div>
-          <span class="unit-card-pts">${u.points} pts</span>
-        </div>
-        <button type="button" class="unit-card-body" data-action="open-unit-detail" data-player="${key}" data-unit-id="${esc(u.id)}">
-          ${u.statsLine ? `<div class="unit-card-stats">${esc(u.statsLine)}</div>` : ''}
-          <div class="unit-card-meta">${remainingModels} model${remainingModels !== 1 ? 's' : ''}${baseLabel ? ` · ${esc(baseLabel)}` : ''}${u.isWarlord ? ' · Warlord' : ''}</div>
-          ${displayKw.length ? `<div class="unit-card-kw">${displayKw.slice(0, 6).map(esc).join(' · ')}</div>` : ''}
-          ${abilityHtml}
-        </button>
-        ${renderUnitWounds(u, key, state, armyUnits)}
-      </div>`;
-
-  const reorderBtns = `
-      <div class="unit-reorder-btns">
-        <button type="button" class="unit-reorder-btn" data-action="reorder-unit" data-player="${key}" data-unit-id="${esc(u.id)}" data-direction="up" ${canUp ? '' : 'disabled'} aria-label="Move up">▲</button>
-        <button type="button" class="unit-reorder-btn" data-action="reorder-unit" data-player="${key}" data-unit-id="${esc(u.id)}" data-direction="down" ${canDown ? '' : 'disabled'} aria-label="Move down">▼</button>
-      </div>`;
-
-  const deadBtn = `<button type="button" class="unit-flag-btn unit-dead-btn ${dead ? 'dead' : ''}" data-action="toggle-unit-dead" data-player="${key}" data-unit-id="${esc(u.id)}">Dead</button>`;
-
-  if (key === 'player2') {
-    return `<div class="unit-card-wrap ${wrapClass}">${deadBtn}${mainBtn}${reorderBtns}</div>`;
-  }
-  return `<div class="unit-card-wrap ${wrapClass}">${mainBtn}${reorderBtns}${deadBtn}</div>`;
-}
-
-function renderArmyRuleItem(a) {
-  const sourceTag =
-    a.source === 'detachment'
-      ? '<span class="ability-phase-tag detachment-tag">Detachment</span>'
-      : '<span class="ability-phase-tag army-tag">Army</span>';
-  const slotTag = `<span class="ability-phase-tag">${esc(SLOT_LABELS[a.slot] || a.slot || 'Rule')}</span>`;
-
-  return `
-    <details class="army-rule-dropdown">
-      <summary class="army-rule-summary">
-        <span class="army-rule-summary-text">
-          <strong>${esc(a.ruleName)}</strong>
-          ${sourceTag}
-          ${slotTag}
-        </span>
-      </summary>
-      <div class="army-rule-body"><p>${esc(a.description)}</p></div>
-    </details>`;
-}
-
-function renderDetachmentBlock(det) {
-  const rules = det.rules || [];
-  const rulesHtml = rules.length
-    ? rules
-        .map(
-          (r) => `
-        <div class="detachment-rule-item">
-          <strong>${esc(r.name)}</strong>
-          <p>${esc(r.description)}</p>
-        </div>`,
-        )
-        .join('')
-    : '<p class="army-rules-empty">No rules found for this detachment.</p>';
-
-  return `
-    <details class="army-rule-dropdown detachment-block">
-      <summary class="army-rule-summary">
-        <span class="army-rule-summary-text">
-          <strong>${esc(det.name)}</strong>
-          <span class="ability-phase-tag detachment-tag">Detachment</span>
-        </span>
-      </summary>
-      <div class="army-rule-body">${rulesHtml}</div>
-    </details>`;
-}
-
-function renderArmyRulesBlock(army, armyRuleAbilities) {
-  const detachments = army.detachments?.length
-    ? army.detachments
-    : army.detachment || army.detachmentRules?.length
-      ? [{ name: army.detachment || 'Detachment', rules: army.detachmentRules || [] }]
-      : [];
-
-  const armyOnly = armyRuleAbilities.filter((a) => a.source === 'army');
-  const hasMeta = army.forceDisposition || detachments.length > 0;
-  const hasArmyRules = armyOnly.length > 0;
-  if (!hasMeta && !hasArmyRules) return '';
-
-  const dispositionLine = army.forceDisposition
-    ? `<p class="army-rules-meta"><span class="army-rules-meta-label">Force Disposition:</span> ${esc(army.forceDisposition)}</p>`
-    : '';
-  const detachmentBlocks = detachments.map((d) => renderDetachmentBlock(d)).join('');
-  const armyRules = armyOnly.map((a) => renderArmyRuleItem(a)).join('');
-
-  return `
-    <div class="army-rules-block">
-      <h4>Army &amp; Detachment Rules</h4>
-      ${dispositionLine}
-      ${detachmentBlocks ? `<div class="army-detachments-list">${detachmentBlocks}</div>` : ''}
-      ${armyRules ? `<div class="army-rules-list">${armyRules}</div>` : ''}
-    </div>`;
-}
-
-function renderArmyPanel(player, key, state) {
-  const army = player.army;
-  if (!army) {
-    return `
-      <div class="army-panel army-empty" data-player="${key}">
-        <h3>${key === 'player1' ? 'Player 1' : 'Player 2'}</h3>
-        <label class="file-btn">
-          Load Army (.json)
-          <input type="file" accept=".json,application/json" data-action="load-army" data-player="${key}" hidden />
-        </label>
-        ${renderNewRecruitHint()}
-      </div>`;
-  }
-
-  const allAbilities = listAllAbilities(army);
-  const abilitiesByUnit = new Map();
-  for (const a of allAbilities) {
-    const list = abilitiesByUnit.get(a.unitName) || [];
-    list.push(a);
-    abilitiesByUnit.set(a.unitName, list);
-  }
-
-  const armyRuleAbilities = allAbilities.filter((a) => a.source === 'army' || a.source === 'detachment');
-
-  const units = army.units
-    .map((u, i) => {
-      const unitAbilities = abilitiesByUnit.get(u.name) || [];
-      return renderUnitCard(u, key, unitAbilities, state, i, army.units.length, army.units);
-    })
-    .join('');
-
-  return `
-    <div class="army-panel" data-player="${key}">
-      <div class="army-panel-header">
-        <div>
-          <h3>${esc(army.name)}</h3>
-          <p class="army-meta">${esc(army.faction)} · ${army.points}/${army.pointsLimit} pts</p>
-        </div>
-        <button type="button" class="btn-small" data-action="clear-army" data-player="${key}">Clear</button>
-      </div>
-      <label class="file-btn btn-small">
-        Replace
-        <input type="file" accept=".json,application/json" data-action="load-army" data-player="${key}" hidden />
-      </label>
-      ${renderArmyRulesBlock(army, armyRuleAbilities)}
-      <div class="unit-list">${units}</div>
-      ${renderCombatOverlay(state, key)}
-    </div>`;
-}
-
-function renderUnitPhaseChecklist(state, step) {
-  if (!isUnitChecklistStep(step)) return '';
-
-  const player = step.player === 'p1' ? state.player1 : state.player2;
-  const army = player?.army;
-  if (!army?.units?.length) return '';
-
-  const phaseKey = getUnitPhaseKey(step);
-  const usedSet = new Set(state.unitPhaseUsed?.[phaseKey] || []);
-  const phaseNames = { movement: 'Movement', shooting: 'Shooting', charge: 'Charge', fight: 'Fight' };
-
-  const playerKey = step.player === 'p1' ? 'player1' : 'player2';
-  const liveUnits = army.units.filter((u) => !isUnitDead(state, playerKey, u.id));
-  if (!liveUnits.length) return '';
-
-  const buttons = liveUnits
-    .map((u) => {
-      const used = usedSet.has(u.id);
-      const remaining = getRemainingModels(u, getUnitWoundsTaken(state, playerKey, u.id));
-      return `<button type="button" class="unit-phase-btn ${used ? 'used' : ''}" data-action="toggle-unit-used" data-unit-id="${esc(u.id)}">
-        <span class="unit-phase-btn-name">${esc(u.name)}</span>
-        <span class="unit-phase-btn-meta">${remaining} model${remaining !== 1 ? 's' : ''}</span>
-      </button>`;
-    })
-    .join('');
-
-  return `
-    <div class="unit-phase-checklist">
-      <h4>${phaseNames[step.phase] || step.phase} — mark units as you go</h4>
-      <p class="unit-phase-hint">Tap each unit when you've finished with it this phase. Optional — not required to advance.</p>
-      <div class="unit-phase-buttons">${buttons}</div>
-    </div>`;
-}
-
-function renderFullChecklist(state) {
-  const checklist = state.flow
-    .map((s, i) => {
-      const done = state.completedSteps[s.id] || i < state.stepIndex;
-      const current = i === state.stepIndex;
-      const cls = `check-item ${done ? 'done' : ''} ${current ? 'current' : ''}`;
-      return `<button type="button" class="${cls}" data-action="goto-step" data-index="${i}">
-        <span class="check-dot"></span>
-        <span class="check-text">${esc(s.label)}</span>
-      </button>`;
-    })
-    .join('');
-
-  return `
-    <details class="checklist-panel checklist-bottom">
-      <summary>Full checklist (${state.flow.length} steps)</summary>
-      <div class="checklist">${checklist}</div>
-    </details>`;
-}
-
-function renderSummaryPlayerCol(slice, align) {
-  if (!slice) {
-    return `<td class="summary-col summary-${align}"><span class="summary-empty">—</span></td>`;
-  }
-  return `<td class="summary-col summary-${align}">
-    <span class="summary-stat">SEC: <strong>${slice.secondary}</strong></span>
-    <span class="summary-stat">PRIM: <strong>${slice.primary}</strong></span>
-    <span class="summary-stat summary-total-stat">TOTAL: <strong>${slice.total}</strong></span>
-  </td>`;
-}
-
-function renderBattleSummary(state) {
-  const p1Name = esc(state.player1.army?.name || state.player1.name);
-  const p2Name = esc(state.player2.army?.name || state.player2.name);
-  const finalP1 = totalScore(state.player1.score);
-  const finalP2 = totalScore(state.player2.score);
-  const snapshots = state.roundSnapshots || {};
-
-  const roundRows = [];
-  for (let r = 1; r <= MAX_BATTLE_ROUNDS; r++) {
-    const snap = snapshots[r];
-    roundRows.push(`
-      <tr class="summary-round-row">
-        <th class="summary-round-label" colspan="3">Round ${r}</th>
-      </tr>
-      <tr class="summary-score-row">
-        ${renderSummaryPlayerCol(snap?.player1, 'left')}
-        <td class="summary-vs-col"></td>
-        ${renderSummaryPlayerCol(snap?.player2, 'right')}
-      </tr>`);
-  }
-
-  const battleReadyRow =
-    state.battleReady?.player1 || state.battleReady?.player2
-      ? `
-      <tr class="summary-battle-ready-row">
-        <td class="summary-col summary-left">${state.battleReady?.player1 ? '<em>Battle Ready?</em> <strong>+10 VP</strong>' : ''}</td>
-        <td class="summary-vs-col"></td>
-        <td class="summary-col summary-right">${state.battleReady?.player2 ? '<em>Battle Ready?</em> <strong>+10 VP</strong>' : ''}</td>
-      </tr>`
-      : '';
-
-  return `
-    <div class="guide-center guide-summary">
-      <div class="step-nav step-nav-top">
-        <button type="button" data-action="prev-step">← Previous</button>
-        <span class="step-counter">Game Summary</span>
-        <button type="button" class="btn-primary" data-action="next-step" disabled>Next Step →</button>
-      </div>
-      <div class="summary-panel">
-        <h2 class="summary-title">Game Summary</h2>
-        <div class="summary-army-names">
-          <span class="summary-army-p1">${p1Name}</span>
-          <span class="summary-final-score">${finalP1} <span class="summary-v">v</span> ${finalP2}</span>
-          <span class="summary-army-p2">${p2Name}</span>
-        </div>
-        <div class="summary-final-breakdown">
-          <div class="summary-breakdown-p1">
-            <span>SEC: <strong>${state.player1.score.secondary}</strong></span>
-            <span>PRIM: <strong>${state.player1.score.primary}</strong></span>
-          </div>
-          <div class="summary-breakdown-p2">
-            <span>PRIM: <strong>${state.player2.score.primary}</strong></span>
-            <span>SEC: <strong>${state.player2.score.secondary}</strong></span>
-          </div>
-        </div>
-        <table class="summary-table">
-          <thead>
-            <tr>
-              <th class="summary-col summary-left">${p1Name}</th>
-              <th class="summary-vs-col"></th>
-              <th class="summary-col summary-right">${p2Name}</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${roundRows.join('')}
-            ${battleReadyRow}
-          </tbody>
-        </table>
-        <p class="summary-footnote">Round totals are snapshots taken when you complete each <strong>End of Battle Round</strong> step. VP changes during a round appear in that round’s row once the round ends.</p>
-      </div>
-    </div>`;
-}
-
-function renderFormationsDeepStrike(state) {
-  const step = getCurrentStep(state);
-  if (step?.id !== 'setup-formations') return '';
-
-  function renderPlayerList(player, label) {
-    const army = player?.army;
-    if (!army?.units?.length) return '';
-
-    const units = army.units.filter((u) => unitHasDeepStrike(u));
-    if (!units.length) {
-      return `
-        <div class="formations-ds-player">
-          <h5>${esc(label)}</h5>
-          <p class="formations-ds-empty">No Deep Strike units</p>
-        </div>`;
-    }
-
-    const items = units
-      .map((u) => `<li class="formations-ds-unit">${esc(u.name)}</li>`)
-      .join('');
-
-    return `
-      <div class="formations-ds-player">
-        <h5>${esc(label)}</h5>
-        <ul class="formations-ds-list">${items}</ul>
-      </div>`;
-  }
-
-  const p1Block = renderPlayerList(state.player1, state.player1.army?.name || 'Player 1');
-  const p2Block = renderPlayerList(state.player2, state.player2.army?.name || 'Player 2');
-
-  return `
-    <div class="formations-deep-strike">
-      <h4>Deep Strike units</h4>
-      <p class="formations-ds-hint">These units can be placed in Strategic Reserves during Declare Battle Formations.</p>
-      <div class="formations-ds-players">${p1Block}${p2Block}</div>
-    </div>`;
-}
-
-function renderGuideCenter(state) {
-  const step = getCurrentStep(state);
-  if (!state.started || !step) {
-    const canStart = state.player1.army && state.player2.army;
-    return `
-      <div class="guide-center guide-welcome">
-        <h2>Battle Guide</h2>
-        <p>Load both army rosters, then begin. This guide walks you through every phase and step from the Core Rules — click <strong>Next Step</strong> as you play on the tabletop.</p>
-        ${renderNewRecruitHint()}
-        <ul class="welcome-list">
-          <li>Setup &amp; Deployment (12 steps)</li>
-          <li>5 Battle Rounds with full turn sequence</li>
-          <li>Army abilities auto-placed in the correct phase</li>
-          <li>Scoreboard: CP · Secondary VP · Primary VP · Total</li>
-        </ul>
-        ${renderHelpGuideCta()}
-        <button type="button" class="btn-primary" data-action="start-game" ${canStart ? '' : 'disabled'}>
-          ${canStart ? 'Begin Battle Guide' : 'Load both armies first'}
-        </button>
-      </div>`;
-  }
-
-  if (step.id === 'battle-summary') {
-    return renderBattleSummary(state);
-  }
-
-  const phaseLabel = getPhaseGroupLabel(step);
-  const firstTurnPicker =
-    step.id === 'setup-first-turn'
-      ? `
-      <div class="first-turn-picker">
-        <h4>Who takes the first turn each battle round?</h4>
-        <p class="first-turn-hint">This sets turn order for all 5 battle rounds.</p>
-        <div class="first-turn-options">
-          <button type="button" class="first-turn-btn ${state.firstPlayer === 'player1' ? 'selected' : ''}" data-action="set-first-player" data-player="player1">
-            <span class="first-turn-side">Left</span>
-            <strong>${esc(state.player1.army?.name || state.player1.name)}</strong>
-          </button>
-          <button type="button" class="first-turn-btn ${state.firstPlayer === 'player2' ? 'selected' : ''}" data-action="set-first-player" data-player="player2">
-            <span class="first-turn-side">Right</span>
-            <strong>${esc(state.player2.army?.name || state.player2.name)}</strong>
-          </button>
-        </div>
-      </div>`
-      : '';
-
-  const stepAbilities = getAllAbilitiesForStep(state, step);
-  const abilities = stepAbilities
-    .map(
-      (a) => `
-      <div class="ability-reminder ${a.player === 'p1' ? 'p1' : 'p2'}">
-        <div class="ability-header">
-          <span class="ability-player">${a.player === 'p1' ? 'P1' : 'P2'}</span>
-          <strong>${esc(a.unitName)}</strong> — ${esc(a.ruleName)}
-          ${a.source === 'army' || a.source === 'detachment' ? '<span class="ability-army-tag">Army rule</span>' : ''}
-          ${a.timing === 'either' ? '<span class="ability-timing-tag">Either player</span>' : ''}
-          ${a.timing === 'opponent' ? '<span class="ability-timing-tag opponent">Opponent\'s phase</span>' : ''}
-        </div>
-        <p>${esc(a.description)}</p>
-      </div>`,
-    )
-    .join('');
-
-  const unitChecklist = renderUnitPhaseChecklist(state, step);
-  const combatUI = renderCombatUI(state, step);
-  const formationsDeepStrike = renderFormationsDeepStrike(state);
-
-  return `
-    <div class="guide-center">
-      <div class="step-nav step-nav-top">
-        <button type="button" data-action="prev-step" ${state.stepIndex === 0 ? 'disabled' : ''}>← Previous</button>
-        <span class="step-counter">Step ${state.stepIndex + 1} of ${state.flow.length}</span>
-        <button type="button" class="btn-primary" data-action="next-step" ${state.stepIndex >= state.flow.length - 1 ? 'disabled' : ''}>Next Step →</button>
-      </div>
-      <div class="step-content">
-        <div class="step-card">
-          <div class="step-phase">${esc(phaseLabel)}</div>
-          <h2 class="step-title">${esc(step.label)}</h2>
-          <p class="step-detail">${esc(step.detail)}</p>
-          <p class="step-ref">${esc(step.ruleRef || '')}</p>
-          ${firstTurnPicker}
-          ${abilities ? `<div class="ability-list"><h4>Abilities to use now (${stepAbilities.length})</h4>${abilities}</div>` : ''}
-        </div>
-        ${unitChecklist}
-        ${formationsDeepStrike}
-        ${combatUI}
-      </div>
-    </div>`;
-}
-
-function saveArmyPanelScroll(root) {
-  const saved = {};
-  if (!root) return saved;
-  for (const el of root.querySelectorAll('.army-panel[data-player]')) {
-    saved[el.dataset.player] = el.scrollTop;
-  }
-  return saved;
-}
-
-function restoreArmyPanelScroll(root, saved) {
-  if (!root || !saved) return;
-  requestAnimationFrame(() => {
-    for (const el of root.querySelectorAll('.army-panel[data-player]')) {
-      const top = saved[el.dataset.player];
-      if (top != null) el.scrollTop = top;
-    }
-  });
-}
-
+/**
+ * App shell entry — Battle Map only (Companion UI removed in Phase C).
+ */
 function renderGuide(root, state, dispatch) {
-  // Map-first: Companion view is behind SHOW_COMPANION_VIEW
-  if (!SHOW_COMPANION_VIEW || state.viewMode === 'battleSim') {
-    renderBattleSim(root, state, dispatch);
-    return;
-  }
-
-  const armyScroll = saveArmyPanelScroll(root);
-  const step = getCurrentStep(state);
-  const isSummary = step?.id === 'battle-summary';
-
-  root.innerHTML = `
-    <div class="guide-app">
-      ${renderScoreboard(state)}
-      <main class="guide-main${isSummary ? ' guide-main-summary' : ''}">
-        ${renderArmyPanel(state.player1, 'player1', state)}
-        ${renderGuideCenter(state)}
-        ${renderArmyPanel(state.player2, 'player2', state)}
-      </main>
-      <footer class="guide-footer">
-        ${state.started ? renderFullChecklist(state) : ''}
-        <div class="guide-footer-bar">
-          Warhammer 40,000 Battle Companion · Step ${state.stepIndex + 1}/${state.flow.length || '—'}
-          <button type="button" class="btn-link" data-action="set-view-mode" data-mode="battleSim">Battle Map</button>
-          <button type="button" class="btn-link" data-action="open-help-guide">Instructions</button>
-          <button type="button" class="btn-link" data-action="reset-game">Reset</button>
-          <button type="button" class="btn-link" data-action="save-game">Save</button>
-        </div>
-      </footer>
-      ${renderUnitDetailModal(state)}
-      ${renderKeywordRulePopover(state)}
-      ${renderStratagemPanel(state)}
-      ${renderHelpGuidePanel(state)}
-    </div>`;
-
-  bindGuideEvents(root, dispatch);
-  restoreArmyPanelScroll(root, armyScroll);
-}
-
-function bindGuideEvents(root, dispatch) {
-  root.querySelector('[data-action="start-game"]')?.addEventListener('click', () => dispatch({ type: 'START_GAME' }));
-  root.querySelector('[data-action="next-step"]')?.addEventListener('click', () => dispatch({ type: 'NEXT_STEP' }));
-  root.querySelector('[data-action="prev-step"]')?.addEventListener('click', () => dispatch({ type: 'PREV_STEP' }));
-  root.querySelector('[data-action="reset-game"]')?.addEventListener('click', () => {
-    if (confirm('Reset the battle guide? Armies and scores will be cleared.')) dispatch({ type: 'RESET_GAME' });
-  });
-  root.querySelector('[data-action="save-game"]')?.addEventListener('click', () => dispatch({ type: 'SAVE' }));
-
-  root.querySelectorAll('[data-action="set-view-mode"]').forEach((btn) => {
-    btn.addEventListener('click', () => dispatch({ type: 'SET_VIEW_MODE', mode: btn.dataset.mode }));
-  });
-
-  root.querySelectorAll('[data-action="goto-step"]').forEach((btn) => {
-    btn.addEventListener('click', () => dispatch({ type: 'GOTO_STEP', index: Number(btn.dataset.index) }));
-  });
-
-  root.querySelectorAll('[data-action="score"]').forEach((btn) => {
-    btn.addEventListener('click', () =>
-      dispatch({
-        type: 'ADJUST_SCORE',
-        player: btn.dataset.player,
-        field: btn.dataset.field,
-        delta: Number(btn.dataset.delta),
-      }),
-    );
-  });
-
-  root.querySelectorAll('[data-action="clear-army"]').forEach((btn) => {
-    btn.addEventListener('click', () => dispatch({ type: 'CLEAR_ARMY', player: btn.dataset.player }));
-  });
-
-  root.querySelectorAll('[data-action="set-first-player"]').forEach((btn) => {
-    btn.addEventListener('click', () => dispatch({ type: 'SET_FIRST_PLAYER', player: btn.dataset.player }));
-  });
-
-  root.querySelectorAll('[data-action="set-leader-attach"]').forEach((sel) => {
-    sel.addEventListener('click', (e) => e.stopPropagation());
-    sel.addEventListener('mousedown', (e) => e.stopPropagation());
-    sel.addEventListener('change', (e) => {
-      e.stopPropagation();
-      dispatch({
-        type: 'SET_LEADER_ATTACHMENT',
-        player: sel.dataset.player,
-        leaderId: sel.dataset.leaderId,
-        attachedUnitId: sel.value || null,
-      });
-    });
-  });
-
-  root.querySelectorAll('[data-action="toggle-battle-shock"]').forEach((btn) => {
-    btn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      dispatch({ type: 'TOGGLE_BATTLE_SHOCK', player: btn.dataset.player, groupId: btn.dataset.groupId });
-    });
-  });
-
-  root.querySelectorAll('[data-action="adjust-unit-wounds"]').forEach((btn) => {
-    btn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      dispatch({
-        type: 'ADJUST_UNIT_WOUNDS',
-        player: btn.dataset.player,
-        unitId: btn.dataset.unitId,
-        delta: Number(btn.dataset.delta),
-      });
-    });
-  });
-
-  root.querySelectorAll('[data-action="toggle-battle-ready"]').forEach((btn) => {
-    btn.addEventListener('click', () => dispatch({ type: 'TOGGLE_BATTLE_READY', player: btn.dataset.player }));
-  });
-
-  bindStratagemEvents(root, dispatch);
-  bindHelpGuideEvents(root, dispatch);
-
-  root.querySelectorAll('[data-action="reorder-unit"]').forEach((btn) => {
-    btn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      dispatch({
-        type: 'REORDER_UNIT',
-        player: btn.dataset.player,
-        unitId: btn.dataset.unitId,
-        direction: btn.dataset.direction,
-      });
-    });
-  });
-
-  root.querySelectorAll('[data-action="toggle-unit-dead"]').forEach((btn) => {
-    btn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      dispatch({ type: 'TOGGLE_UNIT_DEAD', player: btn.dataset.player, unitId: btn.dataset.unitId });
-    });
-  });
-
-  root.querySelectorAll('[data-action="toggle-unit-used"]').forEach((btn) => {
-    btn.addEventListener('click', () => dispatch({ type: 'TOGGLE_UNIT_USED', unitId: btn.dataset.unitId }));
-  });
-
-  root.querySelectorAll('[data-action="combat-select-active"]').forEach((btn) => {
-    btn.addEventListener('click', () => dispatch({ type: 'COMBAT_SELECT_ACTIVE', unitId: btn.dataset.unitId }));
-  });
-
-  root.querySelectorAll('[data-action="combat-select-target"]').forEach((btn) => {
-    btn.addEventListener('click', () => dispatch({ type: 'COMBAT_SELECT_TARGET', unitId: btn.dataset.unitId }));
-  });
-
-  root.querySelectorAll('[data-action="open-unit-detail"]').forEach((btn) => {
-    btn.addEventListener('click', () =>
-      dispatch({ type: 'OPEN_UNIT_DETAIL', player: btn.dataset.player, unitId: btn.dataset.unitId }),
-    );
-  });
-
-  root.querySelector('.unit-modal-backdrop')?.addEventListener('click', (e) => {
-    if (e.target.classList.contains('unit-modal-backdrop')) {
-      dispatch({ type: 'CLOSE_UNIT_DETAIL' });
-    }
-  });
-  root.querySelector('.unit-modal-close')?.addEventListener('click', () => dispatch({ type: 'CLOSE_UNIT_DETAIL' }));
-  root.querySelector('.unit-modal')?.addEventListener('click', (e) => e.stopPropagation());
-
-  root.querySelectorAll('[data-action="show-keyword-rule"]').forEach((btn) => {
-    btn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      dispatch({
-        type: 'SHOW_KEYWORD_RULE',
-        player: btn.dataset.player,
-        unitId: btn.dataset.unitId,
-        ruleName: btn.dataset.ruleName,
-      });
-    });
-  });
-
-  root.querySelector('.keyword-rule-popover-backdrop')?.addEventListener('click', (e) => {
-    if (e.target.classList.contains('keyword-rule-popover-backdrop')) {
-      dispatch({ type: 'CLOSE_KEYWORD_RULE' });
-    }
-  });
-  root.querySelector('.keyword-rule-popover')?.addEventListener('click', (e) => e.stopPropagation());
-  root.querySelector('.keyword-rule-popover-close')?.addEventListener('click', () =>
-    dispatch({ type: 'CLOSE_KEYWORD_RULE' }),
-  );
-
-  root.querySelectorAll('input[data-action="load-army"]').forEach((input) => {
-    input.addEventListener('change', (e) => {
-      const file = e.target.files?.[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = () => {
-        try {
-          dispatch({ type: 'LOAD_ARMY', player: input.dataset.player, json: reader.result });
-        } catch (err) {
-          alert('Failed to load roster: ' + err.message);
-        }
-      };
-      reader.readAsText(file);
-      e.target.value = '';
-    });
-  });
+  renderBattleSim(root, state, dispatch);
 }
 
 /* --- main.js --- */
@@ -11394,7 +9633,7 @@ function showBootError(err) {
   if (root) {
     root.innerHTML =
       '<div style="padding:2rem;font-family:monospace;color:#f87171;min-height:100vh">' +
-      '<h2 style="color:#fbbf24">Battle Companion failed to start</h2>' +
+      '<h2 style="color:#fbbf24">Battle Map failed to start</h2>' +
       '<p>' + msg + '</p>' + stack +
       '<p style="color:#a8a29e;margin-top:1rem">Try running build.bat, then launch-offline.bat again.</p></div>';
   }

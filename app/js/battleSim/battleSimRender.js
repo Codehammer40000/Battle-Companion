@@ -19,7 +19,6 @@ import {
   isGroupBattleShocked,
   getBattleShockActivePlayer,
   groupMustTakeBattleShockTest,
-  SHOW_COMPANION_VIEW,
 } from '../guide/guideState.js';
 import { getAllAbilitiesForStep } from '../guide/abilityMapper.js';
 import { getUnitDisplayAbilities, buildKeywordRuleIndex } from '../guide/rosterParser.js';
@@ -73,15 +72,7 @@ function renderFirstTurnBadge(state, key) {
 }
 
 function renderViewModeBar() {
-  if (!SHOW_COMPANION_VIEW) {
-    return `<div class="view-mode-bar">${renderHelpQuestionBtn()}</div>`;
-  }
-  return `
-    <div class="view-mode-bar">
-      <button type="button" class="view-mode-btn" data-action="set-view-mode" data-mode="companion">Companion</button>
-      <button type="button" class="view-mode-btn active" data-action="set-view-mode" data-mode="battleSim">Battle Map</button>
-      ${renderHelpQuestionBtn()}
-    </div>`;
+  return `<div class="view-mode-bar">${renderHelpQuestionBtn()}</div>`;
 }
 
 function renderSimScoreboard(state) {
@@ -692,10 +683,6 @@ export function renderBattleSim(root, state, dispatch) {
     }
   }
 
-  const companionFooterLink = SHOW_COMPANION_VIEW
-    ? `<button type="button" class="btn-link" data-action="set-view-mode" data-mode="companion">Companion</button>`
-    : '';
-
   root.innerHTML = `
     <div class="guide-app battle-sim-app">
       ${renderSimScoreboard(state)}
@@ -715,7 +702,6 @@ export function renderBattleSim(root, state, dispatch) {
       <footer class="guide-footer">
         <div class="guide-footer-bar">
           Warhammer 40,000 Battle Map
-          ${companionFooterLink}
           <button type="button" class="btn-link" data-action="open-help-guide">Instructions</button>
           <button type="button" class="btn-link" data-action="save-game">Save</button>
           <button type="button" class="btn-link" data-action="reset-game">Reset</button>
@@ -732,9 +718,6 @@ export function renderBattleSim(root, state, dispatch) {
 }
 
 function bindBattleSimEvents(root, state, dispatch) {
-  root.querySelectorAll('[data-action="set-view-mode"]').forEach((btn) => {
-    btn.addEventListener('click', () => dispatch({ type: 'SET_VIEW_MODE', mode: btn.dataset.mode }));
-  });
   root.querySelector('[data-action="start-game"]')?.addEventListener('click', () => dispatch({ type: 'START_GAME' }));
   root.querySelector('[data-action="next-step"]')?.addEventListener('click', () => dispatch({ type: 'NEXT_STEP' }));
   root.querySelector('[data-action="prev-step"]')?.addEventListener('click', () => dispatch({ type: 'PREV_STEP' }));

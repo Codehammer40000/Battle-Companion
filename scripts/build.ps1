@@ -6,7 +6,7 @@ $AppDir = Join-Path $ProjectRoot 'app'
 $DistDir = Join-Path $ProjectRoot 'dist'
 
 Write-Host ""
-Write-Host "  WH40k Battle Guide - Build (no Node.js)" -ForegroundColor Yellow
+Write-Host "  WH40k Battle Map - Build (no Node.js)" -ForegroundColor Yellow
 Write-Host ""
 
 $required = @(
@@ -59,13 +59,13 @@ $html = @"
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Warhammer 40,000 - Battle Companion</title>
+    <title>Warhammer 40,000 - Battle Map</title>
     <style>
 $css
     </style>
   </head>
   <body>
-    <div id="root"><p style="padding:2rem;color:#d4a853;font-family:Georgia,serif">Loading Battle Guide...</p></div>
+    <div id="root"><p style="padding:2rem;color:#d4a853;font-family:Georgia,serif">Loading Battle Map...</p></div>
     <script>
 $js
     </script>

@@ -1,5 +1,5 @@
 /**
- * Shared weapon table + clickable keyword chips (Companion + Battle Sim).
+ * Weapon table + clickable keyword chips for Battle Map unit cards.
  */
 
 import { findKeywordRule } from './rosterParser.js';
