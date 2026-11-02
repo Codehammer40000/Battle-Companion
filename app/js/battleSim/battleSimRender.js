@@ -123,6 +123,105 @@ function renderArmyDrawerToggle(state, playerKey) {
   return `<button type="button" class="ui-btn ui-btn-ghost army-drawer-toggle ${open ? 'is-active' : ''} ${needsLoad ? 'needs-attention' : ''}" data-action="toggle-army-drawer" data-player="${playerKey}" aria-pressed="${open ? 'true' : 'false'}">${esc(label)}</button>`;
 }
 
+function renderArmyRulesBtn(state, playerKey) {
+  if (!state[playerKey]?.army) return '';
+  const open = state.armyRulesPanel?.player === playerKey;
+  return `<button type="button" class="ui-btn ui-btn-ghost army-rules-btn ${open ? 'active' : ''}" data-action="open-army-rules" data-player="${playerKey}" title="Army & detachment rules">Rules</button>`;
+}
+
+function getArmyDetachments(army) {
+  if (!army) return [];
+  if (army.detachments?.length) return army.detachments;
+  if (army.detachment || army.detachmentRules?.length) {
+    return [{ name: army.detachment || 'Detachment', rules: army.detachmentRules || [] }];
+  }
+  return [];
+}
+
+/** Expandable Army Rule + Detachment reference (drawer + modal). */
+function renderArmyRulesContent(army) {
+  if (!army) return '';
+  const armyRules = army.armyRules || army.forceRules || [];
+  const detachments = getArmyDetachments(army);
+  const detachmentLabel = army.detachment || detachments[0]?.name || '';
+
+  const armyRuleItems = armyRules.length
+    ? armyRules
+        .map(
+          (rule) => `
+      <details class="army-rule-dropdown">
+        <summary class="army-rule-summary"><span class="army-rule-summary-text">${esc(rule.name || 'Army Rule')}</span></summary>
+        <div class="army-rule-body"><p>${esc(rule.description || 'No text available.')}</p></div>
+      </details>`,
+        )
+        .join('')
+    : '<p class="army-rules-empty">No army rules found in this roster.</p>';
+
+  const detBlocks = detachments.length
+    ? detachments
+        .map((det) => {
+          const rules = det.rules || [];
+          const ruleHtml = rules.length
+            ? rules
+                .map(
+                  (r) => `
+            <div class="detachment-rule-item">
+              <strong>${esc(r.name || 'Rule')}</strong>
+              <p>${esc(r.description || '')}</p>
+            </div>`,
+                )
+                .join('')
+            : '<p class="army-rules-empty">No detachment rules listed.</p>';
+          return `
+      <details class="army-rule-dropdown detachment-block" open>
+        <summary class="army-rule-summary"><span class="army-rule-summary-text">${esc(det.name || 'Detachment')}</span></summary>
+        <div class="army-rule-body">${ruleHtml}</div>
+      </details>`;
+        })
+        .join('')
+    : '<p class="army-rules-empty">No detachment found in this roster.</p>';
+
+  return `
+    <div class="army-rules-block">
+      <h4>Army &amp; Detachment</h4>
+      ${army.faction ? `<p class="army-rules-meta"><span class="army-rules-meta-label">Faction</span> ${esc(army.faction)}</p>` : ''}
+      ${detachmentLabel ? `<p class="army-rules-meta"><span class="army-rules-meta-label">Detachment</span> ${esc(detachmentLabel)}</p>` : ''}
+      <div class="army-rules-list">
+        <p class="army-rules-section-label">Army rules</p>
+        ${armyRuleItems}
+      </div>
+      <div class="army-detachments-list">
+        <p class="army-rules-section-label">Detachment</p>
+        ${detBlocks}
+      </div>
+    </div>`;
+}
+
+function renderArmyRulesPanel(state) {
+  const playerKey = state.armyRulesPanel?.player;
+  if (!playerKey) return '';
+  const player = state[playerKey];
+  const army = player?.army;
+  if (!army) return '';
+  const sideLabel = playerKey === 'player1' ? 'Player 1' : 'Player 2';
+
+  return `
+    <div class="army-rules-panel-backdrop" data-action="close-army-rules">
+      <div class="army-rules-panel" role="dialog" aria-modal="true" aria-labelledby="army-rules-panel-title">
+        <div class="army-rules-panel-header">
+          <div>
+            <h2 id="army-rules-panel-title">Army &amp; Detachment</h2>
+            <p class="army-rules-panel-meta">${esc(army.name || sideLabel)}${army.faction ? ` · ${esc(army.faction)}` : ''}</p>
+          </div>
+          <button type="button" class="unit-modal-close" data-action="close-army-rules" aria-label="Close">×</button>
+        </div>
+        <div class="army-rules-panel-body">
+          ${renderArmyRulesContent(army)}
+        </div>
+      </div>
+    </div>`;
+}
+
 function renderSimChrome(state) {
   const p1 = state.player1;
   const p2 = state.player2;
@@ -150,6 +249,7 @@ function renderSimChrome(state) {
           </div>
           <div class="score-player-actions">
             ${renderArmyDrawerToggle(state, 'player1')}
+            ${renderArmyRulesBtn(state, 'player1')}
             ${renderStratagemsBtn(state, 'player1')}
             ${renderBattleReadyBtn(state, 'player1')}
           </div>
@@ -181,6 +281,7 @@ function renderSimChrome(state) {
           <div class="score-player-actions score-player-actions-mirror">
             ${renderBattleReadyBtn(state, 'player2')}
             ${renderStratagemsBtn(state, 'player2')}
+            ${renderArmyRulesBtn(state, 'player2')}
             ${renderArmyDrawerToggle(state, 'player2')}
           </div>
         </div>
@@ -320,7 +421,7 @@ function renderSimArmyList(state, playerKey) {
       <div class="army-panel-header">
         <div>
           <h3>${esc(army.name)}</h3>
-          <p class="army-meta">${esc(army.faction)} · ${army.points}${army.pointsLimit ? `/${army.pointsLimit}` : ''} pts</p>
+          <p class="army-meta">${esc(army.faction)}${army.detachment || getArmyDetachments(army)[0]?.name ? ` · ${esc(army.detachment || getArmyDetachments(army)[0].name)}` : ''} · ${army.points}${army.pointsLimit ? `/${army.pointsLimit}` : ''} pts</p>
         </div>
         <div class="army-panel-header-actions">
           <label class="ui-btn ui-btn-ghost ui-btn-tiny file-btn">
@@ -332,6 +433,7 @@ function renderSimArmyList(state, playerKey) {
         </div>
       </div>
       <div class="sim-army-panel-body">
+        ${renderArmyRulesContent(army)}
         <div class="sim-unit-list">${units}</div>
       </div>
     </aside>`;
@@ -856,6 +958,7 @@ export function renderBattleSim(root, state, dispatch) {
       ${renderKeywordRulePopover(state)}
       ${renderLayoutImportDialog(state)}
       ${renderStratagemPanel(state)}
+      ${renderArmyRulesPanel(state)}
       ${renderHelpGuidePanel(state)}
     </div>`;
 
@@ -974,6 +1077,17 @@ function bindBattleSimEvents(root, state, dispatch) {
 
   bindStratagemEvents(root, dispatch);
   bindHelpGuideEvents(root, dispatch);
+
+  root.querySelectorAll('[data-action="open-army-rules"]').forEach((btn) => {
+    btn.addEventListener('click', () => dispatch({ type: 'OPEN_ARMY_RULES', player: btn.dataset.player }));
+  });
+  root.querySelectorAll('[data-action="close-army-rules"]').forEach((el) => {
+    el.addEventListener('click', (e) => {
+      if (el.classList.contains('army-rules-panel-backdrop') && e.target !== el) return;
+      dispatch({ type: 'CLOSE_ARMY_RULES' });
+    });
+  });
+  root.querySelector('.army-rules-panel')?.addEventListener('click', (e) => e.stopPropagation());
 
   root.querySelectorAll('[data-action="map-deploy-unit"]').forEach((btn) => {
     btn.addEventListener('click', () =>

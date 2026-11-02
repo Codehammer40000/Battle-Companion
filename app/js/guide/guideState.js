@@ -50,6 +50,7 @@ export function createInitialGuideState() {
     stratagems: { player1: [], player2: [] },
     stratagemSpent: { player1: {}, player2: {} },
     stratagemPanel: null,
+    armyRulesPanel: null,
     helpGuide: { open: false, query: '', sectionId: null },
     deadUnits: { player1: [], player2: [] },
     unitWounds: { player1: {}, player2: {} },
@@ -798,11 +799,21 @@ export function guideReducer(state, action) {
     case 'OPEN_STRATAGEMS': {
       const { player } = action;
       if (player !== 'player1' && player !== 'player2') return state;
-      return { ...state, stratagemPanel: { player } };
+      return { ...state, stratagemPanel: { player }, armyRulesPanel: null };
     }
 
     case 'CLOSE_STRATAGEMS':
       return { ...state, stratagemPanel: null };
+
+    case 'OPEN_ARMY_RULES': {
+      const { player } = action;
+      if (player !== 'player1' && player !== 'player2') return state;
+      if (!state[player]?.army) return state;
+      return { ...state, armyRulesPanel: { player }, stratagemPanel: null };
+    }
+
+    case 'CLOSE_ARMY_RULES':
+      return { ...state, armyRulesPanel: null };
 
     case 'SPEND_STRATAGEM': {
       const { player, stratagemId } = action;
@@ -1628,6 +1639,7 @@ export function guideReducer(state, action) {
                 : {},
           },
           stratagemPanel: null,
+          armyRulesPanel: null,
           helpGuide: {
             open: false,
             query: '',
@@ -1689,6 +1701,7 @@ export function guideReducer(state, action) {
           flow: [],
           unitDetail: null,
           stratagemPanel: null,
+          armyRulesPanel: null,
           helpGuide: { open: false, query: '', sectionId: null },
           currentStepId: state.flow[state.stepIndex]?.id || null,
         };
